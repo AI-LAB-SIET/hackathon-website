@@ -1,0 +1,51 @@
+"use client";
+
+import React from "react";
+import { motion } from "framer-motion";
+
+interface BadgeProps {
+  children: React.ReactNode;
+  variant?: "success" | "warning" | "danger" | "info" | "primary";
+  pulse?: boolean;
+  className?: string;
+}
+
+export function Badge({
+  children,
+  variant = "primary",
+  pulse = false,
+  className = "",
+}: BadgeProps) {
+  const variants = {
+    primary: "bg-primary-green/10 text-primary-green border border-primary-green/20",
+    success: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    warning: "bg-amber-50 text-amber-700 border border-amber-200",
+    danger: "bg-red-50 text-red-700 border border-red-200",
+    info: "bg-blue-50 text-blue-700 border border-blue-200",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold select-none transition-all duration-200 ${variants[variant]} ${className}`}
+    >
+      {pulse && (
+        <motion.span
+          animate={{ scale: [1, 1.35, 1] }}
+          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+          className={`h-1.5 w-1.5 rounded-full ${
+            variant === "success"
+              ? "bg-emerald-500"
+              : variant === "warning"
+              ? "bg-amber-500"
+              : variant === "danger"
+              ? "bg-red-500"
+              : variant === "info"
+              ? "bg-blue-500"
+              : "bg-primary-green"
+          }`}
+        />
+      )}
+      {children}
+    </span>
+  );
+}

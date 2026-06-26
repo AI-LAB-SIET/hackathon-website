@@ -1,26 +1,96 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary-dark: #004D00;
+  --color-primary-green: #006400;
+  --color-accent-green: #4CAF50;
+  --color-accent-yellow: #F7E035;
+  --color-card-bg: #E6FFE6;
+  --color-input-border: #A3C65F;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #111827; /* Tailwind Gray 900 for high quality readability */
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar customizations */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+::-webkit-scrollbar-thumb {
+  background: #006400;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #004D00;
+}
+
+/* Custom animation classes */
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes float-reverse {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(12px) rotate(-1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.55; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 8s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Aurora background glow mesh styles */
+.gradient-mesh {
+  background-image: radial-gradient(at 0% 0%, hsla(120, 100%, 15%, 0.1) 0px, transparent 50%),
+                    radial-gradient(at 50% 0%, hsla(120, 100%, 20%, 0.08) 0px, transparent 50%),
+                    radial-gradient(at 100% 0%, hsla(68, 62%, 57%, 0.12) 0px, transparent 50%);
+}
+
+.glow-orb {
+  filter: blur(140px);
+  opacity: 0.3;
+}
+
+/* Custom UI enhancements */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 77, 0, 0.08);
+}
+
+.glassmorphism-card {
+  background: rgba(230, 255, 230, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(163, 198, 95, 0.25);
 }
