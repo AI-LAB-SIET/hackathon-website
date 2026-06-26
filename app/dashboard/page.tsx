@@ -6,1118 +6,781 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAppState } from "@/components/layout/StateProvider";
 import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { QRTeamPass } from "@/components/ui/QRTeamPass";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bell,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  FolderOpen,
-  Calendar,
-  Layers,
-  ExternalLink,
-  Users,
-  Send,
-  Github,
-  Video,
-  UserPlus,
-  Trash2,
-  Award,
-  Settings,
-  HelpCircle,
-  MessageSquare,
-  Search,
-  CheckSquare,
-  AlertCircle,
-  Plus,
-  Inbox
+  Home, Users, FolderOpen, Bell, User,
+  CheckCircle, Clock, Lock, Circle, ChevronRight,
+  Github, Video, Globe, Plus, Trash2, Send,
+  CheckSquare, Square, Settings, Shield,
+  AlertTriangle, Info, X, Eye, EyeOff,
+  LayoutDashboard, Layers
 } from "lucide-react";
-import { Participant } from "@/types";
+import { Participant, Notification } from "@/types";
+import { HACK_TRACKS } from "@/lib/mockData";
+
+// ─────────────────────────────────────────────
+// Journey stages
+// ─────────────────────────────────────────────
+const JOURNEY_STAGES = [
+  { id: "registration", label: "Registration", desc: "Account created and team registered with the platform.", icon: "📋" },
+  { id: "team_created", label: "Team Created", desc: "Team profile is set up with all members added.", icon: "👥" },
+  { id: "payment", label: "Payment Verified", desc: "Registration fee payment confirmed by organizers.", icon: "💳" },
+  { id: "idea", label: "Idea Submission", desc: "2-page abstract PDF submitted before July 5, 11:59 PM.", icon: "💡" },
+  { id: "shortlist", label: "Shortlisted", desc: "Team selected in top 20 — cloud GPU credits unlocked.", icon: "⭐" },
+  { id: "hackathon", label: "Hackathon Day", desc: "24-hour physical sprint at SIET AI Lab — July 18.", icon: "🚀" },
+  { id: "evaluation", label: "Final Evaluation", desc: "Live demo presented to industry judges.", icon: "🎯" },
+  { id: "results", label: "Results", desc: "Winners announced and certificates issued.", icon: "🏆" },
+];
+
+type TabType = "home" | "team" | "project" | "notifications" | "profile";
+
+const DEPT_OPTIONS = [
+  "Computer Science & Engineering",
+  "Electronics & Communication",
+  "Information Technology",
+  "Artificial Intelligence & Data Science",
+  "Mechanical Engineering",
+  "Electrical Engineering",
+  "Biotechnology",
+  "Civil Engineering",
+];
+
+const YEAR_OPTIONS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "PG 1st Year", "PG 2nd Year"];
 
 export default function ParticipantDashboard() {
   const router = useRouter();
-  const { session, teams, announcements, updateProjectDetails, updateTeamMembers, updateMilestoneProgress } = useAppState();
+  const {
+    session, teams, notifications,
+    updateProjectDetails, updateTeamMembers, updateMilestoneProgress,
+    markNotificationRead, markAllNotificationsRead,
+  } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState("home");
-
-  // Local inputs
-  const [newMember, setNewMember] = useState<Participant>({
-    name: "",
-    registerNumber: "",
-    email: "",
-    phone: "",
-    department: "Information Technology",
-    year: "III",
-    skills: [],
-    isLeader: false
-  });
+  const [activeTab, setActiveTab] = useState<TabType>("home");
+  const [activeJourneyStage, setActiveJourneyStage] = useState<string | null>(null);
+  const [projectTab, setProjectTab] = useState<"overview" | "repo" | "submission" | "milestones">("overview");
+  const [profileTab, setProfileTab] = useState<"info" | "account" | "notifications" | "appearance" | "security">("info");
+  const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
+  const [showAddMember, setShowAddMember] = useState(false);
   const [newSkill, setNewSkill] = useState("");
-  const [editProject, setEditProject] = useState({
-    name: "",
-    projectDescription: "",
-    githubUrl: "",
-    videoUrl: "",
-    demoUrl: "",
-    aiDisclosure: ""
+  const [newMember, setNewMember] = useState<Participant>({
+    name: "", registerNumber: "", email: "", phone: "",
+    department: DEPT_OPTIONS[0], year: YEAR_OPTIONS[2],
+    skills: [], isLeader: false,
   });
-  const [chatMessage, setChatMessage] = useState("");
-  const [chatLogs, setChatLogs] = useState([
-    { author: "Abhishek", text: "Hey team, did we finalize the RAG system architecture?", time: "10:15 AM" },
-    { author: "Siddharth", text: "Yes, I uploaded the design block to the Shared Files folder.", time: "10:18 AM" },
-    { author: "Dr. A. Rajesh (Mentor)", text: "Ensure safety checks on RAG database context limits.", time: "12:05 PM" }
-  ]);
-  const [supportTicket, setSupportTicket] = useState({ subject: "", desc: "" });
-  const [searchAnn, setSearchAnn] = useState("");
-  const [annFilter, setAnnFilter] = useState<"all" | "info" | "warning" | "success">("all");
+  const [projectEdit, setProjectEdit] = useState({
+    projectDescription: "", githubUrl: "", videoUrl: "", demoUrl: "", aiDisclosure: "", trackId: "",
+  });
 
+  useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
-    setMounted(true);
     if (mounted && (!session.isLoggedIn || session.role !== "participant")) {
       router.push("/login");
     }
   }, [session, router, mounted]);
 
-  // Sync edit project inputs when userTeam changes
-  const userTeam = teams.find((t) => t.id === session.teamId);
+  const team = teams.find((t) => t.id === session.teamId);
+
+  // Keep project edit in sync with team data — must be before any early returns
   useEffect(() => {
-    if (userTeam) {
-      setEditProject({
-        name: userTeam.name,
-        projectDescription: userTeam.projectDescription || "",
-        githubUrl: userTeam.githubUrl || "",
-        videoUrl: userTeam.videoUrl || "",
-        demoUrl: userTeam.demoUrl || "",
-        aiDisclosure: userTeam.aiDisclosure || ""
+    if (team) {
+      setProjectEdit({
+        projectDescription: team.projectDescription || "",
+        githubUrl: team.githubUrl || "",
+        videoUrl: team.videoUrl || "",
+        demoUrl: team.demoUrl || "",
+        aiDisclosure: team.aiDisclosure || "",
+        trackId: team.trackId || "",
       });
     }
-  }, [userTeam]);
+  }, [team]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "participant") {
+    return <div className="flex h-screen items-center justify-center text-sm text-gray-400">Loading your workspace...</div>;
+  }
+
+  if (!team) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500">
-        Loading workspace...
+      <div className="flex h-screen items-center justify-center flex-col gap-4">
+        <div className="text-gray-400 text-sm">No team found. Please register a team first.</div>
+        <button onClick={() => router.push("/register")} className="px-4 py-2 bg-primary-green text-white rounded-xl text-sm font-semibold cursor-pointer">Register Team</button>
       </div>
     );
   }
 
-  if (!userTeam) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-red-500">
-        Team profile not found. Try logging in again.
-      </div>
-    );
-  }
+  const leader = team.members.find((m) => m.isLeader) || team.members[0];
+  const track = HACK_TRACKS.find((t) => t.id === team.trackId);
+  const avgScore = team.evaluations && team.evaluations.length > 0
+    ? Math.round(team.evaluations.reduce((acc, e) => acc + (e.innovation + e.feasibility + e.presentation) / 3, 0) / team.evaluations.length)
+    : null;
 
-
-
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return {
-          icon: <CheckCircle className="h-10 w-10 text-emerald-600 animate-bounce-slow" />,
-          title: "Registration Approved",
-          desc: "Your team profile has been successfully audited against the college logs. You are eligible to participate in the physical coding sprint on July 18th.",
-          badge: <Badge variant="success" pulse>Approved</Badge>,
-          bg: "bg-emerald-50/30 border-emerald-100",
-        };
-      case "REJECTED":
-        return {
-          icon: <AlertTriangle className="h-10 w-10 text-red-600" />,
-          title: "Registration Rejected",
-          desc: "Your registration was flagged by the administrative council due to duplicate credentials or missing details. Reach out to the lab desk immediately.",
-          badge: <Badge variant="danger">Rejected</Badge>,
-          bg: "bg-red-50/30 border-red-100",
-        };
-      default:
-        return {
-          icon: <Clock className="h-10 w-10 text-amber-600 animate-pulse" />,
-          title: "Audit in Progress",
-          desc: "Your team registry is currently undergoing a credentials check with the SIET administration database. We will update your status shortly.",
-          badge: <Badge variant="warning" pulse>Pending Audit</Badge>,
-          bg: "bg-amber-50/20 border-amber-150",
-        };
+  // Journey status calculation
+  const getStageStatus = (stageId: string) => {
+    switch (stageId) {
+      case "registration": return "completed";
+      case "team_created": return team.members.length >= 2 ? "completed" : "current";
+      case "payment": return team.paymentVerified ? "completed" : team.members.length >= 2 ? "current" : "locked";
+      case "idea": return team.ideaSubmitted ? "completed" : team.paymentVerified ? "current" : "locked";
+      case "shortlist": return team.shortlisted ? "completed" : team.ideaSubmitted ? "upcoming" : "locked";
+      case "hackathon": return team.shortlisted ? "upcoming" : "locked";
+      case "evaluation": return "locked";
+      case "results": return "locked";
+      default: return "locked";
     }
   };
 
-  const statusConfig = getStatusConfig(userTeam.status);
+  // Registration progress
+  const regChecklist = [
+    { label: "Account Created", done: true },
+    { label: "Team Registered", done: team.status !== "PENDING" || true },
+    { label: "Members Added (2+)", done: team.members.length >= 2 },
+    { label: "Payment Verified", done: !!team.paymentVerified },
+    { label: "Faculty Approval", done: !!team.facultyApproved },
+    { label: "Idea Submitted", done: !!team.ideaSubmitted },
+  ];
+  const regPercent = Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100);
 
-  // Gamified progress percentage
-  const calculateProgress = () => {
-    let score = 0;
-    if (userTeam.status === "APPROVED") score += 25;
-    if (userTeam.members.length >= 2) score += 25;
-    if (userTeam.githubUrl && userTeam.projectDescription) score += 25;
-    if (userTeam.submitted) score += 25;
-    return score;
+  // Notifications
+  const filteredNotifs = notifFilter === "all" ? notifications : notifications.filter((n) => n.type === notifFilter);
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const notifTypeStyles: Record<string, { bg: string; dot: string; label: string }> = {
+    approval: { bg: "bg-emerald-50 border-emerald-100", dot: "bg-emerald-500", label: "Approval" },
+    deadline: { bg: "bg-amber-50 border-amber-100", dot: "bg-amber-500", label: "Deadline" },
+    mentor: { bg: "bg-purple-50 border-purple-100", dot: "bg-purple-500", label: "Mentor" },
+    judge: { bg: "bg-blue-50 border-blue-100", dot: "bg-blue-500", label: "Judge" },
+    action: { bg: "bg-red-50 border-red-100", dot: "bg-red-500", label: "Action" },
+    system: { bg: "bg-gray-50 border-gray-100", dot: "bg-gray-400", label: "System" },
   };
-  const progressPercent = calculateProgress();
 
-  // Action: Add Member
-  const handleAddMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMember.name || !newMember.registerNumber || !newMember.email) {
-      toast("Please fill name, register number and email.", "error");
+  const tabs = [
+    { id: "home" as TabType, label: "Home", icon: <Home className="h-4 w-4" /> },
+    { id: "team" as TabType, label: "My Team", icon: <Users className="h-4 w-4" /> },
+    { id: "project" as TabType, label: "Project", icon: <FolderOpen className="h-4 w-4" /> },
+    { id: "notifications" as TabType, label: "Notifications", icon: <Bell className="h-4 w-4" />, badge: unreadCount > 0 ? unreadCount : undefined },
+    { id: "profile" as TabType, label: "Profile", icon: <User className="h-4 w-4" /> },
+  ];
+
+  const handleAddMember = () => {
+    if (!newMember.name || !newMember.email || !newMember.registerNumber) {
+      toast("Please fill in Name, Email, and Register Number.", "error");
       return;
     }
-    if (userTeam.members.length >= 4) {
-      toast("Maximum team size is 4 members.", "error");
+    if (team.members.length >= 4) {
+      toast("Maximum 4 members per team.", "error");
       return;
     }
-    const updated = [...userTeam.members, newMember];
-    updateTeamMembers(userTeam.id, updated);
-    toast(`Added teammate: ${newMember.name}`, "success");
-    setNewMember({
-      name: "",
-      registerNumber: "",
-      email: "",
-      phone: "",
-      department: "Information Technology",
-      year: "III",
-      skills: [],
-      isLeader: false
+    updateTeamMembers(team.id, [...team.members, { ...newMember, skills: newMember.skills }]);
+    setNewMember({ name: "", registerNumber: "", email: "", phone: "", department: DEPT_OPTIONS[0], year: YEAR_OPTIONS[2], skills: [], isLeader: false });
+    setShowAddMember(false);
+    toast("Member added successfully.", "success");
+  };
+
+  const handleRemoveMember = (email: string) => {
+    if (team.members.length <= 2) { toast("Team must have at least 2 members.", "error"); return; }
+    updateTeamMembers(team.id, team.members.filter((m) => m.email !== email));
+    toast("Member removed.", "info");
+  };
+
+  const handleSaveProject = () => {
+    updateProjectDetails(team.id, {
+      projectDescription: projectEdit.projectDescription || team.projectDescription,
+      githubUrl: projectEdit.githubUrl || team.githubUrl,
+      videoUrl: projectEdit.videoUrl || team.videoUrl,
+      demoUrl: projectEdit.demoUrl || team.demoUrl,
+      aiDisclosure: projectEdit.aiDisclosure || team.aiDisclosure,
+      trackId: projectEdit.trackId || team.trackId,
     });
+    toast("Project details saved.", "success");
   };
 
-  // Action: Remove Member
-  const handleRemoveMember = (emailToRemove: string) => {
-    const updated = userTeam.members.filter((m) => m.email !== emailToRemove);
-    updateTeamMembers(userTeam.id, updated);
-    toast("Teammate removed from roster.", "info");
-  };
-
-  // Action: Update Project Details
-  const handleSaveProject = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateProjectDetails(userTeam.id, editProject);
-    toast("Project configuration saved successfully.", "success");
-  };
-
-  // Action: Submit Project Final Deliverables
-  const handleSubmitDeliverables = () => {
-    if (!editProject.githubUrl) {
-      toast("Please configure the GitHub Repository link first.", "error");
-      return;
-    }
-    updateProjectDetails(userTeam.id, {
-      ...editProject,
-      submitted: true,
-      submittedAt: new Date().toISOString()
-    });
-    toast("Project final deliverables submitted to judges evaluation queue!", "success");
-  };
-
-  // Action: Send Team Message
-  const handleSendChatMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatMessage.trim()) return;
-    setChatLogs([...chatLogs, { author: session.email?.split("@")[0] || "Me", text: chatMessage, time: "Just now" }]);
-    setChatMessage("");
-    toast("Message posted to team channel.", "success");
-  };
-
-  // Action: Submit Support Ticket
-  const handleRaiseTicket = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!supportTicket.subject || !supportTicket.desc) {
-      toast("Please fill in the subject and description.", "error");
-      return;
-    }
-    toast(`Ticket #${Math.floor(Math.random() * 9000 + 1000)} created! An organizer will check shortly.`, "success");
-    setSupportTicket({ subject: "", desc: "" });
-  };
+  // (projectEdit sync useEffect moved above early returns)
 
   return (
-    <PageWrapper className="flex min-h-screen bg-gray-50/50">
-      {/* Sidebar for desktop */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+    <PageWrapper>
+      <div className="flex min-h-screen bg-[#f8fafb]">
+        {/* Sidebar */}
+        <Sidebar />
 
-      {/* Main Container */}
-      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-screen">
-        
-        {/* Mobile Horizontal Navigation Header */}
-        <div className="md:hidden flex overflow-x-auto pb-3 mb-6 border-b border-gray-150 gap-2 scrollbar-none shrink-0">
-          {[
-            { id: "home", label: "Home" },
-            { id: "team", label: "My Team" },
-            { id: "project", label: "Project" },
-            { id: "deliverables", label: "Deliverables" },
-            { id: "timeline", label: "Timeline" },
-            { id: "resources", label: "Resources" },
-            { id: "announcements", label: "Announcements" },
-            { id: "messages", label: "Messages" },
-            { id: "support", label: "Support" },
-            { id: "settings", label: "Settings" }
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                activeTab === item.id 
-                  ? "bg-primary-green text-white" 
-                  : "bg-white text-gray-600 border border-gray-200"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Header Title */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-primary-dark tracking-tight capitalize">
-              {activeTab === "home" ? "Mission Control" : activeTab.replace("-", " ")}
-            </h1>
-            <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-0.5">
-              Workspace of <strong>{userTeam.name}</strong> | Role: {session.role?.toUpperCase()}
-            </p>
+        <main className="flex-1 min-w-0 p-6 lg:p-8">
+          {/* Tab Header */}
+          <div className="flex items-center gap-2 flex-wrap mb-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${activeTab === tab.id ? "bg-primary-green text-white shadow-md" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40 hover:text-primary-green"}`}
+              >
+                {tab.icon}{tab.label}
+                {tab.badge && (
+                  <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{tab.badge}</span>
+                )}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-bold hidden sm:inline">
-              Team ID: <code className="text-primary-green bg-card-bg px-2 py-1 rounded border border-input-border/25">{userTeam.id}</code>
-            </span>
-          </div>
-        </div>
 
-        {/* Tab Contents */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.15 }}
-          >
-            
-            {/* ==================== HOME TAB ==================== */}
+          <AnimatePresence mode="wait">
+            {/* ─── HOME TAB ─── */}
             {activeTab === "home" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Left Columns */}
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                  
-                  {/* Status Roster Audits */}
-                  <div className={`rounded-3xl border p-5 sm:p-6 flex flex-col sm:flex-row items-start gap-4 bg-white shadow-sm ${statusConfig.bg}`}>
-                    <div className="shrink-0">{statusConfig.icon}</div>
+              <motion.div key="home" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+                {/* Welcome */}
+                <div className="bg-gradient-to-br from-primary-dark to-emerald-700 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <div className="text-emerald-200 text-xs font-semibold uppercase tracking-widest mb-1">Mission Control</div>
+                      <h1 className="text-2xl font-extrabold mb-1">Welcome back, {session.name?.split(" ")[0] || "Participant"} 👋</h1>
+                      <div className="text-emerald-200 text-sm">{team.name} · {track?.label || "Track not set"}</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {team.status === "APPROVED" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/30 border border-emerald-400/30 text-xs font-bold text-emerald-100"><CheckCircle className="h-3.5 w-3.5" /> Approved</span>}
+                      {team.status === "PENDING" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/30 text-xs font-bold text-amber-100"><Clock className="h-3.5 w-3.5" /> Pending Approval</span>}
+                      {avgScore !== null && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-xs font-bold text-blue-100">Score: {avgScore}/10</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Animated Journey Timeline */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                  <h2 className="font-bold text-primary-dark mb-6 flex items-center gap-2"><Layers className="h-5 w-5 text-primary-green" /> Hackathon Journey</h2>
+                  <div className="relative">
+                    {/* Connecting line */}
+                    <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100" />
+                    <div className="flex flex-col gap-1">
+                      {JOURNEY_STAGES.map((stage, idx) => {
+                        const status = getStageStatus(stage.id);
+                        const isActive = activeJourneyStage === stage.id;
+                        return (
+                          <div key={stage.id}>
+                            <button
+                              onClick={() => setActiveJourneyStage(isActive ? null : stage.id)}
+                              className="relative w-full flex items-center gap-4 py-3 pl-2 pr-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group text-left"
+                            >
+                              {/* Icon */}
+                              <div className={`relative z-10 h-10 w-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-all ${
+                                status === "completed" ? "bg-emerald-100" :
+                                status === "current" ? "bg-amber-100 ring-2 ring-amber-400 ring-offset-2" :
+                                status === "upcoming" ? "bg-blue-50" : "bg-gray-50"
+                              }`}>
+                                {status === "completed" ? "✅" : status === "current" ? "🟡" : status === "upcoming" ? "⚪" : "🔒"}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className={`font-semibold text-sm ${status === "locked" ? "text-gray-400" : "text-primary-dark"}`}>{stage.label}</div>
+                                <div className={`text-xs ${status === "current" ? "text-amber-600 font-semibold" : status === "completed" ? "text-emerald-600" : "text-gray-400"}`}>
+                                  {status === "completed" ? "Completed" : status === "current" ? "In Progress" : status === "upcoming" ? "Up Next" : "Locked"}
+                                </div>
+                              </div>
+
+                              <ChevronRight className={`h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-transform ${isActive ? "rotate-90" : ""}`} />
+                            </button>
+
+                            {/* Expandable detail */}
+                            <AnimatePresence>
+                              {isActive && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="ml-14 mr-4 mb-2 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                    <p className="text-sm text-gray-600">{stage.desc}</p>
+                                    {status === "current" && (
+                                      <button
+                                        onClick={() => setActiveTab(stage.id === "idea" ? "project" : "team")}
+                                        className="mt-2 text-xs font-semibold text-primary-green hover:underline cursor-pointer"
+                                      >
+                                        Take action →
+                                      </button>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick cards row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Latest Notifications</div>
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-base font-bold text-primary-dark">{statusConfig.title}</h3>
-                        {statusConfig.badge}
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-500 leading-relaxed max-w-xl font-semibold">
-                        {statusConfig.desc}
-                      </p>
-                      {userTeam.status === "APPROVED" && (
-                        <div className="flex gap-4 mt-2">
-                          <button
-                            onClick={() => {
-                              toast("GPU credit tokens: SIET-AILAB-2026X4-CLAUDE", "info");
-                            }}
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-green hover:underline cursor-pointer bg-transparent border-0"
-                          >
-                            Claim Cloud GPU Token <ExternalLink className="h-3.5 w-3.5" />
-                          </button>
+                      {notifications.filter((n) => !n.read).slice(0, 3).map((n) => (
+                        <div key={n.id} className="flex items-start gap-2">
+                          <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${notifTypeStyles[n.type]?.dot || "bg-gray-400"}`} />
+                          <div className="text-xs text-gray-600 leading-tight">{n.title}</div>
                         </div>
-                      )}
+                      ))}
+                      {notifications.filter((n) => !n.read).length === 0 && <div className="text-xs text-gray-400">All caught up ✓</div>}
+                    </div>
+                    <button onClick={() => setActiveTab("notifications")} className="mt-3 text-xs font-semibold text-primary-green hover:underline cursor-pointer">View all →</button>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Upcoming Deadlines</div>
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-red-400 shrink-0" />
+                        <div><div className="text-xs font-semibold text-gray-700">Idea Submission</div><div className="text-xs text-gray-400">July 5, 2026</div></div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-amber-400 shrink-0" />
+                        <div><div className="text-xs font-semibold text-gray-700">Hackathon Day</div><div className="text-xs text-gray-400">July 18, 2026</div></div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Progress Indicator */}
-                  <div className="p-6 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-primary-dark">Hackathon Milestones Completed</span>
-                      <span className="text-xs font-extrabold text-primary-green">{progressPercent}%</span>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Quick Actions</div>
+                    <div className="flex flex-col gap-2">
+                      <button onClick={() => { setActiveTab("project"); setProjectTab("submission"); }} className="text-xs font-semibold text-left text-primary-green hover:underline cursor-pointer flex items-center gap-1.5">
+                        <Send className="h-3.5 w-3.5" /> Submit Idea Abstract
+                      </button>
+                      <button onClick={() => setActiveTab("team")} className="text-xs font-semibold text-left text-primary-green hover:underline cursor-pointer flex items-center gap-1.5">
+                        <Users className="h-3.5 w-3.5" /> View Team QR
+                      </button>
+                      <button onClick={() => setActiveTab("project")} className="text-xs font-semibold text-left text-primary-green hover:underline cursor-pointer flex items-center gap-1.5">
+                        <Github className="h-3.5 w-3.5" /> Update Repository
+                      </button>
                     </div>
-                    <div className="w-full bg-gray-150 h-3 rounded-full overflow-hidden">
-                      <div className="bg-primary-green h-full transition-all duration-300" style={{ width: `${progressPercent}%` }} />
-                    </div>
-                    <div className="grid grid-cols-4 gap-2 text-center text-[9px] font-bold text-gray-400 mt-1">
-                      <span className={userTeam.status === "APPROVED" ? "text-primary-green" : ""}>1. Approval</span>
-                      <span className={userTeam.members.length >= 2 ? "text-primary-green" : ""}>2. Teammates</span>
-                      <span className={userTeam.githubUrl ? "text-primary-green" : ""}>3. Repository</span>
-                      <span className={userTeam.submitted ? "text-primary-green" : ""}>4. Submission</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── MY TEAM TAB ─── */}
+            {activeTab === "team" && (
+              <motion.div key="team" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><Users className="h-5 w-5 text-primary-green" /> My Team</h2>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* QR Team Pass */}
+                  <div className="space-y-4">
+                    <QRTeamPass team={team} />
+
+                    {/* Registration Progress */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="font-bold text-primary-dark text-sm">Registration Progress</div>
+                        <div className="text-2xl font-extrabold text-primary-green">{regPercent}%</div>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${regPercent}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-gradient-to-r from-primary-green to-teal-400" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {regChecklist.map((item) => (
+                          <div key={item.label} className="flex items-center gap-2">
+                            {item.done ? <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" /> : <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />}
+                            <span className={`text-sm ${item.done ? "text-gray-700" : "text-amber-600 font-medium"}`}>{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Checklist and Action list */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {/* Checklist of Tasks */}
-                    <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-4">
-                      <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
-                        <CheckSquare className="h-4.5 w-4.5 text-primary-green" /> Today&apos;s Action Checklist
-                      </h3>
+                  {/* Members */}
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="font-bold text-primary-dark text-sm">Members ({team.members.length}/4)</div>
+                        {team.members.length < 4 && (
+                          <button onClick={() => setShowAddMember(!showAddMember)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer">
+                            <Plus className="h-3.5 w-3.5" /> Add Member
+                          </button>
+                        )}
+                      </div>
                       <div className="flex flex-col gap-3">
-                        {[
-                          { label: "Verify Team Registry", done: userTeam.status === "APPROVED" },
-                          { label: "Invite at least 2 members", done: userTeam.members.length >= 2 },
-                          { label: "Link GitHub repository", done: !!userTeam.githubUrl },
-                          { label: "Submit Final Presentation deck", done: !!userTeam.submitted }
-                        ].map((tsk, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs">
-                            <span className={`h-4.5 w-4.5 rounded-full flex items-center justify-center text-[10px] ${
-                              tsk.done ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-400"
-                            }`}>
-                              ✓
-                            </span>
-                            <span className={`font-semibold ${tsk.done ? "line-through text-gray-400" : "text-gray-700"}`}>
-                              {tsk.label}
-                            </span>
+                        {team.members.map((m) => (
+                          <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                              {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-primary-dark text-sm flex items-center gap-2">
+                                {m.name}
+                                {m.isLeader && <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 rounded-full">Leader</span>}
+                              </div>
+                              <div className="text-xs text-gray-400">{m.department} · {m.year}</div>
+                              <div className="text-xs text-gray-400">{m.email}</div>
+                            </div>
+                            {!m.isLeader && (
+                              <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Upcoming Deadlines */}
-                    <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-4">
-                      <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
-                        <Clock className="h-4.5 w-4.5 text-primary-green" /> Deadlines & Timers
-                      </h3>
-                      <div className="flex flex-col gap-3">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-semibold text-gray-700">Team approvals end:</span>
-                          <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-100">Tomorrow</span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-semibold text-gray-700">Mid-term RAG Checkpoint:</span>
-                          <span className="text-gray-500 font-semibold">July 10th</span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-semibold text-gray-700">Final Deliverables sprint:</span>
-                          <span className="text-primary-green font-extrabold">July 18th (Live)</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column (Pinned Announcements) */}
-                <div className="flex flex-col gap-6">
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 shadow-sm flex flex-col gap-4 max-h-[500px] overflow-hidden">
-                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-100 pb-2">
-                      <Bell className="h-4.5 w-4.5 text-primary-green" /> Recent Broadcasts
-                    </h3>
-                    <div className="flex flex-col gap-3.5 overflow-y-auto pr-1">
-                      {announcements.slice(0, 3).map((ann) => (
-                        <div key={ann.id} className="p-3.5 rounded-2xl border border-gray-100 bg-card-bg/20 flex flex-col gap-1 text-xs">
-                          <div className="flex justify-between items-center">
-                            <span className={`text-[9px] uppercase font-bold tracking-widest ${
-                              ann.type === "warning" ? "text-amber-700" : ann.type === "success" ? "text-emerald-700" : "text-blue-700"
-                            }`}>
-                              {ann.type}
-                            </span>
-                            <span className="text-[8px] text-gray-400 font-semibold">{ann.date}</span>
-                          </div>
-                          <h4 className="font-extrabold text-primary-dark leading-tight">{ann.title}</h4>
-                          <p className="text-[11px] text-gray-500 leading-relaxed truncate">{ann.content}</p>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => setActiveTab("announcements")}
-                        className="text-xs font-bold text-primary-green hover:underline cursor-pointer border-0 bg-transparent text-center pt-1"
-                      >
-                        View all announcements ({announcements.length})
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Mentor Feedback Peek */}
-                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3">
-                    <h3 className="text-xs font-extrabold text-primary-dark uppercase tracking-wider">Latest Mentor Feedback</h3>
-                    {userTeam.mentorFeedbacks && userTeam.mentorFeedbacks.length > 0 ? (
-                      <div className="p-3 rounded-2xl bg-amber-50/30 border border-amber-100 text-xs">
-                        <p className="font-bold text-gray-700">{userTeam.mentorFeedbacks[0].author}</p>
-                        <p className="text-gray-500 italic mt-1">&quot;{userTeam.mentorFeedbacks[0].feedback}&quot;</p>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400 italic">No feedback submitted by assigned mentors yet.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ==================== MY TEAM TAB ==================== */}
-            {activeTab === "team" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Roster management (Left columns) */}
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                  
-                  {/* Members list */}
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4">
-                    <h3 className="text-base font-bold text-primary-dark flex items-center gap-2">
-                      <Users className="h-5 w-5 text-primary-green" /> Teammates Roster ({userTeam.members.length}/4)
-                    </h3>
-                    
-                    <div className="flex flex-col gap-3.5">
-                      {userTeam.members.map((member, index) => (
-                        <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 rounded-2xl border border-gray-100 hover:border-input-border/20 transition-all">
-                          <div className="flex items-center gap-3">
-                            <Avatar name={member.name} size="sm" />
+                    {/* Add Member Form */}
+                    <AnimatePresence>
+                      {showAddMember && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                          <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div className="font-bold text-primary-dark text-sm">Register New Member</div>
+                              <button onClick={() => setShowAddMember(false)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X className="h-4 w-4" /></button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              {[
+                                { label: "Full Name*", field: "name" as const, placeholder: "Ravi Kumar" },
+                                { label: "Register Number*", field: "registerNumber" as const, placeholder: "2022CSE0101" },
+                                { label: "College Email*", field: "email" as const, placeholder: "ravi@college.edu" },
+                                { label: "Phone", field: "phone" as const, placeholder: "98765..." },
+                              ].map(({ label, field, placeholder }) => (
+                                <div key={field}>
+                                  <label className="text-xs font-semibold text-gray-500 block mb-1">{label}</label>
+                                  <input
+                                    type="text"
+                                    placeholder={placeholder}
+                                    value={newMember[field]}
+                                    onChange={(e) => setNewMember((p) => ({ ...p, [field]: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 block mb-1">Department</label>
+                                <select value={newMember.department} onChange={(e) => setNewMember((p) => ({ ...p, department: e.target.value }))}
+                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                                  {DEPT_OPTIONS.map((d) => <option key={d}>{d}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 block mb-1">Year</label>
+                                <select value={newMember.year} onChange={(e) => setNewMember((p) => ({ ...p, year: e.target.value }))}
+                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                                  {YEAR_OPTIONS.map((y) => <option key={y}>{y}</option>)}
+                                </select>
+                              </div>
+                            </div>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-primary-dark">{member.name}</span>
-                                {member.isLeader && (
-                                  <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-primary-green text-[9px] font-extrabold border border-primary-green/20">Leader</span>
-                                )}
+                              <label className="text-xs font-semibold text-gray-500 block mb-1">Skills (press Enter to add)</label>
+                              <div className="flex flex-wrap gap-1.5 mb-2">
+                                {newMember.skills.map((s) => (
+                                  <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                    {s}
+                                    <button onClick={() => setNewMember((p) => ({ ...p, skills: p.skills.filter((sk) => sk !== s) }))} className="cursor-pointer"><X className="h-3 w-3" /></button>
+                                  </span>
+                                ))}
                               </div>
-                              <span className="text-[10px] text-gray-400 font-semibold">{member.registerNumber} | {member.department} ({member.year} Yr)</span>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Add skill..."
+                                  value={newSkill}
+                                  onChange={(e) => setNewSkill(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && newSkill.trim()) {
+                                      setNewMember((p) => ({ ...p, skills: [...p.skills, newSkill.trim()] }));
+                                      setNewSkill("");
+                                    }
+                                  }}
+                                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                                />
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {member.skills.map((sk, skIdx) => (
-                              <span key={skIdx} className="px-1.5 py-0.5 bg-card-bg text-primary-dark rounded text-[9px] font-bold border border-input-border/10">{sk}</span>
-                            ))}
-                          </div>
-                          {!member.isLeader && (
-                            <button
-                              onClick={() => handleRemoveMember(member.email)}
-                              className="text-xs text-red-600 hover:text-red-700 cursor-pointer p-1 rounded hover:bg-red-50 border-0 bg-transparent self-end sm:self-auto"
-                            >
-                              <Trash2 className="h-4.5 w-4.5" />
+                            <button onClick={handleAddMember} className="w-full py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">
+                              Add Member to Team
                             </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Add Teammate Form */}
-                  {userTeam.members.length < 4 && (
-                    <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4">
-                      <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2">
-                        <UserPlus className="h-4.5 w-4.5 text-primary-green" /> Register New Teammate
-                      </h3>
-                      
-                      <form onSubmit={handleAddMember} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          label="Full Name"
-                          placeholder="e.g. Abhishek Sharma"
-                          value={newMember.name}
-                          onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
-                        />
-                        <Input
-                          label="University Register Number"
-                          placeholder="e.g. 711721104001"
-                          value={newMember.registerNumber}
-                          onChange={(e) => setNewMember({ ...newMember, registerNumber: e.target.value })}
-                        />
-                        <Input
-                          label="College Email ID"
-                          placeholder="email@college.edu"
-                          type="email"
-                          value={newMember.email}
-                          onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                        />
-                        <Input
-                          label="Mobile Contact"
-                          placeholder="10-digit number"
-                          value={newMember.phone}
-                          onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
-                        />
-                        
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-semibold text-primary-dark">Department</label>
-                          <select
-                            value={newMember.department}
-                            onChange={(e) => setNewMember({ ...newMember, department: e.target.value })}
-                            className="px-3 py-2 text-xs font-semibold rounded-lg border border-input-border bg-white cursor-pointer"
-                          >
-                            <option value="Information Technology">Information Technology</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Artificial Intelligence">Artificial Intelligence</option>
-                            <option value="Electronics & Communication">Electronics & Comm</option>
-                          </select>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-semibold text-primary-dark">Academic Year</label>
-                          <select
-                            value={newMember.year}
-                            onChange={(e) => setNewMember({ ...newMember, year: e.target.value })}
-                            className="px-3 py-2 text-xs font-semibold rounded-lg border border-input-border bg-white cursor-pointer"
-                          >
-                            <option value="I">1st Year</option>
-                            <option value="II">2nd Year</option>
-                            <option value="III">3rd Year</option>
-                            <option value="IV">4th Year</option>
-                          </select>
-                        </div>
-
-                        {/* Teammate Skills Input */}
-                        <div className="sm:col-span-2 flex flex-col gap-2">
-                          <label className="text-xs font-semibold text-primary-dark">Competence / Skills</label>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="e.g. Next.js, Python, RAG"
-                              value={newSkill}
-                              onChange={(e) => setNewSkill(e.target.value)}
-                              error={undefined}
-                            />
-                            <Button
-                              type="button"
-                              onClick={() => {
-                                if (newSkill.trim()) {
-                                  setNewMember({
-                                    ...newMember,
-                                    skills: [...newMember.skills, newSkill.trim()]
-                                  });
-                                  setNewSkill("");
-                                }
-                              }}
-                              className="px-3"
-                            >
-                              Add
-                            </Button>
                           </div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {newMember.skills.map((sk, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-primary-green/10 text-primary-green rounded text-[9px] font-bold border border-primary-green/20 flex items-center gap-1">
-                                {sk}
-                                <button
-                                  type="button"
-                                  onClick={() => setNewMember({
-                                    ...newMember,
-                                    skills: newMember.skills.filter((s) => s !== sk)
-                                  })}
-                                  className="text-red-600 hover:text-red-700 bg-transparent border-0 font-bold"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <Button type="submit" className="sm:col-span-2 mt-2 gap-1 text-xs">
-                          <Plus className="h-4.5 w-4.5" /> Save Teammate Profile
-                        </Button>
-                      </form>
-                    </div>
-                  )}
-                </div>
-
-                {/* Team Activity and Shared files (Right Column) */}
-                <div className="flex flex-col gap-6">
-                  {/* Simulated Chat */}
-                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-4 max-h-[380px]">
-                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
-                      <MessageSquare className="h-4.5 w-4.5 text-primary-green" /> Team Chat Room
-                    </h3>
-                    
-                    <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1 scrollbar-thin">
-                      {chatLogs.map((c, idx) => (
-                        <div key={idx} className="text-xs bg-card-bg/20 p-2.5 rounded-xl border border-gray-100 flex flex-col gap-0.5">
-                          <div className="flex justify-between items-center">
-                            <span className="font-extrabold text-primary-dark">{c.author}</span>
-                            <span className="text-[8px] text-gray-400 font-semibold">{c.time}</span>
-                          </div>
-                          <p className="text-gray-600">{c.text}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <form onSubmit={handleSendChatMessage} className="flex gap-2">
-                      <input
-                        placeholder="Say something to team..."
-                        value={chatMessage}
-                        onChange={(e) => setChatMessage(e.target.value)}
-                        className="flex-1 px-3 py-2 rounded-xl border border-input-border text-xs focus:ring-1 focus:ring-primary-green focus:outline-none"
-                      />
-                      <Button type="submit" className="px-3">
-                        <Send className="h-3.5 w-3.5" />
-                      </Button>
-                    </form>
-                  </div>
-
-                  {/* Shared Files manager */}
-                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3">
-                    <h3 className="text-xs font-extrabold text-primary-dark uppercase tracking-wider border-b border-gray-150 pb-1.5">Shared Team Assets</h3>
-                    <div className="flex flex-col gap-2">
-                      {[
-                        { name: "RAG Architecture Diagram.png", size: "1.4 MB", ext: "IMG" },
-                        { name: "Pitch Slide Draft.pptx", size: "4.8 MB", ext: "PPT" },
-                        { name: "Sample Context Datasets.csv", size: "12 KB", ext: "CSV" }
-                      ].map((file, idx) => (
-                        <div key={idx} className="flex justify-between items-center text-xs p-2 rounded-xl bg-card-bg/25 border border-input-border/10">
-                          <div className="flex items-center gap-2">
-                            <span className="px-1.5 py-0.5 rounded bg-primary-green/10 text-primary-green text-[9px] font-bold">{file.ext}</span>
-                            <span className="font-semibold text-gray-700 truncate max-w-[120px]">{file.name}</span>
-                          </div>
-                          <span className="text-[10px] text-gray-400 font-bold">{file.size}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => toast("Drag & Drop is simulated. File successfully uploaded.", "success")}
-                      className="mt-2 w-full py-2 border border-dashed border-input-border/60 hover:border-primary-green rounded-xl text-[10px] font-bold text-gray-500 hover:text-primary-green transition-all cursor-pointer"
-                    >
-                      + Upload New Asset
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ==================== PROJECT CONFIG TAB ==================== */}
-            {activeTab === "project" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Form configuration (Left columns) */}
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4">
-                    <h3 className="text-base font-bold text-primary-dark flex items-center gap-2">
-                      <FolderOpen className="h-5 w-5 text-primary-green" /> Build & Project Context
-                    </h3>
-                    
-                    <form onSubmit={handleSaveProject} className="flex flex-col gap-4">
-                      <Input
-                        label="Project Title"
-                        value={editProject.name}
-                        onChange={(e) => setEditProject({ ...editProject, name: e.target.value })}
-                      />
-                      
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-primary-dark">Project Abstract / Summary</label>
-                        <textarea
-                          rows={4}
-                          value={editProject.projectDescription}
-                          onChange={(e) => setEditProject({ ...editProject, projectDescription: e.target.value })}
-                          placeholder="Describe the problem, the core AI/ML stack, and how the RAG context evaluates queries."
-                          className="w-full px-4 py-3 rounded-xl border border-input-border focus:ring-2 focus:ring-primary-green focus:border-primary-green focus:outline-none text-xs text-gray-800"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          label="GitHub Code Repository"
-                          placeholder="https://github.com/..."
-                          value={editProject.githubUrl}
-                          onChange={(e) => setEditProject({ ...editProject, githubUrl: e.target.value })}
-                        />
-                        <Input
-                          label="Live Hosted Demo URL"
-                          placeholder="https://your-demo.vercel.app"
-                          value={editProject.demoUrl}
-                          onChange={(e) => setEditProject({ ...editProject, demoUrl: e.target.value })}
-                        />
-                        <Input
-                          label="Pitch Presentation / Video URL"
-                          placeholder="https://youtube.com/watch?v=..."
-                          value={editProject.videoUrl}
-                          onChange={(e) => setEditProject({ ...editProject, videoUrl: e.target.value })}
-                        />
-                        <Input
-                          label="AI Models & Assist Disclosure"
-                          placeholder="Claude 3.5, GPT-4o, Llama 3 etc."
-                          value={editProject.aiDisclosure}
-                          onChange={(e) => setEditProject({ ...editProject, aiDisclosure: e.target.value })}
-                        />
-                      </div>
-
-                      <Button type="submit" className="mt-2 text-xs">
-                        Save Configurations
-                      </Button>
-                    </form>
-                  </div>
-                </div>
-
-                {/* Milestones checklists (Right column) */}
-                <div className="flex flex-col gap-6">
-                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-4">
-                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
-                      <Layers className="h-4.5 w-4.5 text-primary-green" /> Workspace Milestones
-                    </h3>
-                    
-                    <div className="flex flex-col gap-4">
-                      {userTeam.milestonesProgress?.map((m) => (
-                        <div key={m.id} className="flex items-start gap-3 text-xs">
-                          <input
-                            type="checkbox"
-                            checked={m.completed}
-                            onChange={(e) => {
-                              updateMilestoneProgress(userTeam.id, m.id, e.target.checked);
-                              toast(`Milestone status updated!`, "success");
-                            }}
-                            className="rounded border-input-border text-primary-green focus:ring-primary-green h-4 w-4 cursor-pointer mt-0.5"
-                          />
-                          <div className="flex flex-col">
-                            <span className={`font-bold ${m.completed ? "text-primary-green line-through" : "text-primary-dark"}`}>{m.title}</span>
-                            <span className="text-[10px] text-gray-400 font-semibold">{m.completed ? "Cleared" : "Ongoing check"}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ==================== DELIVERABLES SUBMISSION TAB ==================== */}
-            {activeTab === "deliverables" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Submission Form (Left column) */}
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4">
-                    <h3 className="text-base font-bold text-primary-dark flex items-center gap-2">
-                      <Inbox className="h-5 w-5 text-primary-green" /> Pitch Submission Office
-                    </h3>
-                    <p className="text-xs text-gray-500 leading-relaxed font-semibold">
-                      Ensure your code repository is public and contains the presentation file in the root folder. The evaluation panel will review directly.
-                    </p>
-
-                    <div className="p-4 rounded-2xl bg-card-bg/25 border border-input-border/10 text-xs flex flex-col gap-3">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-gray-700">Submission Status:</span>
-                        {userTeam.submitted ? (
-                          <Badge variant="success">Submitted</Badge>
-                        ) : (
-                          <Badge variant="warning">Draft Checklist</Badge>
-                        )}
-                      </div>
-                      {userTeam.submittedAt && (
-                        <div className="flex justify-between items-center text-[10px] text-gray-400 font-semibold">
-                          <span>Timestamp:</span>
-                          <span>{new Date(userTeam.submittedAt).toLocaleString()}</span>
-                        </div>
+                        </motion.div>
                       )}
-                    </div>
-
-                    <div className="flex flex-col gap-3 mt-2 text-xs">
-                      <h4 className="font-extrabold text-primary-dark border-b border-gray-100 pb-1">Submitting Assets:</h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-white border border-gray-150 rounded-xl flex items-center gap-2">
-                          <Github className="h-4.5 w-4.5 text-gray-600" />
-                          <div className="overflow-hidden">
-                            <p className="font-bold text-[10px] text-gray-400 uppercase">Code Repository</p>
-                            <p className="font-semibold text-gray-700 truncate text-[11px]">{editProject.githubUrl || "Not configured"}</p>
-                          </div>
-                        </div>
-                        <div className="p-3 bg-white border border-gray-150 rounded-xl flex items-center gap-2">
-                          <Video className="h-4.5 w-4.5 text-red-600" />
-                          <div className="overflow-hidden">
-                            <p className="font-bold text-[10px] text-gray-400 uppercase">Pitch Deck/Video</p>
-                            <p className="font-semibold text-gray-700 truncate text-[11px]">{editProject.videoUrl || "Not configured"}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={handleSubmitDeliverables}
-                      className="mt-4 py-3 text-xs"
-                      disabled={userTeam.submitted}
-                    >
-                      {userTeam.submitted ? "Submission Locked (Under Review)" : "Publish Final Submission"}
-                    </Button>
+                    </AnimatePresence>
                   </div>
                 </div>
-
-                {/* Score Rubric Feedback (Right column) */}
-                <div className="flex flex-col gap-6">
-                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-4">
-                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
-                      <Award className="h-4.5 w-4.5 text-primary-green" /> Judging Evaluation Scores
-                    </h3>
-                    
-                    {userTeam.evaluations && userTeam.evaluations.length > 0 ? (
-                      userTeam.evaluations.map((ev, idx) => {
-                        const avg = ((ev.innovation + ev.feasibility + ev.presentation) / 3).toFixed(1);
-                        return (
-                          <div key={idx} className="flex flex-col gap-3 text-xs">
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold text-gray-700">Judge Panel Score:</span>
-                              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-primary-green font-extrabold text-sm border border-primary-green/25">
-                                {avg} / 10
-                              </span>
-                            </div>
-                            <div className="flex flex-col gap-2 mt-1">
-                              <div className="flex justify-between">
-                                <span className="text-gray-500 font-semibold">Innovation:</span>
-                                <span className="font-bold text-primary-dark">{ev.innovation}/10</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500 font-semibold">Feasibility:</span>
-                                <span className="font-bold text-primary-dark">{ev.feasibility}/10</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500 font-semibold">Presentation:</span>
-                                <span className="font-bold text-primary-dark">{ev.presentation}/10</span>
-                              </div>
-                            </div>
-                            <div className="mt-2 p-3 bg-card-bg/30 border border-input-border/10 rounded-xl">
-                              <p className="font-bold text-gray-800 text-[10px] uppercase">Review Comment:</p>
-                              <p className="text-gray-500 italic mt-0.5 leading-relaxed">&quot;{ev.feedback}&quot;</p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-xs text-gray-400 italic">No score evaluations published by judges panel yet.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* ==================== TIMELINE TAB ==================== */}
-            {activeTab === "timeline" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-8 shadow-sm flex flex-col gap-6">
-                <h3 className="text-base font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-3">
-                  <Calendar className="h-5 w-5 text-primary-green" /> Coding Sprint Timeline
-                </h3>
-                
-                <div className="relative border-l border-gray-200 ml-4 flex flex-col gap-8 py-2">
-                  {[
-                    { title: "Team Registry Audits", time: "July 01", desc: "Student credentials verification and team matching.", status: "completed" },
-                    { title: "AI Mentor Reviews & GPU claim", time: "July 05", desc: "Coordinators allocate Cloud server credits tokens.", status: "ongoing" },
-                    { title: "Mid-way Abstract submission", time: "July 10", desc: "Submit project RAG model documentation file.", status: "upcoming" },
-                    { title: "Hackathon Coding Sprint", time: "July 18", desc: "24-hour physical prototyping sprint inside SIET Lab.", status: "upcoming" }
-                  ].map((evt, idx) => (
-                    <div key={idx} className="relative pl-6">
-                      <span className={`absolute left-0 -translate-x-1/2 top-1.5 h-4.5 w-4.5 rounded-full border-4 border-white ${
-                        evt.status === "completed" 
-                          ? "bg-emerald-500" 
-                          : evt.status === "ongoing" 
-                          ? "bg-amber-500 animate-pulse" 
-                          : "bg-gray-300"
-                      }`} />
-                      <div className="flex flex-col gap-0.5 text-xs">
-                        <span className="text-[9px] text-gray-400 font-extrabold uppercase">{evt.time}</span>
-                        <h4 className="font-bold text-primary-dark">{evt.title}</h4>
-                        <p className="text-gray-500 max-w-lg leading-relaxed mt-0.5">{evt.desc}</p>
-                      </div>
-                    </div>
+            {/* ─── PROJECT TAB ─── */}
+            {activeTab === "project" && (
+              <motion.div key="project" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><FolderOpen className="h-5 w-5 text-primary-green" /> Project Workspace</h2>
+                {/* Sub tabs */}
+                <div className="flex gap-2 flex-wrap">
+                  {(["overview", "repo", "submission", "milestones"] as const).map((t) => (
+                    <button key={t} onClick={() => setProjectTab(t)}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer capitalize ${projectTab === t ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
+                    >{t}</button>
                   ))}
                 </div>
-              </div>
-            )}
 
-            {/* ==================== RESOURCES TAB ==================== */}
-            {activeTab === "resources" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[
-                  { title: "Slide Presentation Deck", type: "Google Slides Template", desc: "Pre-designed outline featuring Innovation, tech architecture, and team slides.", action: "Download Template" },
-                  { title: "FastAPI + Claude Starter", type: "GitHub Repository", desc: "Boilerplate setup to query Anthropic API with standard security middlewares.", action: "Fork Repository" },
-                  { title: "Claim GPU Credits Board", type: "SIET Lab Tokens", desc: "Redeem 100$ credits for Anthropic and OpenAI sandboxes.", action: "Reveal Token" },
-                  { title: "Student RAG Datasets", type: "L&T bypass traffic logs", desc: "Pre-cleaned CSV file representing traffic flows for predictive modeling.", action: "Download Dataset" }
-                ].map((res, idx) => (
-                  <div key={idx} className="p-5 rounded-3xl border border-input-border/30 bg-white hover:border-primary-green transition-all shadow-sm flex flex-col justify-between gap-4">
-                    <div className="flex flex-col gap-1 text-xs">
-                      <span className="text-[10px] text-primary-green uppercase font-bold tracking-wider">{res.type}</span>
-                      <h4 className="font-extrabold text-primary-dark">{res.title}</h4>
-                      <p className="text-gray-500 leading-relaxed font-semibold mt-0.5">{res.desc}</p>
+                {projectTab === "overview" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Track</label>
+                      <select value={projectEdit.trackId} onChange={(e) => setProjectEdit((p) => ({ ...p, trackId: e.target.value }))}
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                        <option value="">Select a track...</option>
+                        {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
+                      </select>
                     </div>
-                    <Button
-                      onClick={() => {
-                        toast(`Access link dispatched!`, "success");
-                      }}
-                      className="w-full text-xs"
-                    >
-                      {res.action}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* ==================== ANNOUNCEMENTS TAB ==================== */}
-            {activeTab === "announcements" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-5">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-3">
-                  <h3 className="text-base font-bold text-primary-dark flex items-center gap-2">
-                    <Bell className="h-5 w-5 text-primary-green" /> Broadcast Board ({announcements.length})
-                  </h3>
-                  
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:flex-none">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        placeholder="Search broadcasts..."
-                        value={searchAnn}
-                        onChange={(e) => setSearchAnn(e.target.value)}
-                        className="pl-9 pr-4 py-2 border border-input-border text-xs rounded-xl focus:ring-1 focus:ring-primary-green focus:outline-none w-full"
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Project Description</label>
+                      <textarea rows={4} value={projectEdit.projectDescription}
+                        onChange={(e) => setProjectEdit((p) => ({ ...p, projectDescription: e.target.value }))}
+                        placeholder="Describe your AI project..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30"
                       />
                     </div>
-                    <select
-                      value={annFilter}
-                      onChange={(e) => setAnnFilter(e.target.value as "all" | "info" | "warning" | "success")}
-                      className="px-3 py-2 border border-input-border rounded-xl text-xs font-semibold cursor-pointer bg-white"
-                    >
-                      <option value="all">All levels</option>
-                      <option value="info">Info only</option>
-                      <option value="warning">Warnings</option>
-                      <option value="success">Bulletins</option>
-                    </select>
-                  </div>
-                </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">AI Tool Disclosure</label>
+                      <textarea rows={2} value={projectEdit.aiDisclosure}
+                        onChange={(e) => setProjectEdit((p) => ({ ...p, aiDisclosure: e.target.value }))}
+                        placeholder="List any AI tools used (Copilot, ChatGPT, etc.)..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                      />
+                    </div>
+                    <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Changes</button>
 
-                <div className="flex flex-col gap-4">
-                  {announcements
-                    .filter((ann) => annFilter === "all" || ann.type === annFilter)
-                    .filter((ann) => ann.title.toLowerCase().includes(searchAnn.toLowerCase()) || ann.content.toLowerCase().includes(searchAnn.toLowerCase()))
-                    .map((ann) => (
-                      <div key={ann.id} className={`p-4 rounded-2xl border flex gap-4 items-start transition-all ${
-                        ann.type === "warning" 
-                          ? "bg-amber-50/20 border-amber-100" 
-                          : ann.type === "success" 
-                          ? "bg-emerald-50/20 border-emerald-100" 
-                          : "bg-blue-50/20 border-blue-100"
-                      }`}>
-                        <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 border ${
-                          ann.type === "warning" 
-                            ? "bg-amber-50 text-amber-700 border-amber-250" 
-                            : ann.type === "success" 
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-250" 
-                            : "bg-blue-50 text-blue-700 border-blue-250"
-                        }`}>
-                          <AlertCircle className="h-4.5 w-4.5" />
-                        </div>
-                        <div className="flex flex-col gap-1 text-xs">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[8px] uppercase tracking-widest font-extrabold text-gray-400">{ann.date}</span>
-                          </div>
-                          <h4 className="font-extrabold text-primary-dark">{ann.title}</h4>
-                          <p className="text-gray-500 leading-relaxed font-semibold">{ann.content}</p>
+                    {/* Judge Feedback */}
+                    {(team.evaluations || []).length > 0 && (
+                      <div className="mt-6 border-t border-gray-100 pt-4">
+                        <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Judge Evaluations</div>
+                        {team.evaluations!.map((ev, i) => {
+                          const avg = Math.round((ev.innovation + ev.feasibility + ev.presentation) / 3);
+                          return (
+                            <div key={i} className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                              <div className="flex items-center gap-3 mb-2">
+                                <span className="text-2xl font-extrabold text-blue-700">{avg}/10</span>
+                                <div className="text-xs text-blue-600">Innovation: {ev.innovation} · Feasibility: {ev.feasibility} · Presentation: {ev.presentation}</div>
+                              </div>
+                              <p className="text-sm text-blue-800">{ev.feedback}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {projectTab === "repo" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    {[
+                      { label: "GitHub Repository URL", field: "githubUrl" as const, icon: <Github className="h-4 w-4" />, placeholder: "https://github.com/your-team/project" },
+                      { label: "Demo Video URL", field: "videoUrl" as const, icon: <Video className="h-4 w-4" />, placeholder: "https://youtube.com/..." },
+                      { label: "Live Demo URL", field: "demoUrl" as const, icon: <Globe className="h-4 w-4" />, placeholder: "https://your-demo.vercel.app" },
+                    ].map(({ label, field, icon, placeholder }) => (
+                      <div key={field}>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1.5">{label}</label>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
+                          <input type="text" value={projectEdit[field]} placeholder={placeholder}
+                            onChange={(e) => setProjectEdit((p) => ({ ...p, [field]: e.target.value }))}
+                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                          />
                         </div>
                       </div>
                     ))}
-                </div>
-              </div>
-            )}
+                    <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Links</button>
+                  </div>
+                )}
 
-            {/* ==================== MESSAGES TAB ==================== */}
-            {activeTab === "messages" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-6 shadow-sm flex flex-col items-center justify-center text-center py-20 gap-3">
-                <div className="h-14 w-14 rounded-2xl bg-emerald-50 border border-primary-green/20 text-primary-green flex items-center justify-center shadow-sm">
-                  <MessageSquare className="h-7 w-7" />
-                </div>
-                <h4 className="text-base font-extrabold text-primary-dark">Mentor Messaging Box</h4>
-                <p className="text-xs text-gray-500 max-w-sm leading-relaxed font-semibold">
-                  You are connected with <strong>Dr. A. Rajesh (Advisor)</strong>. Text queries inside the Team Chat room tab to request virtual meeting slots.
-                </p>
-                <Button
-                  onClick={() => {
-                    toast("Meeting Link: https://meet.google.com/siet-rag-mentor", "info");
-                  }}
-                  className="mt-2 text-xs"
-                >
-                  Join Mentor Sandbox Meeting
-                </Button>
-              </div>
-            )}
+                {projectTab === "submission" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className={`p-4 rounded-xl ${team.ideaSubmitted ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"}`}>
+                      <div className="flex items-center gap-2 font-bold text-sm mb-1">
+                        {team.ideaSubmitted ? <><CheckCircle className="h-4 w-4 text-emerald-600" /><span className="text-emerald-700">Idea Submitted</span></> : <><Clock className="h-4 w-4 text-amber-600" /><span className="text-amber-700">Submission Pending</span></>}
+                      </div>
+                      <p className="text-xs text-gray-600">Upload your 2-page idea abstract PDF. Deadline: July 5, 2026 at 11:59 PM.</p>
+                    </div>
+                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
+                      <div className="text-4xl mb-3">📄</div>
+                      <div className="font-semibold text-gray-600 mb-1">Drop your PDF here</div>
+                      <div className="text-xs text-gray-400 mb-4">Maximum 10 MB · PDF format only</div>
+                      <button
+                        onClick={() => { updateProjectDetails(team.id, { ideaSubmitted: true }); toast("Idea abstract submitted!", "success"); }}
+                        className="px-5 py-2 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer"
+                      >Submit Abstract</button>
+                    </div>
+                  </div>
+                )}
 
-            {/* ==================== SUPPORT TAB ==================== */}
-            {activeTab === "support" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Form tickets (Left columns) */}
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4">
-                    <h3 className="text-base font-bold text-primary-dark flex items-center gap-2">
-                      <HelpCircle className="h-5 w-5 text-primary-green" /> Raise Support Ticket
-                    </h3>
-                    
-                    <form onSubmit={handleRaiseTicket} className="flex flex-col gap-4">
-                      <Input
-                        label="Subject / Ticket Category"
-                        placeholder="e.g. Sandbox GPU credentials allocation delay"
-                        value={supportTicket.subject}
-                        onChange={(e) => setSupportTicket({ ...supportTicket, subject: e.target.value })}
-                      />
-                      <div className="flex flex-col gap-1.5 text-xs">
-                        <label className="text-xs font-semibold text-primary-dark">Trouble Description</label>
-                        <textarea
-                          rows={4}
-                          value={supportTicket.desc}
-                          onChange={(e) => setSupportTicket({ ...supportTicket, desc: e.target.value })}
-                          placeholder="Describe the issues regarding registration checks, teammates role edit errors or submission audits."
-                          className="w-full px-4 py-3 rounded-xl border border-input-border focus:ring-1 focus:ring-primary-green focus:outline-none"
+                {projectTab === "milestones" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <div className="flex flex-col gap-3">
+                      {(team.milestonesProgress || []).map((ms) => (
+                        <div key={ms.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                          <button onClick={() => updateMilestoneProgress(team.id, ms.id, !ms.completed)} className="cursor-pointer">
+                            {ms.completed ? <CheckSquare className="h-5 w-5 text-emerald-500" /> : <Square className="h-5 w-5 text-gray-300" />}
+                          </button>
+                          <span className={`text-sm font-medium ${ms.completed ? "text-gray-500 line-through" : "text-primary-dark"}`}>{ms.title}</span>
+                          {ms.completed && <span className="ml-auto text-xs text-emerald-600 font-semibold">Done</span>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <span>Progress</span>
+                        <span>{(team.milestonesProgress || []).filter((m) => m.completed).length} / {(team.milestonesProgress || []).length}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full bg-primary-green transition-all"
+                          style={{ width: `${((team.milestonesProgress || []).filter((m) => m.completed).length / Math.max((team.milestonesProgress || []).length, 1)) * 100}%` }}
                         />
                       </div>
-                      <Button type="submit" className="text-xs">
-                        Publish Ticket
-                      </Button>
-                    </form>
-                  </div>
-                </div>
-
-                {/* FAQ links (Right column) */}
-                <div className="flex flex-col gap-6">
-                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3">
-                    <h3 className="text-xs font-extrabold text-primary-dark uppercase tracking-wider border-b border-gray-150 pb-2">Emergency Contacts</h3>
-                    <div className="text-xs flex flex-col gap-2.5">
-                      <div>
-                        <p className="font-bold text-gray-700">Student IT Desk:</p>
-                        <p className="text-gray-400 font-semibold">+91 98765 43210 (Rahul)</p>
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-700">Lab emergency line:</p>
-                        <p className="text-red-600 font-extrabold">+91 98765 99999</p>
-                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                )}
+              </motion.div>
             )}
 
-            {/* ==================== SETTINGS TAB ==================== */}
-            {activeTab === "settings" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-6 shadow-sm flex flex-col gap-6 max-w-xl">
-                <h3 className="text-base font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
-                  <Settings className="h-5 w-5 text-primary-green" /> Profile & Workspace settings
-                </h3>
-                
-                <div className="flex flex-col gap-5 text-xs">
-                  <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                    <div>
-                      <p className="font-bold text-gray-800">Email Notifications</p>
-                      <p className="text-gray-400 font-semibold">Notify me for every announcement broadcasted.</p>
-                    </div>
-                    <input type="checkbox" defaultChecked className="rounded border-input-border text-primary-green focus:ring-primary-green h-4.5 w-4.5 cursor-pointer" />
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                    <div>
-                      <p className="font-bold text-gray-800">Direct Messages</p>
-                      <p className="text-gray-400 font-semibold">Allow mentors to invite to calendar sessions.</p>
-                    </div>
-                    <input type="checkbox" defaultChecked className="rounded border-input-border text-primary-green focus:ring-primary-green h-4.5 w-4.5 cursor-pointer" />
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                    <div>
-                      <p className="font-bold text-gray-800">Dark Theme</p>
-                      <p className="text-gray-400 font-semibold">Toggle dark system appearance.</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      onChange={() => toast("Dark mode theme will be available in V1 releases.", "info")}
-                      className="rounded border-input-border text-primary-green focus:ring-primary-green h-4.5 w-4.5 cursor-pointer"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={() => {
-                      toast("Theme preferences and settings saved.", "success");
-                    }}
-                    className="mt-2 text-xs"
-                  >
-                    Save Preferences
-                  </Button>
+            {/* ─── NOTIFICATIONS TAB ─── */}
+            {activeTab === "notifications" && (
+              <motion.div key="notifications" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><Bell className="h-5 w-5 text-primary-green" /> Notifications</h2>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllNotificationsRead} className="text-sm font-semibold text-primary-green hover:underline cursor-pointer">Mark all as read</button>
+                  )}
                 </div>
-              </div>
+
+                {/* Filter pills */}
+                <div className="flex flex-wrap gap-2">
+                  {(["all", "approval", "deadline", "mentor", "judge", "action", "system"] as const).map((f) => (
+                    <button key={f} onClick={() => setNotifFilter(f)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer capitalize ${notifFilter === f ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
+                    >
+                      {f === "all" ? "All" : notifTypeStyles[f]?.label || f}
+                      {f === "all" && unreadCount > 0 && <span className="ml-1 px-1 bg-red-500 text-white rounded-full text-[10px]">{unreadCount}</span>}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {filteredNotifs.length === 0 && <div className="text-center text-gray-400 py-12 text-sm">No notifications in this category.</div>}
+                  {filteredNotifs.map((n) => {
+                    const style = notifTypeStyles[n.type] || notifTypeStyles.system;
+                    return (
+                      <motion.div key={n.id} layout
+                        className={`flex items-start gap-3 p-4 rounded-xl border ${!n.read ? style.bg : "bg-white border-gray-100"} transition-colors`}
+                        onClick={() => markNotificationRead(n.id)}
+                      >
+                        <div className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${style.dot}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-sm font-semibold ${!n.read ? "text-primary-dark" : "text-gray-600"}`}>{n.title}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{n.body}</div>
+                          <div className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
+                        </div>
+                        {n.priority === "high" && !n.read && <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full shrink-0">Urgent</span>}
+                        {n.read && <span className="text-xs text-gray-300 shrink-0">Read</span>}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
             )}
 
-          </motion.div>
-        </AnimatePresence>
-      </main>
+            {/* ─── PROFILE TAB ─── */}
+            {activeTab === "profile" && (
+              <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><User className="h-5 w-5 text-primary-green" /> Profile & Settings</h2>
+                <div className="flex gap-2 flex-wrap mb-4">
+                  {(["info", "account", "notifications", "appearance", "security"] as const).map((t) => (
+                    <button key={t} onClick={() => setProfileTab(t)}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors cursor-pointer ${profileTab === t ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
+                    >{t === "info" ? "Personal Info" : t}</button>
+                  ))}
+                </div>
+
+                {profileTab === "info" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl">
+                        {(session.name || session.email || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-extrabold text-primary-dark text-lg">{session.name || "Participant"}</div>
+                        <div className="text-gray-400 text-sm">{session.email}</div>
+                        <div className="text-xs font-semibold text-primary-green mt-0.5">{team.name} · {leader?.isLeader && session.email === leader?.email ? "Team Leader" : "Team Member"}</div>
+                      </div>
+                    </div>
+                    {leader && (
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { label: "Full Name", value: leader.name },
+                          { label: "Register Number", value: leader.registerNumber },
+                          { label: "Department", value: leader.department },
+                          { label: "Year", value: leader.year },
+                          { label: "Phone", value: leader.phone },
+                          { label: "GitHub", value: leader.github || "—" },
+                        ].map(({ label, value }) => (
+                          <div key={label}>
+                            <div className="text-xs font-semibold text-gray-400">{label}</div>
+                            <div className="text-sm font-medium text-gray-800 mt-0.5">{value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {profileTab === "account" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="text-sm font-semibold text-gray-500">Account Email</div>
+                    <div className="px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700">{session.email}</div>
+                    <div className="text-sm font-semibold text-gray-500 mt-4">Role</div>
+                    <div className="px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 font-semibold">Participant</div>
+                  </div>
+                )}
+
+                {profileTab === "notifications" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    {[
+                      "Team approvals & rejections",
+                      "Mentor feedback",
+                      "Judge evaluations",
+                      "Deadline reminders",
+                      "Platform announcements",
+                    ].map((label) => (
+                      <div key={label} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                        <span className="text-sm text-gray-700">{label}</span>
+                        <div className="h-5 w-9 rounded-full bg-primary-green flex items-center justify-end px-0.5 cursor-pointer">
+                          <div className="h-4 w-4 rounded-full bg-white shadow" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {profileTab === "appearance" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="text-sm font-semibold text-gray-700">Theme</div>
+                    <div className="flex gap-3">
+                      {["Light", "Dark", "System"].map((t) => (
+                        <button key={t} className={`px-4 py-2 rounded-xl text-sm font-semibold border cursor-pointer transition-colors ${t === "Light" ? "bg-primary-green text-white border-primary-green" : "border-gray-200 text-gray-600"}`}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {profileTab === "security" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="text-sm font-semibold text-gray-700">Change Password</div>
+                    {["Current Password", "New Password", "Confirm New Password"].map((label) => (
+                      <div key={label}>
+                        <label className="text-xs font-semibold text-gray-400 block mb-1">{label}</label>
+                        <input type="password" placeholder="••••••••" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                      </div>
+                    ))}
+                    <button className="px-5 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Update Password</button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
     </PageWrapper>
   );
 }

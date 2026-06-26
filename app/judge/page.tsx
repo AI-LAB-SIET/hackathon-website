@@ -5,508 +5,550 @@ import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAppState } from "@/components/layout/StateProvider";
-import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { QRScanner } from "@/components/ui/QRScanner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard,
-  Users,
-  FolderCode,
-  Gavel,
-  Activity,
-  MessageSquare,
-  Settings,
-  Github,
-  Video,
-  ExternalLink,
-  Award,
-  CheckCircle,
-  Clock,
-  ChevronRight,
-  TrendingUp,
-  Inbox
+  LayoutDashboard, ListChecks, Gavel, Trophy, Bell, User,
+  Search, Filter, CheckCircle, Clock, X, ChevronRight,
+  Github, Video, Globe, Star, ExternalLink, Users, Mail, Phone,
+  TrendingUp, Award, Target
 } from "lucide-react";
-import { Team } from "@/types";
+import { Team, Notification } from "@/types";
+import { HACK_TRACKS } from "@/lib/mockData";
+
+type TabType = "dashboard" | "queue" | "evaluation" | "leaderboard" | "notifications" | "profile";
+type ProfileTabType = "info" | "account" | "notifications" | "appearance" | "security";
+
+const SCORE_CRITERIA = [
+  { key: "innovation" as const, label: "Innovation & Originality", max: 10 },
+  { key: "feasibility" as const, label: "Feasibility & Impact", max: 10 },
+  { key: "presentation" as const, label: "Presentation Quality", max: 10 },
+  { key: "technicalDepth" as const, label: "Technical Depth", max: 10 },
+  { key: "aiUsage" as const, label: "AI/ML Integration", max: 10 },
+];
 
 export default function JudgeDashboard() {
   const router = useRouter();
-  const { session, teams, evaluateProject } = useAppState();
+  const { session, teams, notifications, evaluateProject, markNotificationRead, markAllNotificationsRead } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+  const [profileTab, setProfileTab] = useState<ProfileTabType>("info");
 
-  // Selection state for evaluation
-  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
-  const [innovation, setInnovation] = useState<number>(8);
-  const [feasibility, setFeasibility] = useState<number>(8);
-  const [presentation, setPresentation] = useState<number>(8);
-  const [feedback, setFeedback] = useState<string>("");
+  // Filters
+  const [trackFilter, setTrackFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "reviewed">("all");
+  const [deptFilter, setDeptFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
+  // Team detail popup
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+
+  // Evaluation scores
+  const [scores, setScores] = useState({ innovation: 8, feasibility: 8, presentation: 8, technicalDepth: 7, aiUsage: 8 });
+  const [feedback, setFeedback] = useState("");
+
+  // QR Scanner
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  // Notification filter
+  const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
+
+  useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
-    setMounted(true);
-    if (mounted && (!session.isLoggedIn || session.role !== "judge")) {
-      router.push("/login");
-    }
+    if (mounted && (!session.isLoggedIn || session.role !== "judge")) router.push("/login");
   }, [session, router, mounted]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "judge") {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500">
-        Loading judge portal...
-      </div>
-    );
+    return <div className="flex h-screen items-center justify-center text-sm text-gray-400">Loading judge portal...</div>;
   }
 
-  // Under review teams are those with status APPROVED
   const assignedTeams = teams.filter((t) => t.status === "APPROVED");
-  const gradedTeamsCount = assignedTeams.filter((t) => 
-    t.evaluations?.some((e) => e.judgeEmail === session.email)
-  ).length;
+  const reviewedTeams = assignedTeams.filter((t) => t.evaluations?.some((e) => e.judgeEmail === session.email));
+  const pendingTeams = assignedTeams.filter((t) => !t.evaluations?.some((e) => e.judgeEmail === session.email));
+  const avgScore = reviewedTeams.length > 0
+    ? Math.round(reviewedTeams.reduce((acc, t) => {
+        const ev = t.evaluations?.find((e) => e.judgeEmail === session.email);
+        return acc + (ev ? (ev.innovation + ev.feasibility + ev.presentation) / 3 : 0);
+      }, 0) / reviewedTeams.length * 10) / 10
+    : 0;
 
-  const handleStartEvaluation = (team: Team) => {
-    setSelectedTeamId(team.id);
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Apply filters to queue
+  const departments = Array.from(new Set(assignedTeams.flatMap((t) => t.members.map((m) => m.department))));
+  const filteredQueue = assignedTeams.filter((t) => {
+    if (trackFilter !== "all" && t.trackId !== trackFilter) return false;
+    if (statusFilter === "pending" && t.evaluations?.some((e) => e.judgeEmail === session.email)) return false;
+    if (statusFilter === "reviewed" && !t.evaluations?.some((e) => e.judgeEmail === session.email)) return false;
+    if (deptFilter !== "all" && !t.members.some((m) => m.department === deptFilter)) return false;
+    if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const handleOpenEval = (team: Team) => {
+    setSelectedTeam(team);
     const existing = team.evaluations?.find((e) => e.judgeEmail === session.email);
     if (existing) {
-      setInnovation(existing.innovation);
-      setFeasibility(existing.feasibility);
-      setPresentation(existing.presentation);
+      setScores({
+        innovation: existing.innovation,
+        feasibility: existing.feasibility,
+        presentation: existing.presentation,
+        technicalDepth: existing.technicalDepth || 7,
+        aiUsage: existing.aiUsage || 8,
+      });
       setFeedback(existing.feedback);
     } else {
-      setInnovation(8);
-      setFeasibility(8);
-      setPresentation(8);
+      setScores({ innovation: 8, feasibility: 8, presentation: 8, technicalDepth: 7, aiUsage: 8 });
       setFeedback("");
     }
     setActiveTab("evaluation");
   };
 
-  const handleSubmitScore = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTeamId) {
-      toast("Please select a team to grade first.", "error");
-      return;
-    }
-    evaluateProject(selectedTeamId, {
-      innovation,
-      feasibility,
-      presentation,
-      feedback,
-      judgeEmail: session.email || "judge@college.edu"
-    });
-    toast("Project score evaluated and broadcasted to participant.", "success");
-    setActiveTab("dashboard");
-    setSelectedTeamId("");
+  const handleSubmitEval = () => {
+    if (!selectedTeam) return;
+    evaluateProject(selectedTeam.id, { ...scores, feedback, judgeEmail: session.email! });
+    toast(`Evaluation submitted for ${selectedTeam.name}`, "success");
+    setSelectedTeam(null);
+    setActiveTab("queue");
   };
 
-  // Leaderboard ranking logic
-  const getRankedTeams = () => {
-    return [...teams]
-      .map((t) => {
-        const evals = t.evaluations || [];
-        if (evals.length === 0) return { ...t, score: 0 };
-        const sum = evals.reduce((acc, curr) => acc + (curr.innovation + curr.feasibility + curr.presentation) / 3, 0);
-        return { ...t, score: parseFloat((sum / evals.length).toFixed(2)) };
-      })
-      .sort((a, b) => b.score - a.score);
+  const leaderboard = [...assignedTeams]
+    .map((t) => {
+      const evs = t.evaluations || [];
+      const avg = evs.length > 0 ? evs.reduce((a, e) => a + (e.innovation + e.feasibility + e.presentation) / 3, 0) / evs.length : 0;
+      return { team: t, avg: Math.round(avg * 10) / 10, count: evs.length };
+    })
+    .sort((a, b) => b.avg - a.avg);
+
+  const notifTypeStyles: Record<string, { dot: string; label: string }> = {
+    approval: { dot: "bg-emerald-500", label: "Approval" },
+    deadline: { dot: "bg-amber-500", label: "Deadline" },
+    mentor: { dot: "bg-purple-500", label: "Mentor" },
+    judge: { dot: "bg-blue-500", label: "Judge" },
+    action: { dot: "bg-red-500", label: "Action" },
+    system: { dot: "bg-gray-400", label: "System" },
   };
 
-  const rankedTeams = getRankedTeams();
+  const tabs = [
+    { id: "dashboard" as TabType, label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { id: "queue" as TabType, label: "Review Queue", icon: <ListChecks className="h-4 w-4" /> },
+    { id: "evaluation" as TabType, label: "Evaluation", icon: <Gavel className="h-4 w-4" /> },
+    { id: "leaderboard" as TabType, label: "Leaderboard", icon: <Trophy className="h-4 w-4" /> },
+    { id: "notifications" as TabType, label: "Notifications", icon: <Bell className="h-4 w-4" />, badge: unreadCount > 0 ? unreadCount : undefined },
+    { id: "profile" as TabType, label: "Profile", icon: <User className="h-4 w-4" /> },
+  ];
 
   return (
-    <PageWrapper className="flex min-h-screen bg-gray-50/50">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-
-      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-screen">
-        {/* Mobile Nav */}
-        <div className="md:hidden flex overflow-x-auto pb-3 mb-6 border-b border-gray-150 gap-2 scrollbar-none shrink-0">
-          {[
-            { id: "dashboard", label: "Dashboard" },
-            { id: "assigned", label: "Assigned Projects" },
-            { id: "evaluation", label: "Evaluation" },
-            { id: "leaderboard", label: "Leaderboard" },
-            { id: "messages", label: "Messages" },
-            { id: "settings", label: "Settings" }
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                activeTab === item.id 
-                  ? "bg-primary-green text-white" 
-                  : "bg-white text-gray-600 border border-gray-200"
-              }`}
+    <PageWrapper>
+      <div className="flex min-h-screen bg-[#f8fafb]">
+        <Sidebar />
+        <main className="flex-1 min-w-0 p-6 lg:p-8">
+          {/* Tab Bar */}
+          <div className="flex items-center gap-2 flex-wrap mb-8">
+            {tabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${activeTab === tab.id ? "bg-blue-600 text-white shadow-md" : "bg-white border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"}`}
+              >
+                {tab.icon}{tab.label}
+                {tab.badge && <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{tab.badge}</span>}
+              </button>
+            ))}
+            <button onClick={() => setScannerOpen(true)}
+              className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
             >
-              {item.label}
+              <Gavel className="h-4 w-4" /> Scan QR
             </button>
-          ))}
-        </div>
-
-        {/* Workspace Title */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-primary-dark tracking-tight capitalize">
-              {activeTab === "dashboard" ? "Judge Dashboard" : activeTab.replace("-", " ")}
-            </h1>
-            <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-0.5">
-              Logged in as: <strong>{session.email}</strong> | Role: {session.role?.toUpperCase()}
-            </p>
           </div>
-        </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.15 }}
-          >
-            {/* ==================== DASHBOARD TAB ==================== */}
+          <AnimatePresence mode="wait">
+            {/* ─── DASHBOARD ─── */}
             {activeTab === "dashboard" && (
-              <div className="flex flex-col gap-6">
-                {/* Stats row */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <motion.div key="dash" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="bg-gradient-to-br from-blue-800 to-indigo-700 rounded-2xl p-6 text-white">
+                  <div className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Judge Portal</div>
+                  <h1 className="text-2xl font-extrabold mb-1">Welcome, {session.name || "Judge"}</h1>
+                  <p className="text-blue-200 text-sm">You have {pendingTeams.length} teams remaining to evaluate.</p>
+                </div>
+
+                {/* KPI Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: "Assigned Teams", val: assignedTeams.length, icon: <Users className="h-5 w-5" /> },
-                    { label: "Evaluations Completed", val: `${gradedTeamsCount} / ${assignedTeams.length}`, icon: <CheckCircle className="h-5 w-5 text-emerald-600" /> },
-                    { label: "Leaderboard Top Score", val: rankedTeams[0]?.score > 0 ? `${rankedTeams[0].score} / 10` : "N/A", icon: <Award className="h-5 w-5 text-amber-500" /> },
-                  ].map((stat, idx) => (
-                    <div key={idx} className="p-5 rounded-2xl border border-input-border/30 bg-white shadow-sm flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-xl bg-card-bg text-primary-green flex items-center justify-center border border-input-border/10 shrink-0">
-                        {stat.icon}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{stat.label}</span>
-                        <span className="text-sm font-extrabold text-primary-dark">{stat.val}</span>
-                      </div>
+                    { label: "Assigned", value: assignedTeams.length, icon: <Users className="h-5 w-5 text-blue-500" />, bg: "bg-blue-50" },
+                    { label: "Completed", value: reviewedTeams.length, icon: <CheckCircle className="h-5 w-5 text-emerald-500" />, bg: "bg-emerald-50" },
+                    { label: "Remaining", value: pendingTeams.length, icon: <Clock className="h-5 w-5 text-amber-500" />, bg: "bg-amber-50" },
+                    { label: "Avg Score", value: `${avgScore}/10`, icon: <Star className="h-5 w-5 text-purple-500" />, bg: "bg-purple-50" },
+                  ].map((k) => (
+                    <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-2">
+                      <div className={`p-2 rounded-xl w-fit ${k.bg}`}>{k.icon}</div>
+                      <div className="text-2xl font-extrabold text-primary-dark">{k.value}</div>
+                      <div className="text-xs text-gray-400 font-semibold">{k.label}</div>
                     </div>
                   ))}
                 </div>
 
-                {/* Assigned Queue Summary */}
-                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4">
-                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
-                    <FolderCode className="h-4.5 w-4.5 text-primary-green" /> Projects Awaiting Score
-                  </h3>
-                  
-                  <div className="flex flex-col gap-3">
-                    {assignedTeams.map((team) => {
-                      const isGraded = team.evaluations?.some((e) => e.judgeEmail === session.email);
+                {/* Progress bar */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="font-bold text-primary-dark text-sm">Review Progress</div>
+                    <div className="text-sm font-semibold text-blue-600">{reviewedTeams.length} / {assignedTeams.length}</div>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${assignedTeams.length > 0 ? (reviewedTeams.length / assignedTeams.length) * 100 : 0}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+                  </div>
+                </div>
+
+                {/* Pending */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                  <div className="font-bold text-primary-dark text-sm mb-3">Pending Reviews</div>
+                  <div className="flex flex-col gap-2">
+                    {pendingTeams.slice(0, 3).map((t) => {
+                      const track = HACK_TRACKS.find((tr) => tr.id === t.trackId);
                       return (
-                        <div key={team.id} className="flex justify-between items-center p-3 rounded-2xl border border-gray-100 hover:bg-card-bg/20 text-xs">
-                          <div>
-                            <p className="font-bold text-gray-800">{team.name}</p>
-                            <p className="text-[10px] text-gray-400 font-semibold truncate max-w-[280px]">
-                              {team.projectDescription || "No summary configured"}
-                            </p>
+                        <button key={t.id} onClick={() => handleOpenEval(t)}
+                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer group text-left">
+                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            {t.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                              isGraded ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700 animate-pulse"
-                            }`}>
-                              {isGraded ? "Graded" : "Pending Grading"}
-                            </span>
-                            <button
-                              onClick={() => handleStartEvaluation(team)}
-                              className="px-3 py-1.5 rounded-lg bg-primary-green hover:bg-primary-green/90 text-white text-[10px] font-bold cursor-pointer"
-                            >
-                              {isGraded ? "Edit Score" : "Grade Project"}
-                            </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-primary-dark">{t.name}</div>
+                            <div className="text-xs text-gray-400">{track?.label || "—"}</div>
                           </div>
-                        </div>
+                          <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                        </button>
                       );
                     })}
-                    {assignedTeams.length === 0 && (
-                      <p className="text-xs text-gray-400 italic">No approved teams in the registration system yet.</p>
-                    )}
+                    {pendingTeams.length === 0 && <div className="text-sm text-gray-400 text-center py-4">All teams reviewed! 🎉</div>}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* ==================== ASSIGNED PROJECTS TAB ==================== */}
-            {activeTab === "assigned" && (
-              <div className="flex flex-col gap-6">
-                {assignedTeams.map((team) => {
-                  const ev = team.evaluations?.find((e) => e.judgeEmail === session.email);
-                  return (
-                    <div key={team.id} className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-base font-bold text-primary-dark">{team.name}</h3>
-                          <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Submitted Project Details</p>
+            {/* ─── REVIEW QUEUE ─── */}
+            {activeTab === "queue" && (
+              <motion.div key="queue" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl">Review Queue</h2>
+
+                {/* Filters */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-3 items-center">
+                  <div className="relative flex-1 min-w-48">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search teams..."
+                      className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                  </div>
+                  <select value={trackFilter} onChange={(e) => setTrackFilter(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+                    <option value="all">All Tracks</option>
+                    {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
+                  </select>
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="reviewed">Reviewed</option>
+                  </select>
+                  <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+                    <option value="all">All Departments</option>
+                    {departments.map((d) => <option key={d} value={d}>{d.split("&")[0].trim()}</option>)}
+                  </select>
+                </div>
+
+                <div className="text-xs text-gray-400 font-semibold">{filteredQueue.length} teams</div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredQueue.map((team) => {
+                    const track = HACK_TRACKS.find((tr) => tr.id === team.trackId);
+                    const reviewed = team.evaluations?.some((e) => e.judgeEmail === session.email);
+                    const myEval = team.evaluations?.find((e) => e.judgeEmail === session.email);
+                    const avgScore = myEval ? Math.round((myEval.innovation + myEval.feasibility + myEval.presentation) / 3 * 10) / 10 : null;
+                    return (
+                      <div key={team.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start gap-3">
+                          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                            {team.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-primary-dark">{team.name}</div>
+                            <div className="text-xs text-gray-400">{track?.label || "—"} · {team.members.length} members</div>
+                          </div>
+                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${reviewed ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                            {reviewed ? "Reviewed" : "Pending"}
+                          </span>
                         </div>
-                        {ev ? (
-                          <Badge variant="success">Graded ({( (ev.innovation + ev.feasibility + ev.presentation) / 3 ).toFixed(1)}/10)</Badge>
-                        ) : (
-                          <Badge variant="warning">Awaiting Grade</Badge>
+
+                        <p className="text-xs text-gray-500 line-clamp-2">{team.projectDescription}</p>
+
+                        {reviewed && avgScore !== null && (
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 text-amber-400" />
+                            <span className="text-sm font-bold text-gray-700">Your Score: {avgScore}/10</span>
+                          </div>
                         )}
-                      </div>
 
-                      <div className="p-4 rounded-2xl bg-card-bg/25 border border-input-border/10 text-xs">
-                        <p className="font-bold text-gray-700">Abstract Summary:</p>
-                        <p className="text-gray-500 leading-relaxed mt-1 font-semibold">
-                          {team.projectDescription || "No concept summary declared by team."}
-                        </p>
-                      </div>
-
-                      {team.aiDisclosure && (
-                        <div className="text-xs text-gray-500">
-                          <strong>AI Model Assist Disclosure:</strong> {team.aiDisclosure}
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                        <div className="p-3 border border-gray-150 rounded-xl flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 font-bold text-gray-700">
-                            <Github className="h-4 w-4 text-gray-600" /> Repository Link:
-                          </span>
-                          <a
-                            href={team.githubUrl || "#"}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary-green font-extrabold hover:underline truncate max-w-[150px]"
-                          >
-                            {team.githubUrl ? "GitHub Repo" : "Not Linked"}
-                          </a>
-                        </div>
-
-                        <div className="p-3 border border-gray-150 rounded-xl flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 font-bold text-gray-700">
-                            <Video className="h-4 w-4 text-red-600" /> Pitch Presentation:
-                          </span>
-                          <a
-                            href={team.videoUrl || "#"}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary-green font-extrabold hover:underline truncate max-w-[150px]"
-                          >
-                            {team.videoUrl ? "Watch Video" : "Not Provided"}
-                          </a>
+                        <div className="flex gap-2">
+                          <button onClick={() => setSelectedTeam(team)}
+                            className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors cursor-pointer">
+                            View Details
+                          </button>
+                          <button onClick={() => handleOpenEval(team)}
+                            className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer">
+                            {reviewed ? "Update Score" : "Evaluate"}
+                          </button>
                         </div>
                       </div>
-
-                      <div className="flex gap-2 justify-end mt-2">
-                        <button
-                          onClick={() => handleStartEvaluation(team)}
-                          className="px-4 py-2 rounded-xl bg-primary-green hover:bg-primary-green/90 text-white text-xs font-bold cursor-pointer"
-                        >
-                          {ev ? "Edit Scoring Rubric" : "Start Scoring Review"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {assignedTeams.length === 0 && (
-                  <div className="p-12 text-center border border-dashed border-gray-200 rounded-3xl bg-white">
-                    <p className="text-xs text-gray-400 italic">No assigned projects found.</p>
-                  </div>
-                )}
-              </div>
+                    );
+                  })}
+                  {filteredQueue.length === 0 && <div className="col-span-2 text-center text-gray-400 py-12 text-sm">No teams match your filters.</div>}
+                </div>
+              </motion.div>
             )}
 
-            {/* ==================== EVALUATION RUBRIC TAB ==================== */}
+            {/* ─── EVALUATION ─── */}
             {activeTab === "evaluation" && (
-              <div className="max-w-2xl rounded-3xl border border-input-border/30 bg-white p-5 sm:p-8 shadow-sm">
-                <div className="flex justify-between items-center border-b border-gray-150 pb-3 mb-6">
-                  <h3 className="text-base font-bold text-primary-dark flex items-center gap-2">
-                    <Gavel className="h-5 w-5 text-primary-green" /> Scoring & Grading Rubric
-                  </h3>
-                  {selectedTeamId && (
-                    <span className="text-xs font-bold text-primary-green">
-                      Grading: {teams.find((t) => t.id === selectedTeamId)?.name}
-                    </span>
-                  )}
-                </div>
-
-                {!selectedTeamId ? (
-                  <div className="py-8 text-center text-xs text-gray-400 italic">
-                    Please select a project to review from the &quot;Assigned Projects&quot; tab first.
+              <motion.div key="eval" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl">Evaluation</h2>
+                {!selectedTeam ? (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+                    <Target className="h-12 w-12 text-gray-200 mx-auto mb-4" />
+                    <div className="text-gray-400 text-sm mb-4">Select a team from the Review Queue to begin evaluation.</div>
+                    <button onClick={() => setActiveTab("queue")} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 cursor-pointer">Go to Queue</button>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmitScore} className="flex flex-col gap-6">
-                    {/* Innovation Range */}
-                    <div className="flex flex-col gap-1.5 text-xs">
-                      <div className="flex justify-between font-bold">
-                        <span className="text-gray-700">1. Tech Innovation & AI Model depth</span>
-                        <span className="text-primary-green font-extrabold">{innovation} / 10</span>
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
+                    <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
+                        {selectedTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                       </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={innovation}
-                        onChange={(e) => setInnovation(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-green"
-                      />
-                      <p className="text-[10px] text-gray-400 font-semibold leading-relaxed">
-                        Assess depth of LLMs, prompts structures, safety RAG controls, and originality of localized integration.
-                      </p>
-                    </div>
-
-                    {/* Feasibility Range */}
-                    <div className="flex flex-col gap-1.5 text-xs">
-                      <div className="flex justify-between font-bold">
-                        <span className="text-gray-700">2. Feasibility & Architecture limits</span>
-                        <span className="text-primary-green font-extrabold">{feasibility} / 10</span>
+                      <div>
+                        <div className="font-extrabold text-primary-dark">{selectedTeam.name}</div>
+                        <div className="text-sm text-gray-400">{HACK_TRACKS.find(t => t.id === selectedTeam.trackId)?.label || "—"}</div>
                       </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={feasibility}
-                        onChange={(e) => setFeasibility(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-green"
-                      />
-                      <p className="text-[10px] text-gray-400 font-semibold leading-relaxed">
-                        Assess database layout, FastAPI structures, API endpoint reliability, and frontend speed.
-                      </p>
                     </div>
 
-                    {/* Presentation Range */}
-                    <div className="flex flex-col gap-1.5 text-xs">
-                      <div className="flex justify-between font-bold">
-                        <span className="text-gray-700">3. Pitch Presentation & Demo Quality</span>
-                        <span className="text-primary-green font-extrabold">{presentation} / 10</span>
+                    {SCORE_CRITERIA.map(({ key, label, max }) => (
+                      <div key={key}>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-semibold text-gray-700">{label}</label>
+                          <span className="text-sm font-extrabold text-blue-600">{scores[key]}/{max}</span>
+                        </div>
+                        <input type="range" min={1} max={max} value={scores[key]}
+                          onChange={(e) => setScores((p) => ({ ...p, [key]: parseInt(e.target.value) }))}
+                          className="w-full accent-blue-600 cursor-pointer"
+                        />
+                        <div className="flex justify-between text-xs text-gray-300 mt-1"><span>1</span><span>{max}</span></div>
                       </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={presentation}
-                        onChange={(e) => setPresentation(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-green"
-                      />
-                      <p className="text-[10px] text-gray-400 font-semibold leading-relaxed">
-                        Assess pitch style, clarity of the video presentation, slide deck completeness, and visual design.
-                      </p>
-                    </div>
+                    ))}
 
-                    {/* Feedback comment */}
-                    <div className="flex flex-col gap-1.5 text-xs">
-                      <label className="font-bold text-gray-700">4. Review Feedback / Recommendations</label>
-                      <textarea
-                        rows={4}
-                        value={feedback}
-                        onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="Leave constructive critiques or instructions for API safety corrections..."
-                        className="w-full px-4 py-3 rounded-xl border border-input-border focus:ring-1 focus:ring-primary-green focus:outline-none"
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Written Feedback</label>
+                      <textarea rows={4} value={feedback} onChange={(e) => setFeedback(e.target.value)}
+                        placeholder="Provide detailed constructive feedback for the team..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
                       />
                     </div>
 
-                    <div className="flex gap-3 justify-end mt-2">
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          setSelectedTeamId("");
-                          setActiveTab("dashboard");
-                        }}
-                        className="bg-gray-150 text-gray-700 hover:bg-gray-200 border-0 text-xs px-4"
-                      >
+                    <div className="flex gap-3">
+                      <button onClick={() => { setSelectedTeam(null); setActiveTab("queue"); }}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
                         Cancel
-                      </Button>
-                      <Button type="submit" className="text-xs px-5">
-                        Submit Scorecard
-                      </Button>
+                      </button>
+                      <button onClick={handleSubmitEval}
+                        className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 cursor-pointer">
+                        Submit Evaluation
+                      </button>
                     </div>
-                  </form>
+                  </div>
                 )}
-              </div>
+              </motion.div>
             )}
 
-            {/* ==================== LEADERBOARD TAB ==================== */}
+            {/* ─── LEADERBOARD ─── */}
             {activeTab === "leaderboard" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-8 shadow-sm flex flex-col gap-5">
-                <div className="flex justify-between items-center border-b border-gray-150 pb-3">
-                  <h3 className="text-base font-bold text-primary-dark flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-primary-green" /> Scoring Rankings & Standings
-                  </h3>
-                  <span className="text-xs font-bold text-gray-400">Updates in real-time</span>
+              <motion.div key="lb" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><Trophy className="h-5 w-5 text-amber-500" /> Leaderboard</h2>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">#</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Team</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Track</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Evaluations</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Avg Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard.map(({ team, avg, count }, idx) => (
+                        <tr key={team.id} className={`border-b border-gray-50 last:border-0 ${idx < 3 ? "bg-amber-50/30" : ""}`}>
+                          <td className="px-5 py-3 font-bold text-gray-400">
+                            {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : idx + 1}
+                          </td>
+                          <td className="px-5 py-3 font-semibold text-primary-dark">{team.name}</td>
+                          <td className="px-5 py-3 text-gray-500 text-xs">{HACK_TRACKS.find(t => t.id === team.trackId)?.label || "—"}</td>
+                          <td className="px-5 py-3 text-gray-500">{count}</td>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-2">
+                              <Star className="h-4 w-4 text-amber-400" />
+                              <span className="font-extrabold text-primary-dark">{count > 0 ? avg : "—"}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+              </motion.div>
+            )}
 
-                <div className="flex flex-col gap-3">
-                  {rankedTeams.map((team, idx) => (
-                    <div key={team.id} className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 hover:border-input-border/10 text-xs">
-                      <div className="flex items-center gap-4">
-                        <span className={`h-6 w-6 rounded-full flex items-center justify-center font-extrabold text-[10px] ${
-                          idx === 0 
-                            ? "bg-amber-100 text-amber-800 border border-amber-300" 
-                            : idx === 1 
-                            ? "bg-slate-100 text-slate-800 border border-slate-350" 
-                            : "bg-gray-100 text-gray-700"
-                        }`}>
-                          {idx + 1}
-                        </span>
-                        <div>
-                          <p className="font-bold text-gray-800">{team.name}</p>
-                          <p className="text-[10px] text-gray-400 font-semibold">{team.members.length} members | Status: {team.status}</p>
-                        </div>
+            {/* ─── NOTIFICATIONS ─── */}
+            {activeTab === "notifications" && (
+              <motion.div key="notifs" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-extrabold text-primary-dark text-xl">Notifications</h2>
+                  {unreadCount > 0 && <button onClick={markAllNotificationsRead} className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">Mark all read</button>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(["all", "approval", "deadline", "judge", "system"] as const).map((f) => (
+                    <button key={f} onClick={() => setNotifFilter(f)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize cursor-pointer transition-colors ${notifFilter === f ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
+                    >{notifTypeStyles[f]?.label || "All"}</button>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {(notifFilter === "all" ? notifications : notifications.filter((n) => n.type === notifFilter)).map((n) => (
+                    <div key={n.id} onClick={() => markNotificationRead(n.id)}
+                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer ${!n.read ? "bg-blue-50 border-blue-100" : "bg-white border-gray-100"}`}>
+                      <div className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${notifTypeStyles[n.type]?.dot || "bg-gray-400"}`} />
+                      <div className="flex-1">
+                        <div className={`text-sm font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{n.body}</div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-gray-400 font-bold">Avg Score:</span>
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-primary-green font-extrabold text-sm border border-primary-green/20">
-                          {team.score > 0 ? `${team.score} / 10` : "Unrated"}
-                        </span>
-                      </div>
+                      {!n.read && <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1" />}
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* ==================== MESSAGES TAB ==================== */}
-            {activeTab === "messages" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-6 shadow-sm flex flex-col items-center justify-center text-center py-20 gap-3">
-                <div className="h-14 w-14 rounded-2xl bg-emerald-50 border border-primary-green/20 text-primary-green flex items-center justify-center shadow-sm">
-                  <MessageSquare className="h-7 w-7" />
+            {/* ─── PROFILE ─── */}
+            {activeTab === "profile" && (
+              <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl">Profile & Settings</h2>
+                <div className="flex gap-2 flex-wrap">
+                  {(["info", "account", "notifications", "appearance", "security"] as const).map((t) => (
+                    <button key={t} onClick={() => setProfileTab(t)}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${profileTab === t ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
+                    >{t === "info" ? "Personal Info" : t}</button>
+                  ))}
                 </div>
-                <h4 className="text-base font-extrabold text-primary-dark">Organizers Support Box</h4>
-                <p className="text-xs text-gray-500 max-w-sm leading-relaxed font-semibold">
-                  Request coordinators to resolve team eligibility conflicts or reset scorecard rubrics.
-                </p>
-                <Button
-                  onClick={() => {
-                    toast("Direct line to coordinators: support@siet.ac.in", "info");
-                  }}
-                  className="mt-2 text-xs"
-                >
-                  Contact Admin Desk
-                </Button>
-              </div>
-            )}
-
-            {/* ==================== SETTINGS TAB ==================== */}
-            {activeTab === "settings" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-6 shadow-sm flex flex-col gap-6 max-w-xl">
-                <h3 className="text-base font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
-                  <Settings className="h-5 w-5 text-primary-green" /> Portal Preferences
-                </h3>
-                <div className="flex flex-col gap-4 text-xs font-semibold">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-gray-800">Scoring Notifications</p>
-                      <p className="text-gray-400 font-normal">Alert when new teams submit final code links.</p>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                  {profileTab === "info" && (
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold">
+                        {(session.name || "J").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-extrabold text-primary-dark text-lg">{session.name || "Judge"}</div>
+                        <div className="text-gray-400 text-sm">{session.email}</div>
+                        <div className="text-xs font-semibold text-blue-600 mt-0.5">Judge · SIET AI Hack Lab 2026</div>
+                      </div>
                     </div>
-                    <input type="checkbox" defaultChecked className="rounded border-input-border text-primary-green focus:ring-primary-green h-4.5 w-4.5 cursor-pointer" />
-                  </div>
-                  <Button
-                    onClick={() => {
-                      toast("Scoring configs updated.", "success");
-                    }}
-                    className="mt-2 text-xs"
-                  >
-                    Save Scoring Configuration
-                  </Button>
+                  )}
+                  {profileTab === "account" && <div className="text-sm text-gray-500">Email: <span className="font-semibold text-gray-800">{session.email}</span></div>}
+                  {profileTab === "notifications" && <div className="text-sm text-gray-400">Notification preferences coming soon.</div>}
+                  {profileTab === "appearance" && <div className="text-sm text-gray-400">Theme settings coming soon.</div>}
+                  {profileTab === "security" && <div className="text-sm text-gray-400">Password management coming soon.</div>}
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* QR Scanner Modal */}
+          <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onSelectTeam={(team) => { handleOpenEval(team); }} />
+
+          {/* Team Detail Popup */}
+          <AnimatePresence>
+            {selectedTeam && activeTab === "queue" && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} onClick={() => setSelectedTeam(null)} className="absolute inset-0 bg-black" />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[85vh] overflow-y-auto"
+                >
+                  <div className="bg-gradient-to-r from-blue-700 to-indigo-600 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
+                    <div>
+                      <div className="text-blue-200 text-xs font-bold uppercase tracking-wide">Team Details</div>
+                      <div className="text-white font-extrabold text-lg">{selectedTeam.name}</div>
+                    </div>
+                    <button onClick={() => setSelectedTeam(null)} className="p-1.5 hover:bg-white/10 rounded-lg text-white cursor-pointer"><X className="h-5 w-5" /></button>
+                  </div>
+                  <div className="p-5 space-y-5">
+                    {/* Members */}
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Members</div>
+                      <div className="flex flex-col gap-2">
+                        {selectedTeam.members.map((m) => (
+                          <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+                            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                              {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-sm text-primary-dark flex items-center gap-1">
+                                {m.name} {m.isLeader && <span className="text-xs text-amber-600 bg-amber-50 px-1.5 rounded-full border border-amber-200">Leader</span>}
+                              </div>
+                              <div className="text-xs text-gray-400">{m.department} · {m.year}</div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1 text-xs text-gray-400"><Mail className="h-3 w-3" />{m.email}</div>
+                              {m.phone && <div className="flex items-center gap-1 text-xs text-gray-400"><Phone className="h-3 w-3" />{m.phone}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Project */}
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Problem Statement & Abstract</div>
+                      <div className="text-xs font-semibold text-blue-600 mb-1">{HACK_TRACKS.find(t => t.id === selectedTeam.trackId)?.label || "—"}</div>
+                      <p className="text-sm text-gray-700">{selectedTeam.projectDescription || "Not provided."}</p>
+                    </div>
+
+                    {/* Links */}
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Links</div>
+                      <div className="flex flex-col gap-2">
+                        {selectedTeam.githubUrl && <a href={selectedTeam.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline"><Github className="h-4 w-4" /> Repository</a>}
+                        {selectedTeam.videoUrl && <a href={selectedTeam.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline"><Video className="h-4 w-4" /> Demo Video</a>}
+                        {selectedTeam.demoUrl && <a href={selectedTeam.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline"><Globe className="h-4 w-4" /> Live Demo</a>}
+                        {!selectedTeam.githubUrl && !selectedTeam.videoUrl && !selectedTeam.demoUrl && <span className="text-sm text-gray-400">No links submitted yet.</span>}
+                      </div>
+                    </div>
+
+                    {/* Previous Feedback */}
+                    {(selectedTeam.evaluations || []).length > 0 && (
+                      <div>
+                        <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Previous Feedback</div>
+                        {selectedTeam.evaluations!.map((ev, i) => (
+                          <div key={i} className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-sm text-blue-800">{ev.feedback}</div>
+                        ))}
+                      </div>
+                    )}
+
+                    <button onClick={() => { handleOpenEval(selectedTeam); setSelectedTeam(null); }}
+                      className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 cursor-pointer">
+                      Start Evaluation
+                    </button>
+                  </div>
+                </motion.div>
               </div>
             )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+          </AnimatePresence>
+        </main>
+      </div>
     </PageWrapper>
   );
 }

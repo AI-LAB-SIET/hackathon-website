@@ -5,536 +5,417 @@ import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, UserPlus, FileText, Users, ArrowRight, ArrowLeft } from "lucide-react";
+import {
+  User, Users, Plus, X, CheckCircle, ArrowRight, ArrowLeft,
+  Send, Eye, EyeOff, Sparkles, Lock
+} from "lucide-react";
 import { Participant } from "@/types";
+import { HACK_TRACKS } from "@/lib/mockData";
+
+const DEPT_OPTIONS = [
+  "Computer Science & Engineering",
+  "Electronics & Communication",
+  "Information Technology",
+  "Artificial Intelligence & Data Science",
+  "Mechanical Engineering",
+  "Electrical Engineering",
+  "Biotechnology",
+  "Civil Engineering",
+];
+const YEAR_OPTIONS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "PG 1st Year", "PG 2nd Year"];
+
+const STEPS = [
+  { num: 1, label: "Account", icon: <User className="h-4 w-4" /> },
+  { num: 2, label: "Team", icon: <Users className="h-4 w-4" /> },
+  { num: 3, label: "Members", icon: <Plus className="h-4 w-4" /> },
+  { num: 4, label: "Submit", icon: <Send className="h-4 w-4" /> },
+];
+
+const emptyMember = (isLeader = false): Participant => ({
+  name: "", registerNumber: "", email: "", phone: "",
+  department: DEPT_OPTIONS[0], year: YEAR_OPTIONS[2],
+  skills: [], github: "", isLeader,
+});
 
 export default function Register() {
   const router = useRouter();
-  const { registerTeam } = useAppState();
+  const { registerTeam, teams } = useAppState();
   const { toast } = useToast();
 
   const [step, setStep] = useState(1);
+  const [showPw, setShowPw] = useState(false);
+
+  // Step 1: Account
+  const [account, setAccount] = useState({ name: "", email: "", password: "", confirm: "" });
+
+  // Step 2: Team
+  const [teamFlow, setTeamFlow] = useState<"create" | "join">("create");
   const [teamName, setTeamName] = useState("");
+  const [trackId, setTrackId] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
-  const [teamSize, setTeamSize] = useState<number>(3); // Default 3 members
+  const [joinCode, setJoinCode] = useState("");
 
-  // Setup state for members. Index 0 is Leader.
+  // Step 3: Members (leader is index 0, pre-filled from account)
   const [members, setMembers] = useState<Participant[]>([
-    { name: "", registerNumber: "", email: "", phone: "", department: "", year: "3rd Year", skills: [], github: "", isLeader: true },
-    { name: "", registerNumber: "", email: "", phone: "", department: "", year: "3rd Year", skills: [], github: "" },
-    { name: "", registerNumber: "", email: "", phone: "", department: "", year: "3rd Year", skills: [], github: "" },
-    { name: "", registerNumber: "", email: "", phone: "", department: "", year: "3rd Year", skills: [], github: "" },
+    { ...emptyMember(true) },
   ]);
+  const [newSkills, setNewSkills] = useState<string[]>([""]);
 
-  const [skillsInputs, setSkillsInputs] = useState<string[]>(["", "", "", ""]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Synchronize members state when teamSize changes
-  const handleTeamSizeChange = (size: number) => {
-    setTeamSize(size);
+  // Validation
+  const validateStep1 = () => {
+    if (!account.name.trim()) { toast("Please enter your full name.", "error"); return false; }
+    if (!account.email.includes("@")) { toast("Please enter a valid email.", "error"); return false; }
+    if (account.password.length < 6) { toast("Password must be at least 6 characters.", "error"); return false; }
+    if (account.password !== account.confirm) { toast("Passwords do not match.", "error"); return false; }
+    return true;
   };
 
-  const handleMemberChange = (idx: number, field: keyof Participant, val: Participant[keyof Participant]) => {
-    const updated = [...members];
-    updated[idx] = { ...updated[idx], [field]: val };
-    setMembers(updated);
-  };
-
-  const validateStep = () => {
-    const errs: Record<string, string> = {};
-    let valid = true;
-
-    if (step === 1) {
-      if (!teamName.trim()) {
-        errs.teamName = "Team Name is required";
-        valid = false;
-      }
-      if (!projectDescription.trim()) {
-        errs.projectDescription = "Project Description is required";
-        valid = false;
-      }
-    } else if (step === 2) {
-      // Validate Leader (Index 0)
-      const leader = members[0];
-      if (!leader.name.trim()) {
-        errs.leaderName = "Leader Name is required";
-        valid = false;
-      }
-      if (!leader.registerNumber.trim()) {
-        errs.leaderReg = "Register Number is required";
-        valid = false;
-      }
-      if (!leader.email.trim()) {
-        errs.leaderEmail = "Email is required";
-        valid = false;
-      } else if (!/\S+@\S+\.\S+/.test(leader.email)) {
-        errs.leaderEmail = "Invalid email format";
-        valid = false;
-      }
-      if (!leader.phone.trim()) {
-        errs.leaderPhone = "Phone number is required";
-        valid = false;
-      }
-      if (!leader.department.trim()) {
-        errs.leaderDept = "Department is required";
-        valid = false;
-      }
-    } else if (step === 3) {
-      // Validate Teammates (Index 1 to teamSize - 1)
-      for (let i = 1; i < teamSize; i++) {
-        const m = members[i];
-        if (!m.name.trim()) {
-          errs[`member_${i}_name`] = `Teammate ${i} Name is required`;
-          valid = false;
-        }
-        if (!m.registerNumber.trim()) {
-          errs[`member_${i}_reg`] = `Teammate ${i} Register Number is required`;
-          valid = false;
-        }
-        if (!m.email.trim()) {
-          errs[`member_${i}_email`] = `Teammate ${i} Email is required`;
-          valid = false;
-        } else if (!/\S+@\S+\.\S+/.test(m.email)) {
-          errs[`member_${i}_email`] = "Invalid email format";
-          valid = false;
-        }
-        if (!m.department.trim()) {
-          errs[`member_${i}_dept`] = `Teammate ${i} Department is required`;
-          valid = false;
-        }
-      }
+  const validateStep2 = () => {
+    if (teamFlow === "create") {
+      if (!teamName.trim()) { toast("Please enter a team name.", "error"); return false; }
+      if (!trackId) { toast("Please select a problem statement track.", "error"); return false; }
+      if (!projectDescription.trim()) { toast("Please describe your project briefly.", "error"); return false; }
+    } else {
+      if (!joinCode.trim()) { toast("Please enter a team join code.", "error"); return false; }
     }
+    return true;
+  };
 
-    setErrors(errs);
-    return valid;
+  const validateStep3 = () => {
+    const leader = members[0];
+    if (!leader.name || !leader.email || !leader.registerNumber) {
+      toast("Please fill in leader details (Name, Email, Register Number).", "error");
+      return false;
+    }
+    if (members.length < 2) { toast("Team must have at least 2 members.", "error"); return false; }
+    return true;
   };
 
   const handleNext = () => {
-    if (validateStep()) {
-      setStep((s) => s + 1);
-    } else {
-      toast("Please complete all required fields correctly.", "error");
-    }
-  };
+    if (step === 1 && !validateStep1()) return;
+    if (step === 2 && !validateStep2()) return;
+    if (step === 3 && !validateStep3()) return;
 
-  const handlePrev = () => {
-    setStep((s) => s - 1);
+    // Pre-fill leader info from account on step 1 → 2
+    if (step === 1) {
+      setMembers([{ ...emptyMember(true), name: account.name, email: account.email }]);
+      setNewSkills([""]);
+    }
+    setStep(step + 1);
   };
 
   const handleSubmit = () => {
-    if (!validateStep()) {
-      toast("Form validation failed.", "error");
-      return;
-    }
-
-    setSubmitting(true);
-    setTimeout(() => {
-      // Assemble members based on team size
-      const activeMembers = members.slice(0, teamSize).map((m, idx) => {
-        const skillsString = skillsInputs[idx];
-        const skills = skillsString
-          ? skillsString.split(",").map((s) => s.trim()).filter((s) => s.length > 0)
-          : [];
-        return {
-          ...m,
-          skills,
-        };
-      });
-
-      registerTeam({
-        name: teamName,
-        projectDescription,
-        members: activeMembers,
-      });
-
-      setSubmitting(false);
-      setIsSuccess(true);
-      toast("Team Registered Successfully!", "success");
-    }, 1500);
+    const filledMembers = members.filter((m) => m.name.trim() && m.email.trim() && m.registerNumber.trim());
+    if (filledMembers.length < 2) { toast("At least 2 members with complete details required.", "error"); return; }
+    registerTeam({ name: teamName, projectDescription, members: filledMembers.map((m, i) => ({ ...m, isLeader: i === 0 })) });
+    toast("Team registered successfully!", "success");
+    router.push("/dashboard");
   };
 
-  const yearsList = ["1st Year", "2nd Year", "3rd Year", "4th Year", "Postgraduate"];
+  const updateMember = (idx: number, field: keyof Participant, value: string) => {
+    setMembers((prev) => prev.map((m, i) => i === idx ? { ...m, [field]: value } : m));
+  };
+
+  const addMember = () => {
+    if (members.length >= 4) { toast("Maximum 4 members per team.", "error"); return; }
+    setMembers((prev) => [...prev, emptyMember()]);
+    setNewSkills((prev) => [...prev, ""]);
+  };
+
+  const removeMember = (idx: number) => {
+    if (idx === 0) return;
+    setMembers((prev) => prev.filter((_, i) => i !== idx));
+    setNewSkills((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const addSkill = (idx: number) => {
+    const skill = newSkills[idx]?.trim();
+    if (!skill) return;
+    setMembers((prev) => prev.map((m, i) => i === idx ? { ...m, skills: [...m.skills, skill] } : m));
+    setNewSkills((prev) => prev.map((s, i) => i === idx ? "" : s));
+  };
+
+  const removeSkill = (memberIdx: number, skill: string) => {
+    setMembers((prev) => prev.map((m, i) => i === memberIdx ? { ...m, skills: m.skills.filter((s) => s !== skill) } : m));
+  };
 
   return (
-    <PageWrapper className="relative bg-white min-h-screen">
+    <PageWrapper>
       <Navbar />
 
-      <main className="max-w-3xl mx-auto px-6 py-12 md:py-20 relative">
-        <div className="absolute top-10 left-0 w-48 h-48 bg-primary-green/5 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute bottom-10 right-0 w-64 h-64 bg-accent-yellow/5 blur-3xl rounded-full pointer-events-none" />
+      <section className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center py-12 px-4">
+        <div className="w-full max-w-2xl">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-sm font-semibold mb-4">
+              <Sparkles className="h-4 w-4" /> AI Hack Lab 2026
+            </div>
+            <h1 className="text-3xl font-extrabold text-primary-dark">Register Your Team</h1>
+            <p className="text-gray-400 text-sm mt-2">Create an account, build your team, and compete.</p>
+          </div>
 
-        <AnimatePresence mode="wait">
-          {!isSuccess ? (
-            <motion.div
-              key="registration-form"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              className="rounded-3xl border border-input-border/30 bg-white p-6 sm:p-10 shadow-2xl relative z-10"
-            >
-              {/* Header Title */}
-              <div className="flex flex-col gap-2 mb-8 text-center sm:text-left">
-                <span className="text-xs font-bold text-primary-green uppercase tracking-widest">
-                  Step {step} of 4
-                </span>
-                <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-primary-dark leading-tight">
-                  Team Registration
-                </h2>
-                <p className="text-xs text-gray-500 max-w-lg font-semibold leading-relaxed">
-                  {step === 1 && "Start by declaring your team name and project brief."}
-                  {step === 2 && "Enter coordinate profiles for the designated team leader."}
-                  {step === 3 && "Input academic profiles for the remaining team members."}
-                  {step === 4 && "Review your complete profile before final submission."}
-                </p>
-              </div>
+          {/* Step Progress */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            {STEPS.map((s, idx) => (
+              <React.Fragment key={s.num}>
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all ${step === s.num ? "bg-primary-green text-white shadow-md" : step > s.num ? "bg-emerald-100 text-emerald-700" : "bg-white border border-gray-200 text-gray-400"}`}>
+                  {step > s.num ? <CheckCircle className="h-4 w-4" /> : s.icon}
+                  <span className="text-xs font-bold hidden sm:block">{s.label}</span>
+                </div>
+                {idx < STEPS.length - 1 && <div className={`h-0.5 w-8 rounded-full ${step > s.num ? "bg-primary-green" : "bg-gray-200"}`} />}
+              </React.Fragment>
+            ))}
+          </div>
 
-              {/* Progress Line */}
-              <div className="flex gap-1.5 h-1 bg-gray-150 rounded-full mb-8 overflow-hidden select-none">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className={`flex-1 h-full transition-all duration-300 ${
-                      i <= step ? "bg-primary-green" : "bg-gray-200"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Step Forms */}
-              <div className="min-h-[280px]">
-                {step === 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex flex-col gap-5"
-                  >
-                    <Input
-                      label="Team Name"
-                      placeholder="e.g. Neural Knights"
-                      value={teamName}
-                      onChange={(e) => setTeamName(e.target.value)}
-                      error={errors.teamName}
-                    />
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-primary-dark">Project Description / Brief Idea</label>
-                      <textarea
-                        rows={4}
-                        placeholder="Detail your AI product solution concept (e.g. LLM integration, agent tools, RAG schema)..."
-                        value={projectDescription}
-                        onChange={(e) => setProjectDescription(e.target.value)}
-                        className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all duration-200 text-sm
-                          ${
-                            errors.projectDescription
-                              ? "border-red-500 focus:ring-1 focus:ring-red-500"
-                              : "border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green shadow-inner"
-                          }`}
-                      />
-                      {errors.projectDescription && (
-                        <span className="text-xs text-red-600 font-semibold">{errors.projectDescription}</span>
-                      )}
-                    </div>
-
-                    {/* Team Size Selector */}
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-semibold text-primary-dark">Total Team Size (including Leader)</label>
-                      <div className="flex gap-3">
-                        {[2, 3, 4].map((sz) => (
-                          <button
-                            key={sz}
-                            type="button"
-                            onClick={() => handleTeamSizeChange(sz)}
-                            className={`flex-1 py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                              teamSize === sz
-                                ? "bg-primary-green border-primary-green text-white shadow-md shadow-primary-green/10"
-                                : "bg-white border-gray-200 text-gray-600 hover:border-primary-green hover:text-primary-green"
-                            }`}
-                          >
-                            {sz} Members
-                          </button>
-                        ))}
+          {/* Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <AnimatePresence mode="wait">
+              {/* ─── STEP 1: Account ─── */}
+              {step === 1 && (
+                <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-5">
+                  <div>
+                    <h2 className="font-extrabold text-primary-dark text-xl mb-1">Create Account</h2>
+                    <p className="text-sm text-gray-400">Your personal login credentials for the platform.</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1.5">Full Name</label>
+                    <input type="text" value={account.name} onChange={(e) => setAccount((p) => ({ ...p, name: e.target.value }))}
+                      placeholder="e.g. Abhishek Sharma"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1.5">College Email</label>
+                    <input type="email" value={account.email} onChange={(e) => setAccount((p) => ({ ...p, email: e.target.value }))}
+                      placeholder="you@college.edu"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Password</label>
+                      <div className="relative">
+                        <input type={showPw ? "text" : "password"} value={account.password} onChange={(e) => setAccount((p) => ({ ...p, password: e.target.value }))}
+                          placeholder="Min 6 characters"
+                          className="w-full px-4 py-3 pr-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                        <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer">
+                          {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-
-                {step === 2 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex flex-col gap-4"
-                  >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input
-                        label="Leader Name"
-                        placeholder="John Doe"
-                        value={members[0].name}
-                        onChange={(e) => handleMemberChange(0, "name", e.target.value)}
-                        error={errors.leaderName}
-                      />
-                      <Input
-                        label="Leader Register Number"
-                        placeholder="e.g. 2022CSE0101"
-                        value={members[0].registerNumber}
-                        onChange={(e) => handleMemberChange(0, "registerNumber", e.target.value)}
-                        error={errors.leaderReg}
-                      />
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Confirm Password</label>
+                      <input type="password" value={account.confirm} onChange={(e) => setAccount((p) => ({ ...p, confirm: e.target.value }))}
+                        placeholder="Repeat password"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
                     </div>
+                  </div>
+                  <div className="flex items-start gap-2 text-xs text-gray-400 bg-gray-50 p-3 rounded-xl">
+                    <Lock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>Your email will be used to log in and receive hackathon notifications.</span>
+                  </div>
+                </motion.div>
+              )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input
-                        label="College Email Address"
-                        placeholder="john@college.edu"
-                        type="email"
-                        value={members[0].email}
-                        onChange={(e) => handleMemberChange(0, "email", e.target.value)}
-                        error={errors.leaderEmail}
-                      />
-                      <Input
-                        label="Phone Number"
-                        placeholder="10-digit number"
-                        type="tel"
-                        value={members[0].phone}
-                        onChange={(e) => handleMemberChange(0, "phone", e.target.value)}
-                        error={errors.leaderPhone}
-                      />
-                    </div>
+              {/* ─── STEP 2: Team ─── */}
+              {step === 2 && (
+                <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-5">
+                  <div>
+                    <h2 className="font-extrabold text-primary-dark text-xl mb-1">Set Up Your Team</h2>
+                    <p className="text-sm text-gray-400">Create a new team or join one with an existing code.</p>
+                  </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input
-                        label="Department"
-                        placeholder="e.g. Computer Science"
-                        value={members[0].department}
-                        onChange={(e) => handleMemberChange(0, "department", e.target.value)}
-                        error={errors.leaderDept}
-                      />
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-primary-dark">Year of Study</label>
-                        <select
-                          value={members[0].year}
-                          onChange={(e) => handleMemberChange(0, "year", e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-input-border text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green text-sm shadow-inner cursor-pointer"
-                        >
-                          {yearsList.map((y) => (
-                            <option key={y} value={y}>
-                              {y}
-                            </option>
-                          ))}
+                  <div className="flex gap-3">
+                    {(["create", "join"] as const).map((flow) => (
+                      <button key={flow} onClick={() => setTeamFlow(flow)}
+                        className={`flex-1 py-3 rounded-xl font-bold text-sm border-2 cursor-pointer transition-all capitalize ${teamFlow === flow ? "border-primary-green bg-emerald-50 text-primary-green" : "border-gray-200 text-gray-400 hover:border-gray-300"}`}
+                      >{flow === "create" ? "Create New Team" : "Join Existing Team"}</button>
+                    ))}
+                  </div>
+
+                  {teamFlow === "create" ? (
+                    <>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1.5">Team Name</label>
+                        <input type="text" value={teamName} onChange={(e) => setTeamName(e.target.value)}
+                          placeholder="e.g. Neural Knights"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1.5">Problem Statement Track</label>
+                        <select value={trackId} onChange={(e) => setTrackId(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer">
+                          <option value="">Select a track...</option>
+                          {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
                         </select>
                       </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1.5">Project Brief</label>
+                        <textarea rows={3} value={projectDescription} onChange={(e) => setProjectDescription(e.target.value)}
+                          placeholder="Briefly describe your AI project idea..."
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Team Join Code</label>
+                      <input type="text" value={joinCode} onChange={(e) => setJoinCode(e.target.value)}
+                        placeholder="e.g. NK-AI26-104"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 font-mono" />
+                      <p className="text-xs text-gray-400 mt-2">Ask your team leader for the Join Code from their Team Pass.</p>
                     </div>
+                  )}
+                </motion.div>
+              )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input
-                        label="Skills (Comma Separated)"
-                        placeholder="React, PyTorch, LangChain"
-                        value={skillsInputs[0]}
-                        onChange={(e) => {
-                          const updated = [...skillsInputs];
-                          updated[0] = e.target.value;
-                          setSkillsInputs(updated);
-                        }}
-                      />
-                      <Input
-                        label="GitHub Profile URL (Optional)"
-                        placeholder="github.com/username"
-                        value={members[0].github || ""}
-                        onChange={(e) => handleMemberChange(0, "github", e.target.value)}
-                      />
+              {/* ─── STEP 3: Members ─── */}
+              {step === 3 && (
+                <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="font-extrabold text-primary-dark text-xl mb-1">Add Members</h2>
+                      <p className="text-sm text-gray-400">Register all team members (2–4 people, including you).</p>
                     </div>
-                  </motion.div>
-                )}
+                    <button onClick={addMember} disabled={members.length >= 4}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 cursor-pointer transition-colors">
+                      <Plus className="h-3.5 w-3.5" /> Add Member
+                    </button>
+                  </div>
 
-                {step === 3 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex flex-col gap-8 max-h-[50vh] overflow-y-auto pr-2"
-                  >
-                    {Array.from({ length: teamSize - 1 }).map((_, i) => {
-                      const idx = i + 1;
-                      return (
-                        <div key={idx} className="flex flex-col gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0">
-                          <h4 className="text-xs font-bold text-primary-green uppercase tracking-wider flex items-center gap-1.5">
-                            <UserPlus className="h-4 w-4" /> Teammate {idx} Profile
-                          </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                              label="Full Name"
-                              placeholder={`Teammate ${idx} name`}
-                              value={members[idx].name}
-                              onChange={(e) => handleMemberChange(idx, "name", e.target.value)}
-                              error={errors[`member_${idx}_name`]}
-                            />
-                            <Input
-                              label="Register Number"
-                              placeholder="e.g. 2022CSE0112"
-                              value={members[idx].registerNumber}
-                              onChange={(e) => handleMemberChange(idx, "registerNumber", e.target.value)}
-                              error={errors[`member_${idx}_reg`]}
-                            />
+                  <div className="flex flex-col gap-5 max-h-[52vh] overflow-y-auto pr-1">
+                    {members.map((m, idx) => (
+                      <div key={idx} className={`rounded-2xl border p-4 space-y-3 ${idx === 0 ? "border-emerald-200 bg-emerald-50/40" : "border-gray-100 bg-white"}`}>
+                        <div className="flex items-center gap-2">
+                          <div className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold ${idx === 0 ? "bg-primary-green text-white" : "bg-gray-100 text-gray-500"}`}>
+                            {idx === 0 ? "L" : idx + 1}
                           </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                              label="Email Address"
-                              placeholder="teammate@college.edu"
-                              type="email"
-                              value={members[idx].email}
-                              onChange={(e) => handleMemberChange(idx, "email", e.target.value)}
-                              error={errors[`member_${idx}_email`]}
-                            />
-                            <Input
-                              label="Department"
-                              placeholder="e.g. Information Technology"
-                              value={members[idx].department}
-                              onChange={(e) => handleMemberChange(idx, "department", e.target.value)}
-                              error={errors[`member_${idx}_dept`]}
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-1.5">
-                              <label className="text-xs font-semibold text-primary-dark">Year of Study</label>
-                              <select
-                                value={members[idx].year}
-                                onChange={(e) => handleMemberChange(idx, "year", e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-input-border text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green text-sm shadow-inner cursor-pointer"
-                              >
-                                {yearsList.map((y) => (
-                                  <option key={y} value={y}>
-                                    {y}
-                                  </option>
-                                ))}
-                              </select>
+                          <span className="text-xs font-bold text-gray-600">{idx === 0 ? "Team Leader (You)" : `Member ${idx + 1}`}</span>
+                          {idx > 0 && (
+                            <button onClick={() => removeMember(idx)} className="ml-auto p-1 text-gray-300 hover:text-red-400 cursor-pointer"><X className="h-3.5 w-3.5" /></button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {[
+                            { label: "Full Name*", field: "name" as const, placeholder: "Full name" },
+                            { label: "Register Number*", field: "registerNumber" as const, placeholder: "2022CSE0101" },
+                            { label: "College Email*", field: "email" as const, placeholder: "name@college.edu" },
+                            { label: "Phone", field: "phone" as const, placeholder: "98765..." },
+                          ].map(({ label, field, placeholder }) => (
+                            <div key={field}>
+                              <label className="text-xs font-semibold text-gray-400 block mb-1">{label}</label>
+                              <input type="text" value={m[field] as string} onChange={(e) => updateMember(idx, field, e.target.value)}
+                                placeholder={placeholder} disabled={idx === 0 && (field === "name" || field === "email")}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/30 disabled:bg-gray-50 disabled:text-gray-500" />
                             </div>
-                            <Input
-                              label="Skills (Comma Separated)"
-                              placeholder="Node.js, OpenCV, SQL"
-                              value={skillsInputs[idx]}
-                              onChange={(e) => {
-                                const updated = [...skillsInputs];
-                                updated[idx] = e.target.value;
-                                setSkillsInputs(updated);
-                              }}
-                            />
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="text-xs font-semibold text-gray-400 block mb-1">Department</label>
+                            <select value={m.department} onChange={(e) => updateMember(idx, "department", e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer">
+                              {DEPT_OPTIONS.map((d) => <option key={d}>{d}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-gray-400 block mb-1">Year</label>
+                            <select value={m.year} onChange={(e) => updateMember(idx, "year", e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer">
+                              {YEAR_OPTIONS.map((y) => <option key={y}>{y}</option>)}
+                            </select>
                           </div>
                         </div>
-                      );
-                    })}
-                  </motion.div>
-                )}
-
-                {step === 4 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex flex-col gap-5 text-xs sm:text-sm text-gray-600"
-                  >
-                    <div className="rounded-2xl border border-input-border/30 bg-card-bg/20 p-5 flex flex-col gap-3">
-                      <h4 className="text-sm font-bold text-primary-dark uppercase tracking-wide flex items-center gap-2">
-                        <Users className="h-4.5 w-4.5 text-primary-green" /> Team Overview
-                      </h4>
-                      <p>
-                        <strong>Team Name:</strong> {teamName}
-                      </p>
-                      <p>
-                        <strong>Team Size:</strong> {teamSize} Members
-                      </p>
-                      <p className="leading-relaxed">
-                        <strong>Project Pitch:</strong> {projectDescription}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                      <h4 className="text-sm font-bold text-primary-dark uppercase tracking-wide flex items-center gap-2">
-                        <FileText className="h-4.5 w-4.5 text-primary-green" /> Team Roster
-                      </h4>
-                      <div className="grid grid-cols-1 gap-3 max-h-[220px] overflow-y-auto pr-1">
-                        {members.slice(0, teamSize).map((m, i) => (
-                          <div key={i} className="p-3 bg-white border border-gray-150 rounded-xl flex justify-between items-center">
-                            <div>
-                              <p className="font-extrabold text-primary-dark">
-                                {m.name} {i === 0 && <span className="text-[10px] bg-primary-green/10 text-primary-green px-1.5 py-0.5 rounded border border-primary-green/10 ml-1.5">Leader</span>}
-                              </p>
-                              <p className="text-[10px] text-gray-500">
-                                {m.registerNumber} | {m.department}
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{m.year}</span>
+                        <div>
+                          <label className="text-xs font-semibold text-gray-400 block mb-1">Skills</label>
+                          <div className="flex flex-wrap gap-1 mb-1.5">
+                            {m.skills.map((s) => (
+                              <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                {s}
+                                <button onClick={() => removeSkill(idx, s)} className="cursor-pointer"><X className="h-2.5 w-2.5" /></button>
+                              </span>
+                            ))}
                           </div>
-                        ))}
+                          <div className="flex gap-2">
+                            <input type="text" value={newSkills[idx] || ""} onChange={(e) => setNewSkills((prev) => prev.map((s, i) => i === idx ? e.target.value : s))}
+                              onKeyDown={(e) => { if (e.key === "Enter") { addSkill(idx); e.preventDefault(); } }}
+                              placeholder="Add skill + Enter"
+                              className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
 
-              {/* Navigation Actions */}
-              <div className="flex gap-4 mt-10 border-t border-gray-100 pt-6">
-                {step > 1 && (
-                  <button
-                    type="button"
-                    onClick={handlePrev}
-                    className="px-5 py-3 rounded-xl border border-input-border/50 text-primary-dark font-bold text-xs hover:bg-card-bg/25 transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <ArrowLeft className="h-4 w-4" /> Previous
-                  </button>
-                )}
-                {step < 4 ? (
-                  <Button type="button" onClick={handleNext} className="ml-auto gap-1.5">
-                    Next Step <ArrowRight className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button type="button" onClick={handleSubmit} isLoading={submitting} className="ml-auto gap-1.5">
-                    Submit Registration <ArrowRight className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </motion.div>
-          ) : (
-            /* Success Screen */
-            <motion.div
-              key="success-screen"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="rounded-3xl border border-input-border/30 bg-white p-8 sm:p-12 shadow-2xl text-center flex flex-col items-center gap-5 relative z-10"
-            >
-              <div className="h-16 w-16 rounded-full bg-card-bg text-primary-green flex items-center justify-center shadow-inner border border-input-border/30 animate-bounce-slow">
-                <CheckCircle2 className="h-10 w-10" />
-              </div>
-              <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-primary-dark">
-                Registration Confirmed!
-              </h2>
-              <div className="max-w-md text-xs sm:text-sm text-gray-500 leading-relaxed flex flex-col gap-3 font-semibold">
-                <p>
-                  Your registration form has been loaded into our system. An audit has been scheduled with the college registry.
-                </p>
-                <div className="p-4 rounded-2xl bg-card-bg border border-input-border/30 text-primary-dark mt-2">
-                  <p className="font-extrabold">Registered Team: {teamName}</p>
-                  <p className="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-widest">
-                    Status: PENDING AUDIT (Review on Admin Panel)
-                  </p>
-                </div>
-                <p className="text-[10px] text-gray-400 mt-2">
-                  You are now automatically authenticated as the team leader. Use the link below to enter your workspace sandbox.
-                </p>
-              </div>
-              <Button onClick={() => router.push("/dashboard")} className="mt-4 px-8 py-3.5 rounded-xl font-bold">
-                Go to Dashboard
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
+              {/* ─── STEP 4: Review & Submit ─── */}
+              {step === 4 && (
+                <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-5">
+                  <div>
+                    <h2 className="font-extrabold text-primary-dark text-xl mb-1">Review & Submit</h2>
+                    <p className="text-sm text-gray-400">Confirm your details before submitting for organizer approval.</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-100 p-5 space-y-4 bg-gray-50">
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Account</div>
+                      <div className="text-sm font-semibold text-primary-dark">{account.name}</div>
+                      <div className="text-sm text-gray-500">{account.email}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Team</div>
+                      <div className="text-sm font-semibold text-primary-dark">{teamName}</div>
+                      <div className="text-xs text-gray-400">{HACK_TRACKS.find((t) => t.id === trackId)?.label}</div>
+                      <div className="text-xs text-gray-500 mt-1">{projectDescription}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Members ({members.filter((m) => m.name).length})</div>
+                      {members.filter((m) => m.name).map((m, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0">
+                          <div className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-primary-green text-white" : "bg-gray-200 text-gray-500"}`}>{i === 0 ? "L" : i + 1}</div>
+                          <div><div className="text-sm font-semibold text-primary-dark">{m.name}</div><div className="text-xs text-gray-400">{m.department} · {m.year}</div></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 text-xs text-gray-400 bg-emerald-50 border border-emerald-100 p-3 rounded-xl">
+                    <CheckCircle className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                    <span>By submitting, you confirm all details are accurate. Your team will appear as <strong>Pending</strong> until an organizer approves it.</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Navigation Buttons */}
+            <div className="px-8 pb-8 flex gap-3">
+              {step > 1 && (
+                <button onClick={() => setStep(step - 1)}
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors">
+                  <ArrowLeft className="h-4 w-4" /> Back
+                </button>
+              )}
+              {step < 4 ? (
+                <button onClick={handleNext}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-green text-white text-sm font-bold hover:bg-primary-dark cursor-pointer transition-colors shadow-md">
+                  Continue <ArrowRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <button onClick={handleSubmit}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-green text-white text-sm font-bold hover:bg-primary-dark cursor-pointer transition-colors shadow-md">
+                  <Send className="h-4 w-4" /> Submit Registration
+                </button>
+              )}
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-gray-400 mt-4">
+            Already registered?{" "}
+            <button onClick={() => router.push("/login")} className="text-primary-green font-semibold hover:underline cursor-pointer">Log in here</button>
+          </p>
+        </div>
+      </section>
 
       <Footer />
     </PageWrapper>

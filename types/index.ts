@@ -10,6 +10,25 @@ export interface Participant {
   isLeader?: boolean;
 }
 
+export interface AttendanceRecord {
+  teamId: string;
+  checkedIn: boolean;
+  checkInTime?: string;
+  checkInBy?: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  teamId: string;
+  category: "Internet" | "Power" | "Mentor Needed" | "Hardware" | "Food" | "Venue" | "Other";
+  priority: "Low" | "Medium" | "High" | "Critical";
+  status: "Open" | "Assigned" | "Resolved" | "Closed";
+  raisedBy: string;
+  assignedTo?: string;
+  description: string;
+  createdAt: string;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -25,8 +44,25 @@ export interface Team {
   submitted?: boolean;
   submittedAt?: string;
   milestonesProgress?: { id: string; title: string; completed: boolean }[];
-  evaluations?: { innovation: number; feasibility: number; presentation: number; feedback: string; judgeEmail: string }[];
+  evaluations?: {
+    innovation: number;
+    feasibility: number;
+    presentation: number;
+    technicalDepth?: number;
+    aiUsage?: number;
+    feedback: string;
+    judgeEmail: string;
+  }[];
   mentorFeedbacks?: { author: string; feedback: string; date: string }[];
+  // v2 additions
+  qrToken?: string;
+  trackId?: string;
+  paymentVerified?: boolean;
+  facultyApproved?: boolean;
+  attendance?: AttendanceRecord;
+  supportTickets?: SupportTicket[];
+  ideaSubmitted?: boolean;
+  shortlisted?: boolean;
 }
 
 export interface Milestone {
@@ -45,6 +81,17 @@ export interface Announcement {
   date: string;
 }
 
+export interface Notification {
+  id: string;
+  type: "approval" | "deadline" | "mentor" | "judge" | "action" | "system";
+  title: string;
+  body: string;
+  read: boolean;
+  priority: "normal" | "high";
+  createdAt: string;
+  relatedTeamId?: string;
+}
+
 export interface FAQItem {
   id: string;
   question: string;
@@ -56,5 +103,12 @@ export interface UserSession {
   isLoggedIn: boolean;
   role: "participant" | "admin" | "judge" | "mentor" | "organizer" | null;
   email: string | null;
+  name?: string | null;
   teamId?: string | null;
+}
+
+export interface HackTrack {
+  id: string;
+  label: string;
+  color: string;
 }

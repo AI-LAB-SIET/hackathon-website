@@ -1,4 +1,13 @@
-import { FAQItem, Milestone, Announcement, Team } from "@/types";
+import { FAQItem, Milestone, Announcement, Team, Notification, HackTrack } from "@/types";
+
+export const HACK_TRACKS: HackTrack[] = [
+  { id: "gen-ai", label: "Generative AI & LLMs", color: "emerald" },
+  { id: "healthcare", label: "AI in Healthcare", color: "blue" },
+  { id: "smart-campus", label: "Smart Campus", color: "amber" },
+  { id: "decentralized", label: "Decentralized AI Agents", color: "purple" },
+  { id: "cybersecurity", label: "Cybersecurity AI", color: "red" },
+  { id: "iot", label: "IoT & Edge AI", color: "teal" },
+];
 
 export const INITIAL_FAQS: FAQItem[] = [
   {
@@ -95,6 +104,86 @@ export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   },
 ];
 
+export const INITIAL_NOTIFICATIONS: Notification[] = [
+  {
+    id: "notif-1",
+    type: "approval",
+    title: "Team Registration Approved",
+    body: "Your team Neural Knights has been approved by the organizers. You can now access all platform features.",
+    read: false,
+    priority: "high",
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    relatedTeamId: "team-1",
+  },
+  {
+    id: "notif-2",
+    type: "judge",
+    title: "New Evaluation Received",
+    body: "Judge has submitted an evaluation for your project. Innovation: 8/10. Check the Project tab for full feedback.",
+    read: false,
+    priority: "normal",
+    createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+    relatedTeamId: "team-1",
+  },
+  {
+    id: "notif-3",
+    type: "mentor",
+    title: "Mentor Feedback",
+    body: "Dr. A. Rajesh left feedback on your project: Ensure safety checks on RAG database context limits.",
+    read: false,
+    priority: "normal",
+    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    relatedTeamId: "team-1",
+  },
+  {
+    id: "notif-4",
+    type: "deadline",
+    title: "Idea Submission Deadline — 5 Days",
+    body: "Your idea abstract is due on July 5, 2026 at 11:59 PM. Submit your 2-page PDF from the Project tab.",
+    read: true,
+    priority: "high",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+  },
+  {
+    id: "notif-5",
+    type: "action",
+    title: "Payment Verification Pending",
+    body: "Your team registration fee payment has not been verified. Contact the organizers with payment proof.",
+    read: true,
+    priority: "high",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+    relatedTeamId: "team-1",
+  },
+  {
+    id: "notif-6",
+    type: "system",
+    title: "Platform Maintenance — Tonight 11 PM",
+    body: "The platform will undergo scheduled maintenance tonight from 11 PM to 1 AM. Save your work before then.",
+    read: true,
+    priority: "normal",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+  },
+  {
+    id: "notif-7",
+    type: "system",
+    title: "GPU Credits Unlocked",
+    body: "₹5,000 in Nebius GPU credits have been credited to your team account. Access from the Project tab.",
+    read: true,
+    priority: "normal",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    relatedTeamId: "team-1",
+  },
+  {
+    id: "notif-8",
+    type: "deadline",
+    title: "Member Details Verification — July 2",
+    body: "All member register numbers will be cross-verified with college records on July 2. Ensure accuracy.",
+    read: true,
+    priority: "normal",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+  },
+];
+
 export const INITIAL_TEAMS: Team[] = [
   {
     id: "team-1",
@@ -103,6 +192,19 @@ export const INITIAL_TEAMS: Team[] = [
     status: "APPROVED",
     createdAt: "2026-06-25T14:32:00.000Z",
     projectDescription: "Developing a real-time localized RAG system for campus academic advisory.",
+    qrToken: "NK-AI26-104-SEC7F3A",
+    trackId: "gen-ai",
+    paymentVerified: false,
+    facultyApproved: true,
+    ideaSubmitted: false,
+    shortlisted: false,
+    githubUrl: "https://github.com/abhishek-sharma/advisory-rag",
+    videoUrl: "https://youtube.com/watch?v=advisory-rag-demo",
+    demoUrl: "https://advisory-rag.siet.edu",
+    aiDisclosure: "We used Claude 3.5 Sonnet for drafting system models.",
+    submitted: true,
+    submittedAt: new Date().toISOString(),
+    attendance: { teamId: "team-1", checkedIn: false },
     members: [
       {
         name: "Abhishek Sharma",
@@ -135,6 +237,28 @@ export const INITIAL_TEAMS: Team[] = [
         skills: ["PyTorch", "Data Science", "PostgreSQL"],
       },
     ],
+    milestonesProgress: [
+      { id: "ms-1", title: "Ideation & Design Diagram", completed: true },
+      { id: "ms-2", title: "Database & API Schema Setup", completed: true },
+      { id: "ms-3", title: "Core ML/AI Model Integration", completed: true },
+      { id: "ms-4", title: "Frontend Dashboard Integration", completed: false },
+      { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
+    ],
+    evaluations: [
+      {
+        innovation: 8,
+        feasibility: 9,
+        presentation: 8,
+        technicalDepth: 8,
+        aiUsage: 9,
+        feedback: "Great localized RAG system, UI is highly responsive.",
+        judgeEmail: "judge@college.edu",
+      },
+    ],
+    mentorFeedbacks: [
+      { author: "Dr. A. Rajesh", feedback: "Ensure safety checks on RAG database context limits.", date: "2 hours ago" },
+    ],
+    supportTickets: [],
   },
   {
     id: "team-2",
@@ -143,6 +267,13 @@ export const INITIAL_TEAMS: Team[] = [
     status: "PENDING",
     createdAt: "2026-06-26T09:15:00.000Z",
     projectDescription: "AI-powered computer vision system detecting safety violations in student labs.",
+    qrToken: "VM-AI26-105-SEC8B2C",
+    trackId: "smart-campus",
+    paymentVerified: true,
+    facultyApproved: false,
+    ideaSubmitted: false,
+    shortlisted: false,
+    attendance: { teamId: "team-2", checkedIn: false },
     members: [
       {
         name: "Siddharth Sen",
@@ -165,6 +296,16 @@ export const INITIAL_TEAMS: Team[] = [
         skills: ["React Native", "TailwindCSS", "Framer Motion"],
       },
     ],
+    milestonesProgress: [
+      { id: "ms-1", title: "Ideation & Design Diagram", completed: true },
+      { id: "ms-2", title: "Database & API Schema Setup", completed: false },
+      { id: "ms-3", title: "Core ML/AI Model Integration", completed: false },
+      { id: "ms-4", title: "Frontend Dashboard Integration", completed: false },
+      { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
+    ],
+    evaluations: [],
+    mentorFeedbacks: [],
+    supportTickets: [],
   },
   {
     id: "team-3",
@@ -173,6 +314,13 @@ export const INITIAL_TEAMS: Team[] = [
     status: "PENDING",
     createdAt: "2026-06-26T10:45:00.000Z",
     projectDescription: "Intrusion detection dashboard using federated learning across campus nodes.",
+    qrToken: "CS-AI26-106-SECD9E1",
+    trackId: "cybersecurity",
+    paymentVerified: false,
+    facultyApproved: false,
+    ideaSubmitted: false,
+    shortlisted: false,
+    attendance: { teamId: "team-3", checkedIn: false },
     members: [
       {
         name: "Vikram Malhotra",
@@ -213,6 +361,16 @@ export const INITIAL_TEAMS: Team[] = [
         skills: ["Python", "SQL", "Tableau"],
       },
     ],
+    milestonesProgress: [
+      { id: "ms-1", title: "Ideation & Design Diagram", completed: true },
+      { id: "ms-2", title: "Database & API Schema Setup", completed: false },
+      { id: "ms-3", title: "Core ML/AI Model Integration", completed: false },
+      { id: "ms-4", title: "Frontend Dashboard Integration", completed: false },
+      { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
+    ],
+    evaluations: [],
+    mentorFeedbacks: [],
+    supportTickets: [],
   },
   {
     id: "team-4",
@@ -221,6 +379,13 @@ export const INITIAL_TEAMS: Team[] = [
     status: "REJECTED",
     createdAt: "2026-06-24T08:12:00.000Z",
     projectDescription: "Predicting molecular docking combinations for pharmaceutical chemistry laboratory datasets.",
+    qrToken: "BA-AI26-107-SECA5F2",
+    trackId: "healthcare",
+    paymentVerified: true,
+    facultyApproved: true,
+    ideaSubmitted: true,
+    shortlisted: false,
+    attendance: { teamId: "team-4", checkedIn: false },
     members: [
       {
         name: "Amit Banerjee",
@@ -243,5 +408,15 @@ export const INITIAL_TEAMS: Team[] = [
         skills: ["Python", "Scikit-Learn", "FastAPI"],
       },
     ],
+    milestonesProgress: [
+      { id: "ms-1", title: "Ideation & Design Diagram", completed: true },
+      { id: "ms-2", title: "Database & API Schema Setup", completed: true },
+      { id: "ms-3", title: "Core ML/AI Model Integration", completed: false },
+      { id: "ms-4", title: "Frontend Dashboard Integration", completed: false },
+      { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
+    ],
+    evaluations: [],
+    mentorFeedbacks: [],
+    supportTickets: [],
   },
 ];
