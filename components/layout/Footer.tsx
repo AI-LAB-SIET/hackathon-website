@@ -65,7 +65,7 @@ export function Footer() {
             <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider">Event Navigator</h4>
             <div className="flex flex-col gap-2">
               {[
-                { name: "About Us", href: "/about-us" },
+                { name: "About Hackathon", href: "/about" },
                 { name: "Event Timeline", href: "/timeline" },
                 { name: "Rules & Guidelines", href: "/rules" },
                 { name: "Register Team", href: "/register" },
