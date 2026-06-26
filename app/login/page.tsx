@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
@@ -13,6 +12,8 @@ import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { ShieldCheck, Mail, Lock } from "lucide-react";
 
+type RoleType = "participant" | "admin" | "judge" | "mentor" | "organizer";
+
 export default function Login() {
   const router = useRouter();
   const { session, login } = useAppState();
@@ -20,21 +21,41 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"participant" | "admin">("participant");
+  const [role, setRole] = useState<RoleType>("participant");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // If already logged in, redirect to dashboard
+  // If already logged in, redirect to the correct workspace
   useEffect(() => {
     if (session.isLoggedIn) {
-      if (session.role === "admin") {
-        router.push("/admin");
-      } else {
-        router.push("/dashboard");
+      switch (session.role) {
+        case "admin":
+          router.push("/admin");
+          break;
+        case "judge":
+          router.push("/judge");
+          break;
+        case "mentor":
+          router.push("/mentor");
+          break;
+        case "organizer":
+          router.push("/organizer");
+          break;
+        case "participant":
+        default:
+          router.push("/dashboard");
+          break;
       }
     }
   }, [session, router]);
+
+  const handleRoleQuickFill = (selectedRole: RoleType, selectedEmail: string) => {
+    setRole(selectedRole);
+    setEmail(selectedEmail);
+    setPassword("password123");
+    setError("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,15 +73,38 @@ export default function Login() {
       setSubmitting(false);
 
       if (success) {
-        toast(`Welcome back! Logged in as ${role === "admin" ? "Admin" : "Participant"}.`, "success");
-        if (role === "admin") {
-          router.push("/admin");
-        } else {
-          router.push("/dashboard");
+        toast(`Welcome back! Logged in as ${role.toUpperCase()}.`, "success");
+        switch (role) {
+          case "admin":
+            router.push("/admin");
+            break;
+          case "judge":
+            router.push("/judge");
+            break;
+          case "mentor":
+            router.push("/mentor");
+            break;
+          case "organizer":
+            router.push("/organizer");
+            break;
+          case "participant":
+          default:
+            router.push("/dashboard");
+            break;
         }
       } else {
         toast("Invalid credentials or unregistered account.", "error");
-        setError("Account not found. For testing, use: admin@college.edu (Admin) or abhishek@college.edu / sid@college.edu (Participant).");
+        setError(`Account not found. For ${role.toUpperCase()}, use: ${
+          role === "admin"
+            ? "admin@college.edu"
+            : role === "judge"
+            ? "judge@college.edu"
+            : role === "mentor"
+            ? "mentor@college.edu"
+            : role === "organizer"
+            ? "organizer@college.edu"
+            : "abhishek@college.edu"
+        }`);
       }
     }, 1200);
   };
@@ -88,46 +132,43 @@ export default function Login() {
               Access Workspace
             </h2>
             <p className="text-xs text-gray-500 max-w-xs font-semibold leading-relaxed">
-              Login to inspect team details, modify member entries, or review pending approvals.
+              Login to inspect team details, evaluate code, or manage the hackathon timeline.
             </p>
           </div>
 
-          {/* Toggle Role Tab */}
-          <div className="flex bg-card-bg/50 p-1.5 rounded-xl border border-input-border/10 mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                setRole("participant");
-                setError("");
-              }}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                role === "participant"
-                  ? "bg-primary-green text-white shadow-sm"
-                  : "text-gray-600 hover:text-primary-dark"
-              }`}
-            >
-              Participant Account
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRole("admin");
-                setError("");
-              }}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                role === "admin"
-                  ? "bg-primary-green text-white shadow-sm"
-                  : "text-gray-600 hover:text-primary-dark"
-              }`}
-            >
-              System Admin
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {/* Custom Role Selector Dropdown */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-primary-dark">Select Workspace Portal</label>
+              <select
+                value={role}
+                onChange={(e) => {
+                  setRole(e.target.value as RoleType);
+                  setError("");
+                }}
+                className="w-full px-4 py-3 rounded-xl border border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green focus:outline-none transition-all duration-200 text-sm font-semibold bg-white text-gray-800 cursor-pointer"
+              >
+                <option value="participant">Participant Workspace</option>
+                <option value="judge">Judge Evaluation Portal</option>
+                <option value="mentor">Mentor Feedback Desk</option>
+                <option value="organizer">Organizer Audit Control</option>
+                <option value="admin">System Administration</option>
+              </select>
+            </div>
+
             <Input
               label="Account Email ID"
-              placeholder={role === "admin" ? "admin@college.edu" : "email@college.edu"}
+              placeholder={
+                role === "admin"
+                  ? "admin@college.edu"
+                  : role === "judge"
+                  ? "judge@college.edu"
+                  : role === "mentor"
+                  ? "mentor@college.edu"
+                  : role === "organizer"
+                  ? "organizer@college.edu"
+                  : "abhishek@college.edu"
+              }
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -170,22 +211,35 @@ export default function Login() {
             </div>
 
             <Button type="submit" isLoading={submitting} className="w-full py-3.5 mt-2">
-              Log In to Dashboard
+              Log In to Workspace
             </Button>
           </form>
 
           {/* Quick Info Box for Portfolio Evaluators */}
-          <div className="mt-8 p-4 rounded-2xl bg-card-bg/40 border border-input-border/20 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-primary-green mb-1.5 flex items-center justify-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 shrink-0" /> Evaluator Quick Login
+          <div className="mt-8 p-4 rounded-2xl bg-card-bg/40 border border-input-border/20">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-primary-green mb-2.5 flex items-center justify-center gap-1.5 border-b border-input-border/10 pb-1.5">
+              <ShieldCheck className="h-4 w-4 shrink-0" /> Evaluator Quick Login List
             </p>
-            <div className="text-[10px] text-gray-500 flex flex-col gap-1">
-              <p>
-                <strong>Admin:</strong> admin@college.edu | <em>Any password</em>
-              </p>
-              <p>
-                <strong>Student:</strong> abhishek@college.edu | <em>Any password</em>
-              </p>
+            <div className="text-[10px] text-gray-600 flex flex-col gap-2">
+              {[
+                { roleName: "Participant", r: "participant" as const, email: "abhishek@college.edu" },
+                { roleName: "Judge", r: "judge" as const, email: "judge@college.edu" },
+                { roleName: "Mentor", r: "mentor" as const, email: "mentor@college.edu" },
+                { roleName: "Organizer", r: "organizer" as const, email: "organizer@college.edu" },
+                { roleName: "Admin", r: "admin" as const, email: "admin@college.edu" },
+              ].map((item, index) => (
+                <div key={index} className="flex justify-between items-center bg-white/60 p-1.5 rounded-lg border border-gray-150/40">
+                  <span className="font-bold text-gray-800">{item.roleName}:</span>
+                  <span className="text-gray-500 font-mono text-[9px]">{item.email}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRoleQuickFill(item.r, item.email)}
+                    className="text-[9px] px-2 py-0.5 rounded bg-emerald-50 text-primary-green border border-primary-green/20 hover:bg-primary-green hover:text-white transition-all font-bold cursor-pointer"
+                  >
+                    Quick Autofill
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>

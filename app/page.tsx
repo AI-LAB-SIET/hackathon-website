@@ -135,7 +135,7 @@ export default function Home() {
                     Register Your Team
                   </Link>
                   <Link
-                    href="/about"
+                    href="/hackathon"
                     className="w-full sm:w-auto text-center px-8 py-3.5 rounded-xl bg-card-bg text-primary-dark border border-input-border/30 font-bold text-sm hover:bg-emerald-100/50 transition-all flex items-center justify-center gap-1.5"
                   >
                     Learn More <ChevronRight className="h-4 w-4" />

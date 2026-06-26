@@ -65,10 +65,10 @@ export function Footer() {
             <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider">Event Navigator</h4>
             <div className="flex flex-col gap-2">
               {[
-                { name: "About Hackathon", href: "/about" },
-                { name: "Event Timeline", href: "/timeline" },
-                { name: "Rules & Guidelines", href: "/rules" },
-                { name: "Register Team", href: "/register" },
+                { name: "Overview", href: "/" },
+                { name: "Hackathon Details", href: "/hackathon" },
+                { name: "Resources Hub", href: "/resources" },
+                { name: "Contact & Support", href: "/contact" },
               ].map((link, idx) => (
                 <Link
                   key={idx}

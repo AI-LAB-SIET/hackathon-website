@@ -17,10 +17,9 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: "Home", href: "/" },
-    { name: "About", href: "/about" },
-    { name: "Timeline", href: "/timeline" },
-    { name: "Rules", href: "/rules" },
+    { name: "Overview", href: "/" },
+    { name: "Hackathon", href: "/hackathon" },
+    { name: "Resources", href: "/resources" },
     { name: "Contact", href: "/contact" },
   ];
 
@@ -80,7 +79,17 @@ export function Navbar() {
             {session.isLoggedIn ? (
               <>
                 <Link
-                  href={session.role === "admin" ? "/admin" : "/dashboard"}
+                  href={
+                    session.role === "admin"
+                      ? "/admin"
+                      : session.role === "judge"
+                      ? "/judge"
+                      : session.role === "mentor"
+                      ? "/mentor"
+                      : session.role === "organizer"
+                      ? "/organizer"
+                      : "/dashboard"
+                  }
                   className="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-card-bg border border-input-border/30 text-primary-dark hover:bg-emerald-100/50 transition-colors"
                 >
                   {session.role === "admin" ? (
@@ -88,7 +97,15 @@ export function Navbar() {
                   ) : (
                     <User className="h-4 w-4 text-primary-green" />
                   )}
-                  {session.role === "admin" ? "Admin Panel" : "My Dashboard"}
+                  {session.role === "admin"
+                    ? "Admin Panel"
+                    : session.role === "judge"
+                    ? "Judge Portal"
+                    : session.role === "mentor"
+                    ? "Mentor Portal"
+                    : session.role === "organizer"
+                    ? "Organizer Portal"
+                    : "My Dashboard"}
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -165,12 +182,30 @@ export function Navbar() {
                 {session.isLoggedIn ? (
                   <>
                     <Link
-                      href={session.role === "admin" ? "/admin" : "/dashboard"}
+                      href={
+                        session.role === "admin"
+                          ? "/admin"
+                          : session.role === "judge"
+                          ? "/judge"
+                          : session.role === "mentor"
+                          ? "/mentor"
+                          : session.role === "organizer"
+                          ? "/organizer"
+                          : "/dashboard"
+                      }
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-card-bg text-primary-dark font-bold text-sm border border-input-border/30"
                     >
                       {session.role === "admin" ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                      {session.role === "admin" ? "Admin Console" : "My Dashboard"}
+                      {session.role === "admin"
+                        ? "Admin Console"
+                        : session.role === "judge"
+                        ? "Judge Portal"
+                        : session.role === "mentor"
+                        ? "Mentor Portal"
+                        : session.role === "organizer"
+                        ? "Organizer Portal"
+                        : "My Dashboard"}
                     </Link>
                     <button
                       onClick={handleLogout}
