@@ -6,7 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "@/components/ui/modal";
-import { datasets } from "@/lib/resources";
+
 import {
   Info,
   MapPin,
@@ -16,18 +16,15 @@ import {
   Award,
   HelpCircle,
   BookOpen,
-  Database,
-  ExternalLink,
 } from "lucide-react";
 
-type TabType = "overview" | "tracks" | "timeline" | "rules" | "datasets" | "faq";
+type TabType = "overview" | "tracks" | "timeline" | "rules" | "faq";
 
 const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <Info className="h-4 w-4" /> },
   { id: "tracks", label: "Tracks", icon: <Layers className="h-4 w-4" /> },
   { id: "timeline", label: "Schedule", icon: <Calendar className="h-4 w-4" /> },
   { id: "rules", label: "Guidelines", icon: <ShieldAlert className="h-4 w-4" /> },
-  { id: "datasets", label: "Datasets", icon: <Database className="h-4 w-4" /> },
   { id: "faq", label: "FAQ", icon: <HelpCircle className="h-4 w-4" /> },
 ];
 
@@ -318,55 +315,6 @@ export default function HackathonPage() {
                       <span className="h-5 w-5 rounded-full bg-primary-green text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">✓</span>
                       <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold">{rule}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* DATASETS TAB */}
-            {activeTab === "datasets" && (
-              <div>
-                <div className="text-center mb-10 flex flex-col items-center gap-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight">Curated Datasets</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg">Curated open datasets across all hackathon tracks. Download, stream, or query directly in your notebooks.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
-                  {datasets.map((item, i) => (
-                    <motion.a
-                      key={item.title}
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.06, duration: 0.35 }}
-                      className="group flex flex-col gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300 cursor-pointer"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-primary-dark text-base leading-tight group-hover:text-primary-green transition-colors">
-                          {item.title}
-                        </h3>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {item.badge && (
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${item.badgeColor}`}>
-                              {item.badge}
-                            </span>
-                          )}
-                          <ExternalLink className="h-4 w-4 text-gray-300 group-hover:text-primary-green transition-colors" />
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-500 leading-relaxed flex-1">{item.description}</p>
-                      <div className="flex flex-wrap gap-1.5 mt-auto">
-                        {item.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </motion.a>
                   ))}
                 </div>
               </div>

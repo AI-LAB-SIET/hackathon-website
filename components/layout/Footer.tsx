@@ -67,7 +67,6 @@ export function Footer() {
               {[
                 { name: "Overview", href: "/" },
                 { name: "Hackathon Details", href: "/hackathon" },
-                { name: "Resources Hub", href: "/resources" },
                 { name: "Contact & Support", href: "/contact" },
               ].map((link, idx) => (
                 <Link
@@ -77,27 +76,6 @@ export function Footer() {
                 >
                   {link.name}
                 </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Resources Col */}
-          <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider">Resources</h4>
-            <div className="flex flex-col gap-2">
-              {[
-                { name: "College AI Portal", href: "#" },
-                { name: "Idea Slide Deck Template", href: "#" },
-                { name: "API Documentation", href: "#" },
-                { name: "FAQ Support", href: "/#faq" },
-              ].map((link, idx) => (
-                <a
-                  key={idx}
-                  href={link.href}
-                  className="text-xs text-gray-500 hover:text-primary-green hover:translate-x-1 transition-all duration-200"
-                >
-                  {link.name}
-                </a>
               ))}
             </div>
           </div>
@@ -130,12 +108,8 @@ export function Footer() {
         {/* Bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] sm:text-xs text-gray-400">
-            &copy; {currentYear} SIET AI Lab. All rights reserved. Designed for portfolios.
+            &copy; {currentYear} SIET AI Lab. All rights reserved.
           </p>
-          <div className="flex gap-6 text-[10px] sm:text-xs text-gray-400">
-            <a href="#" className="hover:text-primary-green transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-primary-green transition-colors">Terms of Service</a>
-          </div>
         </div>
       </div>
     </footer>

@@ -141,7 +141,7 @@ export default function Home() {
               We guide you from standard idea abstracts to functional deployment. Shortlisted groups will undergo structured developer clinics and live test reviews.
             </p>
             <Link
-              href="/timeline"
+              href="/hackathon"
               className="inline-flex items-center gap-1 text-xs font-bold text-primary-green hover:text-primary-dark transition-colors mt-2"
             >
               Explore interactive timeline <ExternalLink className="h-4 w-4" />
