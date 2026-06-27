@@ -378,17 +378,17 @@ export default function OrganizerDashboard() {
                   </div>
                   <div className="flex flex-wrap gap-2 ml-auto">
                     <select value={trackFilter} onChange={(e) => setTrackFilter(e.target.value)}
-                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none">
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
                       <option value="all">All Tracks</option>
                       {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
                     </select>
                     <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}
-                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none">
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
                       <option value="all">All Departments</option>
                       {departments.map((d) => <option key={d} value={d}>{d.split("&")[0].trim()}</option>)}
                     </select>
                     <select value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}
-                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none">
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
                       <option value="all">Any Size</option>
                       <option value="2">2 Members</option>
                       <option value="3">3 Members</option>
@@ -453,7 +453,7 @@ export default function OrganizerDashboard() {
             {activeTab === "volunteers" && (
               <motion.div key="volunteers" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-extrabold text-primary-dark text-xl">Volunteers ({volunteers.length})</h2>
+                  <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Volunteers ({volunteers.length})</h2>
                   <button onClick={() => openVolunteerModal()}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer"
                   ><UserPlus className="h-4 w-4" /> Add Volunteer</button>
@@ -488,7 +488,7 @@ export default function OrganizerDashboard() {
             {/* ─── TICKETS ─── */}
             {activeTab === "tickets" && (
               <motion.div key="tickets" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Support Tickets</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Support Tickets</h2>
 
                 {/* Status Filters */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-2 dark:bg-gray-900 dark:border-gray-700">
@@ -563,7 +563,7 @@ export default function OrganizerDashboard() {
             {/* ─── PROFILE ─── */}
             {activeTab === "profile" && (
               <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Profile & Settings</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Profile & Settings</h2>
                 <div className="flex gap-2 flex-wrap">
                   {(["edit", "appearance"] as const).map((t) => (
                     <button key={t} onClick={() => setProfileTab(t)}
@@ -641,13 +641,13 @@ export default function OrganizerDashboard() {
             {selectedTeam && (
               <div className="space-y-5">
                 {/* Team Header */}
-                <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
                   <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
                     {selectedTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-extrabold text-primary-dark text-lg">{selectedTeam.name}</div>
-                    <div className="text-xs text-gray-400">
+                    <div className="font-extrabold text-primary-dark text-lg dark:text-gray-100">{selectedTeam.name}</div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500">
                       {HACK_TRACKS.find((tr) => tr.id === selectedTeam.trackId)?.label || "—"} · {selectedTeam.size} members
                     </div>
                   </div>
@@ -657,39 +657,39 @@ export default function OrganizerDashboard() {
                 </div>
 
                 {/* Team Info */}
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <div className="text-[11px] text-gray-400 font-semibold uppercase">Created</div>
-                    <div className="text-primary-dark font-semibold">{new Date(selectedTeam.createdAt).toLocaleDateString()}</div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold uppercase">Created</div>
+                    <div className="text-primary-dark dark:text-gray-100 font-semibold">{new Date(selectedTeam.createdAt).toLocaleDateString()}</div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <div className="text-[11px] text-gray-400 font-semibold uppercase">QR Token</div>
-                    <div className="text-primary-dark font-semibold font-mono text-xs">{selectedTeam.qrToken || "—"}</div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold uppercase">QR Token</div>
+                    <div className="text-primary-dark dark:text-gray-100 font-semibold font-mono text-xs">{selectedTeam.qrToken || "—"}</div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <div className="text-[11px] text-gray-400 font-semibold uppercase">Payment</div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold uppercase">Payment</div>
                     <div className={`font-semibold ${selectedTeam.paymentVerified ? "text-emerald-600" : "text-gray-500"}`}>{selectedTeam.paymentVerified ? "Verified" : "Pending"}</div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <div className="text-[11px] text-gray-400 font-semibold uppercase">Faculty Approval</div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold uppercase">Faculty Approval</div>
                     <div className={`font-semibold ${selectedTeam.facultyApproved ? "text-emerald-600" : "text-gray-500"}`}>{selectedTeam.facultyApproved ? "Approved" : "Pending"}</div>
                   </div>
                 </div>
 
                 {/* Members */}
                 <div>
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Members</div>
+                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Members</div>
                   <div className="flex flex-col gap-2">
                     {selectedTeam.members.map((m) => (
-                      <div key={m.email} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                      <div key={m.email} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
                         <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
                           {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-primary-dark">{m.name} {m.isLeader && <span className="text-[10px] text-amber-600 font-bold">(Leader)</span>}</div>
-                          <div className="text-[11px] text-gray-400 truncate">{m.email} · {m.department} · {m.year}</div>
+                          <div className="text-sm font-semibold text-primary-dark dark:text-gray-100">{m.name} {m.isLeader && <span className="text-[10px] text-amber-600 font-bold">(Leader)</span>}</div>
+                          <div className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{m.email} · {m.department} · {m.year}</div>
                         </div>
-                        <div className="flex items-center gap-1 text-gray-400">
+                        <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500">
                           <Mail className="h-3 w-3" />
                           <Phone className="h-3 w-3" />
                         </div>
@@ -700,7 +700,7 @@ export default function OrganizerDashboard() {
 
                 {/* Registration Progress */}
                 <div>
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Registration Progress</div>
+                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Registration Progress</div>
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { label: "Team Created", done: true },
@@ -719,8 +719,8 @@ export default function OrganizerDashboard() {
                 {/* Project Info */}
                 {selectedTeam.projectDescription && (
                   <div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Project</div>
-                    <p className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3">{selectedTeam.projectDescription}</p>
+                    <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Project</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-xl p-3">{selectedTeam.projectDescription}</p>
                     <div className="flex gap-3 mt-2 text-xs">
                       {selectedTeam.githubUrl && <a href={selectedTeam.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline"><Github className="h-3 w-3" /> GitHub</a>}
                       {selectedTeam.demoUrl && <a href={selectedTeam.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-500 hover:underline"><Globe className="h-3 w-3" /> Demo</a>}
@@ -731,19 +731,19 @@ export default function OrganizerDashboard() {
 
                 {/* Approval Controls */}
                 {selectedTeam.status === "PENDING" && (
-                  <div className="pt-4 border-t border-gray-100 space-y-3">
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">Approval Action</div>
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
+                    <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Approval Action</div>
                     <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
                       placeholder="Rejection reason (optional)..."
                       rows={2}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200" />
                     <div className="flex gap-3">
                       <button onClick={() => handleApprove(selectedTeam.id, selectedTeam.name)}
                         className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 cursor-pointer flex items-center justify-center gap-1">
                         <CheckCircle className="h-4 w-4" /> Approve Team
                       </button>
                       <button onClick={() => handleReject(selectedTeam.id, selectedTeam.name)}
-                        className="flex-1 py-2.5 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 cursor-pointer flex items-center justify-center gap-1 border border-red-200">
+                        className="flex-1 py-2.5 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 cursor-pointer flex items-center justify-center gap-1 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50">
                         <XCircle className="h-4 w-4" /> Reject Team
                       </button>
                     </div>

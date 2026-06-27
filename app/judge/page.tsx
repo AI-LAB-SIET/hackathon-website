@@ -256,21 +256,21 @@ export default function JudgeDashboard() {
                   <div className="relative flex-1 min-w-48">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search teams..."
-                      className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                      className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
                   </div>
                   <select value={trackFilter} onChange={(e) => setTrackFilter(e.target.value)}
-                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
                     <option value="all">All Tracks</option>
                     {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
                   </select>
                   <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
                     <option value="all">All Status</option>
                     <option value="pending">Pending</option>
                     <option value="reviewed">Reviewed</option>
                   </select>
                   <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}
-                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
                     <option value="all">All Departments</option>
                     {departments.map((d) => <option key={d} value={d}>{d.split("&")[0].trim()}</option>)}
                   </select>
@@ -292,7 +292,7 @@ export default function JudgeDashboard() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-primary-dark dark:text-gray-100">{team.name}</div>
-                            <div className="text-xs text-gray-400">{track?.label || "—"} · {team.members.length} members</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">{track?.label || "—"} · {team.members.length} members</div>
                           </div>
                           <span className={`text-xs font-bold px-2 py-1 rounded-full ${reviewed ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                             {reviewed ? "Reviewed" : "Pending"}
@@ -304,13 +304,13 @@ export default function JudgeDashboard() {
                         {reviewed && teamAvgScore !== null && (
                           <div className="flex items-center gap-2">
                             <Star className="h-4 w-4 text-amber-400" />
-                            <span className="text-sm font-bold text-gray-700">Your Score: {teamAvgScore}/10</span>
+                            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Your Score: {teamAvgScore}/10</span>
                           </div>
                         )}
 
                         <div className="flex gap-2">
                           <button onClick={() => setSelectedTeam(team)}
-                            className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors cursor-pointer inline-flex items-center justify-center gap-1">
+                            className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors cursor-pointer inline-flex items-center justify-center gap-1 dark:border-gray-700 dark:text-gray-300">
                             <Eye className="h-3.5 w-3.5" /> View Details
                           </button>
                           <button onClick={() => openEvalModal(team)}
@@ -329,7 +329,7 @@ export default function JudgeDashboard() {
             {/* ─── PROFILE ─── */}
             {activeTab === "profile" && (
               <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Profile & Settings</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Profile & Settings</h2>
                 <div className="flex gap-2 flex-wrap">
                   {(["edit", "appearance"] as const).map((t) => (
                     <button key={t} onClick={() => setProfileTab(t)}
@@ -501,7 +501,7 @@ export default function JudgeDashboard() {
                 {/* Actions */}
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setEvalModalOpen(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
+                    className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
                     Cancel
                   </button>
                   <button onClick={handleSubmitEval}

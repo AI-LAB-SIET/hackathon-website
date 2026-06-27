@@ -249,10 +249,10 @@ export default function VolunteerDashboard() {
                       <User className="h-7 w-7 text-primary-green" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-extrabold text-primary-dark">
+                      <h2 className="text-lg font-extrabold text-primary-dark dark:text-gray-100">
                         Welcome, {volunteerInfo?.name || session.name || "Volunteer"}!
                       </h2>
-                      <p className="text-xs text-gray-500 font-semibold mt-0.5">
+                      <p className="text-xs text-gray-500 font-semibold mt-0.5 dark:text-gray-400">
                         {volunteerInfo?.assignedArea
                           ? `Assigned Area: ${volunteerInfo.assignedArea}`
                           : "No area assigned yet"}
@@ -384,7 +384,7 @@ export default function VolunteerDashboard() {
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-primary-dark text-sm">
+                            <span className="font-bold text-primary-dark text-sm dark:text-gray-100">
                               {ticket.teamName || getTeamName(ticket.teamId)}
                             </span>
                             <span
@@ -433,7 +433,7 @@ export default function VolunteerDashboard() {
                           {isAssignedToMe && ticket.status !== "Closed" && (
                             <button
                               onClick={() => handleTicketAction(ticket.id, "Closed")}
-                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
                             >
                               Close
                             </button>
@@ -452,7 +452,7 @@ export default function VolunteerDashboard() {
             {/* ==================== PROFILE TAB ==================== */}
             {activeTab === "profile" && (
               <div className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Profile & Settings</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Profile & Settings</h2>
                 <div className="flex gap-2 flex-wrap">
                   {(["edit", "appearance"] as const).map((t) => (
                     <button
@@ -461,7 +461,7 @@ export default function VolunteerDashboard() {
                       className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${
                         profileTab === t
                           ? "bg-primary-green text-white"
-                          : "bg-white border border-gray-200 text-gray-600"
+                          : "bg-white border border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {t === "edit" ? "Edit Profile" : "Appearance"}
@@ -482,10 +482,10 @@ export default function VolunteerDashboard() {
                             .toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-extrabold text-primary-dark text-lg">
+                          <div className="font-extrabold text-primary-dark text-lg dark:text-gray-100">
                             {profileName || "Volunteer"}
                           </div>
-                          <div className="text-gray-400 text-sm">{session.email}</div>
+                          <div className="text-gray-400 text-sm dark:text-gray-500">{session.email}</div>
                           <div className="text-xs font-semibold text-primary-green mt-0.5">
                             Volunteer · SIET AI Hack Lab 2026
                           </div>
@@ -493,31 +493,31 @@ export default function VolunteerDashboard() {
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">
+                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
                             Full Name
                           </label>
                           <input
                             type="text"
                             value={profileName}
                             onChange={(e) => setProfileName(e.target.value)}
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20"
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">
+                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
                             Email
                           </label>
                           <input
                             type="email"
                             value={session.email || ""}
                             readOnly
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
                           />
-                          <p className="text-[11px] text-gray-400 mt-1">Email cannot be changed</p>
+                          <p className="text-[11px] text-gray-400 mt-1 dark:text-gray-500">Email cannot be changed</p>
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
                           Bio
                         </label>
                         <textarea
@@ -525,11 +525,11 @@ export default function VolunteerDashboard() {
                           value={profileBio}
                           onChange={(e) => setProfileBio(e.target.value)}
                           placeholder="Tell us about yourself..."
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/20"
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
                           Skills (comma-separated)
                         </label>
                         <input
@@ -537,7 +537,7 @@ export default function VolunteerDashboard() {
                           value={profileSkills}
                           onChange={(e) => setProfileSkills(e.target.value)}
                           placeholder="e.g. First Aid, Crowd Management, Logistics"
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20"
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                         />
                       </div>
                       <button
