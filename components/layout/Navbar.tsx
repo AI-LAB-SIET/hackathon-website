@@ -95,7 +95,7 @@ export function Navbar() {
             <div className="relative h-7 w-7 overflow-hidden">
               <Image src="/siet_logo.png" alt="SIET Logo" fill sizes="28px" priority className="object-contain" />
             </div>
-            <span className="font-serif text-xl tracking-tight text-black">
+            <span className="font-serif text-xl tracking-tight text-black dark:text-white">
               SIET<span className="text-primary-green"> AI_LAB</span>
             </span>
           </Link>
@@ -108,7 +108,7 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-[13px] font-medium tracking-wide transition-colors duration-300 ${isActive ? "text-black" : "text-[#6F6F6F] hover:text-black"}`}
+                  className={`text-[13px] font-medium tracking-wide transition-colors duration-300 ${isActive ? "text-black dark:text-white" : "text-[#6F6F6F] hover:text-black dark:text-gray-400 dark:hover:text-white"}`}
                 >
                   {link.name}
                 </Link>
@@ -135,7 +135,7 @@ export function Navbar() {
                 <div ref={bellRef} className="relative">
                   <button
                     onClick={() => setBellOpen(!bellOpen)}
-                    className="relative p-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors cursor-pointer"
+                    className="relative p-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors cursor-pointer dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
                   >
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
@@ -153,10 +153,10 @@ export function Navbar() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 6, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+                        className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 dark:bg-gray-900 dark:border-gray-700"
                       >
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                          <span className="font-bold text-primary-dark text-sm">Notifications</span>
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                          <span className="font-bold text-primary-dark text-sm dark:text-gray-100">Notifications</span>
                           {unreadCount > 0 && (
                             <button onClick={markAllNotificationsRead} className="text-xs text-primary-green font-semibold hover:underline cursor-pointer">
                               Mark all read
@@ -168,12 +168,12 @@ export function Navbar() {
                             <button
                               key={n.id}
                               onClick={() => { markNotificationRead(n.id); }}
-                              className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left cursor-pointer border-b border-gray-50 last:border-0 ${!n.read ? "bg-emerald-50/40" : ""}`}
+                              className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left cursor-pointer border-b border-gray-50 last:border-0 dark:hover:bg-gray-800 dark:border-gray-800 ${!n.read ? "bg-emerald-50/40 dark:bg-emerald-900/20" : ""}`}
                             >
                               <div className="mt-0.5 shrink-0">{notifIconMap[n.type] || notifIconMap.system}</div>
                               <div className="flex-1 min-w-0">
-                                <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark" : "text-gray-600"} truncate`}>{n.title}</div>
-                                <div className="text-xs text-gray-400 truncate">{n.body}</div>
+                                <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark" : "text-gray-600"} truncate dark:text-gray-200`}>{n.title}</div>
+                                <div className="text-xs text-gray-400 truncate dark:text-gray-500">{n.body}</div>
                               </div>
                               {!n.read && <div className="h-2 w-2 rounded-full bg-primary-green shrink-0 mt-1" />}
                             </button>
@@ -182,7 +182,7 @@ export function Navbar() {
                         <Link
                           href={rolePortalHref}
                           onClick={() => setBellOpen(false)}
-                          className="block text-center text-xs font-semibold text-primary-green py-3 hover:bg-emerald-50 transition-colors border-t border-gray-100"
+                          className="block text-center text-xs font-semibold text-primary-green py-3 hover:bg-emerald-50 transition-colors border-t border-gray-100 dark:hover:bg-emerald-900/20 dark:border-gray-700"
                         >
                           View all notifications →
                         </Link>
@@ -193,7 +193,7 @@ export function Navbar() {
 
                 <Link
                   href={rolePortalHref}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
                 >
                   {session.role === "admin" ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
                   {rolePortalLabel}
@@ -208,8 +208,8 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/login" className="text-[13px] font-medium text-[#6F6F6F] hover:text-black transition-colors duration-300 px-1">Login</Link>
-                <Link href="/register" className="inline-flex items-center text-[13px] font-medium px-5 py-2 rounded-full bg-black text-white transition-all duration-300 hover:bg-[#222] hover:-translate-y-0.5">
+                <Link href="/login" className="text-[13px] font-medium text-[#6F6F6F] hover:text-black transition-colors duration-300 px-1 dark:text-gray-400 dark:hover:text-white">Login</Link>
+                <Link href="/register" className="inline-flex items-center text-[13px] font-medium px-5 py-2 rounded-full bg-black text-white transition-all duration-300 hover:bg-[#222] hover:-translate-y-0.5 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200">
                   Register Team
                 </Link>
               </>
@@ -219,7 +219,7 @@ export function Navbar() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 text-gray-700 hover:bg-card-bg hover:text-primary-dark rounded-xl transition-colors cursor-pointer"
+            className="md:hidden p-1.5 text-gray-700 hover:bg-card-bg hover:text-primary-dark rounded-xl transition-colors cursor-pointer dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -234,12 +234,12 @@ export function Navbar() {
             <motion.div
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 z-35 w-3/4 max-w-sm bg-white p-6 shadow-2xl border-l border-input-border/20 md:hidden flex flex-col pt-20"
+              className="fixed right-0 top-0 bottom-0 z-35 w-3/4 max-w-sm bg-white p-6 shadow-2xl border-l border-input-border/20 md:hidden flex flex-col pt-20 dark:bg-gray-900 dark:border-gray-700"
             >
               <div className="flex flex-col gap-6 flex-1">
                 {navLinks.map((link) => (
                   <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)}
-                    className={`text-base font-bold py-2 border-b border-gray-100 ${pathname === link.href ? "text-primary-green" : "text-gray-800"}`}
+                    className={`text-base font-bold py-2 border-b border-gray-100 dark:border-gray-700 ${pathname === link.href ? "text-primary-green" : "text-gray-800 dark:text-gray-200"}`}
                   >{link.name}</Link>
                 ))}
               </div>

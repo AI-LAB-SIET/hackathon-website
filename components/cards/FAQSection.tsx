@@ -26,7 +26,7 @@ export function FAQSection() {
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-8">
       {/* Category Tabs */}
-      <div className="flex flex-wrap gap-2 justify-center border-b border-gray-100 pb-4">
+      <div className="flex flex-wrap gap-2 justify-center border-b border-gray-100 pb-4 dark:border-gray-700">
         {categories.map((cat) => (
           <button
             key={cat}
@@ -37,7 +37,7 @@ export function FAQSection() {
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
               activeCategory === cat
                 ? "bg-primary-green text-white border-primary-green shadow-md shadow-primary-green/10"
-                : "bg-white text-gray-600 border-gray-200 hover:border-primary-green hover:text-primary-green"
+                : "bg-white text-gray-600 border-gray-200 hover:border-primary-green hover:text-primary-green dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:text-primary-green"
             }`}
           >
             {cat}
@@ -61,14 +61,14 @@ export function FAQSection() {
               return (
                 <div
                   key={faq.id}
-                  className="rounded-2xl border border-input-border/30 bg-white overflow-hidden shadow-sm"
+                  className="rounded-2xl border border-input-border/30 bg-white overflow-hidden shadow-sm dark:bg-gray-900 dark:border-gray-700"
                 >
                   <button
                     onClick={() => toggleExpand(faq.id)}
-                    className="w-full flex items-center justify-between px-6 py-5 text-left font-bold text-primary-dark text-sm sm:text-base hover:bg-card-bg/25 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-6 py-5 text-left font-bold text-primary-dark text-sm sm:text-base hover:bg-card-bg/25 transition-colors cursor-pointer dark:text-gray-100 dark:hover:bg-gray-800"
                   >
                     <span>{faq.question}</span>
-                    <span className="shrink-0 ml-4 h-6 w-6 rounded-lg bg-card-bg flex items-center justify-center text-primary-green">
+                    <span className="shrink-0 ml-4 h-6 w-6 rounded-lg bg-card-bg flex items-center justify-center text-primary-green dark:bg-gray-800">
                       {isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     </span>
                   </button>
@@ -81,7 +81,7 @@ export function FAQSection() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                       >
-                        <div className="px-6 pb-6 pt-1 text-xs sm:text-sm text-gray-500 leading-relaxed border-t border-gray-50">
+                        <div className="px-6 pb-6 pt-1 text-xs sm:text-sm text-gray-500 leading-relaxed border-t border-gray-50 dark:text-gray-400 dark:border-gray-800">
                           {faq.answer}
                         </div>
                       </motion.div>

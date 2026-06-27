@@ -46,14 +46,14 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: "spring", duration: 0.4 }}
-            className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl border border-input-border/30 z-10"
+            className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl border border-input-border/30 z-10 dark:bg-gray-900 dark:border-gray-700"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-card-bg">
-              <h3 className="text-base font-bold text-primary-dark">{title}</h3>
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-card-bg dark:bg-gray-800 dark:border-gray-700">
+              <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">{title}</h3>
               <button
                 onClick={onClose}
-                className="rounded-lg p-1 text-gray-500 hover:bg-emerald-100 hover:text-primary-dark transition-colors cursor-pointer"
+                className="rounded-lg p-1 text-gray-500 hover:bg-emerald-100 hover:text-primary-dark transition-colors cursor-pointer dark:hover:bg-emerald-900/30 dark:text-gray-400"
               >
                 <X className="h-5 w-5" />
               </button>

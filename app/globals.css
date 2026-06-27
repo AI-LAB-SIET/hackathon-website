@@ -141,3 +141,14 @@ body {
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(229, 229, 229, 0.6);
 }
+
+.dark {
+  color-scheme: dark;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.dark .glassmorphism {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+}

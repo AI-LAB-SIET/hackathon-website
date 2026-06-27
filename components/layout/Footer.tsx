@@ -16,7 +16,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="relative bg-white border-t border-input-border/30 overflow-hidden">
+    <footer className="relative bg-white border-t border-input-border/30 overflow-hidden dark:bg-gray-900 dark:border-gray-700">
       {/* Background Orbs */}
       <div className="absolute top-1/2 left-0 -translate-y-1/2 w-72 h-72 rounded-full bg-primary-green/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-accent-yellow/5 blur-[140px] pointer-events-none" />
@@ -35,11 +35,11 @@ export function Footer() {
                   className="object-contain"
                 />
               </div>
-              <span className="font-extrabold tracking-tight text-primary-dark text-lg">
+              <span className="font-extrabold tracking-tight text-primary-dark text-lg dark:text-gray-100">
                 SIET<span className="text-accent-green"> AI_LAB</span>
               </span>
             </Link>
-            <p className="text-xs text-gray-500 leading-relaxed max-w-sm">
+            <p className="text-xs text-gray-500 leading-relaxed max-w-sm dark:text-gray-400">
               Empowering undergraduate research, machine learning exploration, and agentic intelligence projects at the Sri Shakthi Institute of Engineering and Technology.
             </p>
             <div className="flex gap-3 mt-2">
@@ -51,7 +51,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   whileHover={{ y: -3, scale: 1.08 }}
                   whileTap={{ scale: 0.95 }}
-                  className="h-8 w-8 rounded-lg bg-card-bg text-primary-green border border-input-border/30 flex items-center justify-center hover:bg-primary-green hover:text-white transition-colors duration-250 cursor-pointer"
+                  className="h-8 w-8 rounded-lg bg-card-bg text-primary-green border border-input-border/30 flex items-center justify-center hover:bg-primary-green hover:text-white transition-colors duration-250 cursor-pointer dark:bg-gray-800 dark:border-gray-700"
                   title={s.name}
                 >
                   {s.icon}
@@ -62,7 +62,7 @@ export function Footer() {
 
           {/* Quick Links Col */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider">Event Navigator</h4>
+            <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider dark:text-gray-200">Event Navigator</h4>
             <div className="flex flex-col gap-2">
               {[
                 { name: "Overview", href: "/" },
@@ -72,7 +72,7 @@ export function Footer() {
                 <Link
                   key={idx}
                   href={link.href}
-                  className="text-xs text-gray-500 hover:text-primary-green hover:translate-x-1 transition-all duration-200"
+                  className="text-xs text-gray-500 hover:text-primary-green hover:translate-x-1 transition-all duration-200 dark:text-gray-400"
                 >
                   {link.name}
                 </Link>
@@ -82,8 +82,8 @@ export function Footer() {
 
           {/* Contact Col */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider">Get in Touch</h4>
-            <div className="flex flex-col gap-2.5 text-xs text-gray-500">
+            <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider dark:text-gray-200">Get in Touch</h4>
+            <div className="flex flex-col gap-2.5 text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-primary-green shrink-0" />
                 <a href="mailto:ailab@siet.ac.in" className="hover:text-primary-green transition-colors">

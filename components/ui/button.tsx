@@ -26,7 +26,7 @@ export function Button({
     primary:
       "bg-primary-green hover:bg-[#61CC0A] text-white shadow-[0_4px_0_0_#61B800] active:shadow-none",
     secondary:
-      "bg-transparent text-blue border-2 border-input-border shadow-[0_4px_0_0_#E5E5E5] hover:bg-[#F7F7F7] active:shadow-none",
+      "bg-transparent text-blue border-2 border-input-border shadow-[0_4px_0_0_#E5E5E5] hover:bg-[#F7F7F7] active:shadow-none dark:border-gray-700 dark:hover:bg-gray-800",
     "accent-yellow":
       "bg-golden hover:bg-[#FFD119] text-primary-dark shadow-[0_4px_0_0_#E0AB00] active:shadow-none",
     outline:
@@ -34,7 +34,7 @@ export function Button({
     danger:
       "bg-red hover:bg-[#FF6A6A] text-white shadow-[0_4px_0_0_#CC3C3C] active:shadow-none",
     ghost:
-      "bg-transparent text-primary-green hover:bg-primary-green/10 shadow-none active:translate-y-0",
+      "bg-transparent text-primary-green hover:bg-primary-green/10 shadow-none active:translate-y-0 dark:hover:bg-primary-green/20",
   };
 
   const sizes = {

@@ -73,7 +73,7 @@ export default function OrganizerDashboard() {
   }, [session, router, mounted]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "organizer") {
-    return <div className="flex h-screen items-center justify-center text-sm text-gray-400">Loading organizer portal...</div>;
+    return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading organizer portal...</div>;
   }
 
   const totalTeams = teams.length;
@@ -190,7 +190,7 @@ export default function OrganizerDashboard() {
 
   return (
     <PageWrapper>
-      <div className="flex min-h-screen bg-[#f8fafb]">
+      <div className="flex min-h-screen bg-[#f8fafb] dark:bg-gray-950">
         <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
         <main className="flex-1 min-w-0 p-6 lg:p-8">
           {/* Header Bar — utility actions only; navigation handled by Sidebar */}
@@ -303,7 +303,7 @@ export default function OrganizerDashboard() {
             {activeTab === "teams" && (
               <motion.div key="teams" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-extrabold text-primary-dark text-xl">All Teams</h2>
+                  <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">All Teams</h2>
                   <button onClick={handleExportCSV}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
                   ><Download className="h-4 w-4" /> Export CSV</button>
@@ -313,7 +313,7 @@ export default function OrganizerDashboard() {
                   <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search teams..."
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden dark:bg-gray-900 dark:border-gray-700">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
                       <tr>
@@ -361,10 +361,10 @@ export default function OrganizerDashboard() {
             {/* ─── APPROVAL QUEUE ─── */}
             {activeTab === "approval" && (
               <motion.div key="approval" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Approval Queue</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Approval Queue</h2>
 
                 {/* Filters */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-3">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-3 dark:bg-gray-900 dark:border-gray-700">
                   <div className="flex flex-wrap gap-2">
                     {(["all", "pending", "approved", "rejected"] as const).map((f) => (
                       <button key={f} onClick={() => setApprovalFilter(f)}
@@ -489,7 +489,7 @@ export default function OrganizerDashboard() {
                 <h2 className="font-extrabold text-primary-dark text-xl">Support Tickets</h2>
 
                 {/* Status Filters */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-2">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-2 dark:bg-gray-900 dark:border-gray-700">
                   {(["all", "Open", "Assigned", "In Progress", "Resolved", "Closed"] as const).map((f) => (
                     <button key={f} onClick={() => setTicketFilter(f)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors ${ticketFilter === f ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-amber-100"}`}

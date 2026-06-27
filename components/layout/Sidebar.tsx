@@ -108,10 +108,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     <motion.aside
       animate={{ width: collapsed ? 80 : 260 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="hidden md:flex flex-col h-screen sticky top-0 bg-white border-r border-input-border/30 shadow-[4px_0_20px_rgba(0,100,0,0.015)] z-20 shrink-0"
+      className="hidden md:flex flex-col h-screen sticky top-0 bg-white border-r border-input-border/30 shadow-[4px_0_20px_rgba(0,100,0,0.015)] z-20 shrink-0 dark:bg-gray-900 dark:border-gray-700"
     >
       {/* Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-100 bg-card-bg/50">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-100 bg-card-bg/50 dark:border-gray-700 dark:bg-gray-800/50">
         {!collapsed && (
           <Link href="/" className="flex items-center gap-2 select-none">
             <div className="relative h-8 w-8 overflow-hidden">
@@ -123,7 +123,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 className="object-contain"
               />
             </div>
-            <span className="font-extrabold tracking-tight text-primary-dark text-sm">
+            <span className="font-extrabold tracking-tight text-primary-dark text-sm dark:text-gray-100">
               SIET<span className="text-accent-green"> AI_LAB</span>
             </span>
           </Link>
@@ -141,7 +141,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded-lg text-gray-500 hover:bg-emerald-100 hover:text-primary-dark cursor-pointer transition-colors"
+          className="p-1 rounded-lg text-gray-500 hover:bg-emerald-100 hover:text-primary-dark cursor-pointer transition-colors dark:text-gray-400 dark:hover:bg-emerald-900/30 dark:hover:text-white"
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
@@ -160,7 +160,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                   ${
                     isActive
                       ? "bg-primary-green text-white shadow-md shadow-primary-green/10"
-                      : "text-gray-600 hover:bg-card-bg hover:text-primary-dark"
+                      : "text-gray-600 hover:bg-card-bg hover:text-primary-dark dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
                   }
                 `}
               >
@@ -177,7 +177,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         ) : (
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold text-gray-600 hover:bg-card-bg hover:text-primary-dark"
+            className="flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold text-gray-600 hover:bg-card-bg hover:text-primary-dark dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
           >
             <Home className="h-5 w-5" />
             {!collapsed && <span>Go to Home</span>}
@@ -186,19 +186,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       </nav>
 
       {/* User Info / Logout */}
-      <div className="p-3 border-t border-gray-100 flex flex-col gap-2">
+      <div className="p-3 border-t border-gray-100 flex flex-col gap-2 dark:border-gray-700">
         {!collapsed && session.isLoggedIn && (
-          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-card-bg/30 border border-input-border/10">
+          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-card-bg/30 border border-input-border/10 dark:bg-gray-800/30 dark:border-gray-700">
             <Avatar name={session.email || "User"} size="sm" />
             <div className="overflow-hidden">
-              <p className="text-[9px] text-gray-500 truncate font-medium">{session.email}</p>
+              <p className="text-[9px] text-gray-500 truncate font-medium dark:text-gray-400">{session.email}</p>
             </div>
           </div>
         )}
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer transition-colors group relative w-full"
+          className="flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer transition-colors group relative w-full dark:hover:bg-red-900/20"
         >
           <LogOut className="h-5 w-5 shrink-0" />
           {!collapsed && <span>Logout</span>}

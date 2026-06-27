@@ -120,8 +120,8 @@ export default function AdminDashboard() {
   }, [profile, session.name]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "admin") {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500">
+      return (
+      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500 dark:bg-gray-950 dark:text-gray-400">
         Loading admin portal...
       </div>
     );
@@ -277,7 +277,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <PageWrapper className="flex min-h-screen bg-gray-50/50">
+    <PageWrapper className="flex min-h-screen bg-gray-50/50 dark:bg-gray-950">
       <Sidebar activeTab={activeTab} onTabChange={(t) => setActiveTab(t as TabType)} />
 
       <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-screen">
@@ -301,10 +301,10 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-primary-dark tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">
               {tabLabels[activeTab]}
             </h1>
-            <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-0.5">
+            <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-0.5 dark:text-gray-400">
               Logged in as: <strong>{session.email}</strong> | Role: {session.role?.toUpperCase()}
             </p>
           </div>
@@ -401,33 +401,33 @@ export default function AdminDashboard() {
                     { label: "Active Teams", val: activeTeams, icon: <Shield className="h-5 w-5 text-purple-600" /> },
                     { label: "Published Problems", val: publishedPs, icon: <BookOpen className="h-5 w-5 text-amber-500" /> },
                   ].map((stat, idx) => (
-                    <div key={idx} className="p-5 rounded-2xl border border-input-border/30 bg-white shadow-sm flex items-center gap-4">
+                    <div key={idx} className="p-5 rounded-2xl border border-input-border/30 bg-white shadow-sm flex items-center gap-4 dark:bg-gray-900 dark:border-gray-700">
                       <div className="h-10 w-10 rounded-xl bg-card-bg text-primary-green flex items-center justify-center border border-input-border/10 shrink-0">
                         {stat.icon}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{stat.label}</span>
-                        <span className="text-lg font-extrabold text-primary-dark">{stat.val}</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider dark:text-gray-500">{stat.label}</span>
+                        <span className="text-lg font-extrabold text-primary-dark dark:text-gray-100">{stat.val}</span>
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Recent Activity */}
-                <div className="rounded-3xl border border-input-border/30 bg-white p-5 shadow-sm flex flex-col gap-4">
-                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 shadow-sm flex flex-col gap-4 dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2 dark:text-gray-100 dark:border-gray-700">
                     <Activity className="h-4.5 w-4.5 text-primary-green" /> Recent Activity
                   </h3>
                   <div className="flex flex-col gap-3">
                     {recentActivity.map((log) => (
-                      <div key={log.id} className="flex justify-between items-center p-3 rounded-2xl border border-gray-100 bg-white text-xs">
+                      <div key={log.id} className="flex justify-between items-center p-3 rounded-2xl border border-gray-100 bg-white text-xs dark:bg-gray-800 dark:border-gray-700">
                         <div className="flex gap-3 items-center">
                           <span className={`h-2.5 w-2.5 rounded-full ${
                             log.type === "warning" ? "bg-amber-500" : log.type === "success" ? "bg-emerald-500" : "bg-blue-500"
                           }`} />
                           <div>
-                            <p className="font-bold text-gray-800">{log.action}</p>
-                            <p className="text-[9px] text-gray-400 font-semibold">{log.user}</p>
+                            <p className="font-bold text-gray-800 dark:text-gray-200">{log.action}</p>
+                            <p className="text-[9px] text-gray-400 font-semibold dark:text-gray-500">{log.user}</p>
                           </div>
                         </div>
                         <span className="text-[10px] text-gray-400 font-bold">{log.time}</span>

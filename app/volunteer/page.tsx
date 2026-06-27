@@ -79,7 +79,7 @@ export default function VolunteerDashboard() {
 
   if (!mounted || !session.isLoggedIn || session.role !== "volunteer") {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500">
+      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500 dark:bg-gray-950 dark:text-gray-400">
         Loading volunteer portal...
       </div>
     );
@@ -130,7 +130,7 @@ export default function VolunteerDashboard() {
   };
 
   return (
-    <PageWrapper className="flex min-h-screen bg-gray-50/50">
+    <PageWrapper className="flex min-h-screen bg-gray-50/50 dark:bg-gray-950">
       <Sidebar activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as TabType)} />
 
       <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-screen">
@@ -158,10 +158,10 @@ export default function VolunteerDashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-primary-dark tracking-tight capitalize">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-primary-dark tracking-tight capitalize dark:text-gray-100">
               {activeTab === "dashboard" ? "Volunteer Portal" : activeTab.replace("-", " ")}
             </h1>
-            <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-0.5">
+            <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-0.5 dark:text-gray-400">
               Logged in as: <strong>{session.email}</strong> | Role: Volunteer
               {volunteerInfo?.assignedArea && (
                 <> | Area: <strong>{volunteerInfo.assignedArea}</strong></>
@@ -285,24 +285,24 @@ export default function VolunteerDashboard() {
                   ].map((stat, idx) => (
                     <div
                       key={idx}
-                      className="p-5 rounded-2xl border border-input-border/30 bg-white shadow-sm flex items-center gap-4"
+                      className="p-5 rounded-2xl border border-input-border/30 bg-white shadow-sm flex items-center gap-4 dark:bg-gray-900 dark:border-gray-700"
                     >
                       <div className="h-10 w-10 rounded-xl bg-card-bg text-primary-green flex items-center justify-center border border-input-border/10 shrink-0">
                         {stat.icon}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider dark:text-gray-500">
                           {stat.label}
                         </span>
-                        <span className="text-sm font-extrabold text-primary-dark">{stat.val}</span>
+                        <span className="text-sm font-extrabold text-primary-dark dark:text-gray-100">{stat.val}</span>
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Assigned Tickets List */}
-                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4">
-                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2">
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-4 dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2 dark:text-gray-100 dark:border-gray-700">
                     <LifeBuoy className="h-4.5 w-4.5 text-primary-green" /> My Assigned Tickets
                   </h3>
                   <div className="flex flex-col gap-3">
@@ -377,7 +377,7 @@ export default function VolunteerDashboard() {
                     return (
                       <div
                         key={ticket.id}
-                        className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3"
+                        className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 dark:bg-gray-900 dark:border-gray-700"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -466,10 +466,10 @@ export default function VolunteerDashboard() {
                   ))}
                 </div>
 
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700">
                   {profileTab === "edit" && (
                     <div className="space-y-6">
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
                         <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary-green to-emerald-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
                           {(profileName || "V")
                             .split(" ")

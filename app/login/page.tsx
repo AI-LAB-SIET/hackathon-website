@@ -110,14 +110,14 @@ export default function Login() {
   };
 
   return (
-    <PageWrapper className="relative bg-white min-h-screen flex flex-col">
+    <PageWrapper className="relative bg-white min-h-screen flex flex-col dark:bg-gray-950">
       <Navbar />
 
       <main className="flex-1 flex items-center justify-center py-12 px-6 gradient-mesh relative">
         <div className="absolute top-1/4 left-10 w-64 h-64 rounded-full bg-primary-green/5 blur-3xl pointer-events-none" />
         <div className="absolute bottom-1/4 right-10 w-72 h-72 rounded-full bg-accent-yellow/5 blur-3xl pointer-events-none" />
 
-        <div className="w-full max-w-md rounded-3xl border border-input-border/30 bg-white p-8 shadow-2xl relative z-10">
+        <div className="w-full max-w-md rounded-3xl border border-input-border/30 bg-white p-8 shadow-2xl relative z-10 dark:bg-gray-900 dark:border-gray-700">
           <div className="flex flex-col items-center gap-2 text-center mb-8">
             <div className="relative h-10 w-10 overflow-hidden">
               <Image
@@ -128,10 +128,10 @@ export default function Login() {
                 className="object-contain"
               />
             </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-primary-dark">
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-primary-dark dark:text-gray-100">
               Access Workspace
             </h2>
-            <p className="text-xs text-gray-500 max-w-xs font-semibold leading-relaxed">
+            <p className="text-xs text-gray-500 max-w-xs font-semibold leading-relaxed dark:text-gray-400">
               Login to inspect team details, evaluate code, or manage the hackathon timeline.
             </p>
           </div>
@@ -139,14 +139,14 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             {/* Custom Role Selector Dropdown */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-primary-dark">Select Workspace Portal</label>
+              <label className="text-xs font-bold text-primary-dark dark:text-gray-200">Select Workspace Portal</label>
               <select
                 value={role}
                 onChange={(e) => {
                   setRole(e.target.value as RoleType);
                   setError("");
                 }}
-                className="w-full px-4 py-3 rounded-xl border border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green focus:outline-none transition-all duration-200 text-sm font-semibold bg-white text-gray-800 cursor-pointer"
+                className="w-full px-4 py-3 rounded-xl border border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green focus:outline-none transition-all duration-200 text-sm font-semibold bg-white text-gray-800 cursor-pointer dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
               >
                 <option value="participant">Participant Workspace</option>
                 <option value="judge">Judge Evaluation Portal</option>
@@ -192,7 +192,7 @@ export default function Login() {
 
             {/* Remember Me / Forgot Password */}
             <div className="flex items-center justify-between text-xs font-bold select-none">
-              <label className="flex items-center gap-1.5 text-gray-600 cursor-pointer">
+              <label className="flex items-center gap-1.5 text-gray-600 cursor-pointer dark:text-gray-400">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -216,11 +216,11 @@ export default function Login() {
           </form>
 
           {/* Quick Info Box for Portfolio Evaluators */}
-          <div className="mt-8 p-4 rounded-2xl bg-card-bg/40 border border-input-border/20">
+          <div className="mt-8 p-4 rounded-2xl bg-card-bg/40 border border-input-border/20 dark:bg-gray-800/40 dark:border-gray-700">
             <p className="text-[10px] font-bold uppercase tracking-wider text-primary-green mb-2.5 flex items-center justify-center gap-1.5 border-b border-input-border/10 pb-1.5">
               <ShieldCheck className="h-4 w-4 shrink-0" /> Evaluator Quick Login List
             </p>
-            <div className="text-[10px] text-gray-600 flex flex-col gap-2">
+            <div className="text-[10px] text-gray-600 flex flex-col gap-2 dark:text-gray-400">
               {[
                 { roleName: "Participant", r: "participant" as const, email: "abhishek@college.edu" },
                 { roleName: "Judge", r: "judge" as const, email: "judge@college.edu" },
@@ -228,9 +228,9 @@ export default function Login() {
                 { roleName: "Volunteer", r: "volunteer" as const, email: "riya@college.edu" },
                 { roleName: "Admin", r: "admin" as const, email: "admin@college.edu" },
               ].map((item, index) => (
-                <div key={index} className="flex justify-between items-center bg-white/60 p-1.5 rounded-lg border border-gray-150/40">
-                  <span className="font-bold text-gray-800">{item.roleName}:</span>
-                  <span className="text-gray-500 font-mono text-[9px]">{item.email}</span>
+                <div key={index} className="flex justify-between items-center bg-white/60 p-1.5 rounded-lg border border-gray-150/40 dark:bg-gray-800/60 dark:border-gray-700">
+                  <span className="font-bold text-gray-800 dark:text-gray-200">{item.roleName}:</span>
+                  <span className="text-gray-500 font-mono text-[9px] dark:text-gray-400">{item.email}</span>
                   <button
                     type="button"
                     onClick={() => handleRoleQuickFill(item.r, item.email)}

@@ -89,27 +89,27 @@ export default function HackathonPage() {
   const selectedTrackData = selectedTrack !== null ? tracks[selectedTrack] : null;
 
   return (
-    <PageWrapper className="relative bg-white min-h-screen">
+    <PageWrapper className="relative bg-white min-h-screen dark:bg-gray-950">
       <Navbar />
 
       {/* Header */}
-      <section className="relative py-16 bg-card-bg/20 border-b border-input-border/15 overflow-hidden">
+      <section className="relative py-16 bg-card-bg/20 border-b border-input-border/15 overflow-hidden dark:bg-gray-800/20 dark:border-gray-700">
         <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-primary-green/5 blur-[120px]" />
         <div className="max-w-[1440px] mx-auto px-6 text-center flex flex-col items-center gap-3 relative z-10">
           <span className="text-[10px] sm:text-xs font-bold text-primary-green uppercase tracking-widest bg-card-bg px-3 py-1 rounded-full border border-input-border/20">
             Ecosystem Directory
           </span>
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-primary-dark">
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-primary-dark dark:text-gray-100">
             Hackathon Blueprint
           </h1>
-          <p className="max-w-2xl text-xs sm:text-sm text-gray-500 font-semibold leading-relaxed">
+          <p className="max-w-2xl text-xs sm:text-sm text-gray-500 font-semibold leading-relaxed dark:text-gray-400">
             Everything you need to understand about the AI Hack Lab rules, timeline, tracks, evaluation models, and prizes.
           </p>
         </div>
       </section>
 
       {/* Tabs Selector Navigation */}
-      <section className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 py-4 shadow-sm">
+      <section className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 py-4 shadow-sm dark:bg-gray-900/95 dark:border-gray-700">
         <div className="max-w-[1440px] mx-auto px-6 overflow-x-auto scrollbar-none flex gap-2 md:justify-center">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -120,7 +120,7 @@ export default function HackathonPage() {
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer
                   ${isActive
                     ? "bg-primary-green text-white shadow-md shadow-primary-green/10"
-                    : "bg-card-bg/40 text-gray-600 hover:bg-card-bg hover:text-primary-dark"
+                    : "bg-card-bg/40 text-gray-600 hover:bg-card-bg hover:text-primary-dark dark:bg-gray-800/40 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
                   }
                 `}
               >
@@ -147,7 +147,7 @@ export default function HackathonPage() {
               <div className="flex flex-col gap-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                   <div className="flex flex-col gap-5">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight leading-tight">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight leading-tight dark:text-gray-100">
                       Welcome to the AI Hack Lab 2026
                     </h2>
                     <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-medium">
@@ -156,7 +156,7 @@ export default function HackathonPage() {
                     <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-medium">
                       This year, we focus on <span className="font-bold">Agentic Intelligence</span>—autonomous software agents that can reason, orchestrate APIs, and deliver end-to-end user flows.
                     </p>
-                    <div className="flex items-center gap-4 text-xs font-bold text-gray-700 mt-2">
+                    <div className="flex items-center gap-4 text-xs font-bold text-gray-700 mt-2 dark:text-gray-300">
                       <span className="flex items-center gap-1 bg-card-bg px-3 py-1.5 rounded-lg border border-input-border/20">
                         <MapPin className="h-4 w-4 text-primary-green" /> Main Research Lab, SIET
                       </span>
@@ -168,10 +168,10 @@ export default function HackathonPage() {
 
                   <div className="p-8 rounded-3xl border border-input-border/30 bg-card-bg/25 flex flex-col gap-4 relative overflow-hidden shadow-inner">
                     <div className="absolute -bottom-10 -left-10 w-44 h-44 rounded-full bg-accent-yellow/10 blur-3xl" />
-                    <h3 className="text-lg font-extrabold text-primary-dark tracking-tight flex items-center gap-2">
+                      <h3 className="text-lg font-extrabold text-primary-dark tracking-tight flex items-center gap-2 dark:text-gray-100">
                       <BookOpen className="h-5 w-5 text-primary-green" /> Participant Journey Map
                     </h3>
-                    <ul className="flex flex-col gap-3.5 text-xs text-primary-dark font-bold mt-2">
+                    <ul className="flex flex-col gap-3.5 text-xs text-primary-dark font-bold mt-2 dark:text-gray-200">
                       <li className="flex gap-2.5 items-center">
                         <span className="h-5 w-5 rounded-full bg-primary-green text-white flex items-center justify-center text-[10px]">1</span>
                         <span>Form team & submit idea abstract</span>
@@ -195,18 +195,18 @@ export default function HackathonPage() {
                 {/* Prizes (moved from standalone tab) */}
                 <div>
                   <div className="text-center mb-10 flex flex-col items-center gap-2">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight">Winner Recognition</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg">Competitors stand a chance to claim trophies and cash prize allocations.</p>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Winner Recognition</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Competitors stand a chance to claim trophies and cash prize allocations.</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                     {prizes.map((p, idx) => (
-                      <div key={idx} className={`border rounded-3xl p-6 text-center flex flex-col items-center gap-3 shadow-sm hover:shadow-md transition-all ${p.glow}`}>
+                      <div key={idx} className={`border rounded-3xl p-6 text-center flex flex-col items-center gap-3 shadow-sm hover:shadow-md transition-all dark:bg-gray-900 dark:border-gray-700 ${p.glow}`}>
                         <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-primary-green to-accent-green text-white font-extrabold flex items-center justify-center text-sm shadow">
                           <Award className="h-6 w-6" />
                         </div>
-                        <h4 className="text-sm sm:text-base font-bold text-primary-dark mt-1">{p.title}</h4>
+                        <h4 className="text-sm sm:text-base font-bold text-primary-dark mt-1 dark:text-gray-100">{p.title}</h4>
                         <span className="text-xl sm:text-2xl font-black text-primary-green">{p.amount}</span>
-                        <p className="text-xs text-gray-500 leading-relaxed font-semibold">{p.desc}</p>
+                        <p className="text-xs text-gray-500 leading-relaxed font-semibold dark:text-gray-400">{p.desc}</p>
                       </div>
                     ))}
                   </div>
@@ -218,19 +218,19 @@ export default function HackathonPage() {
             {activeTab === "tracks" && (
               <div>
                 <div className="text-center mb-10 flex flex-col items-center gap-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight">Event Tracks</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg">Choose a track that matches your team interest and outline it in your slide deck abstract.</p>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Event Tracks</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Choose a track that matches your team interest and outline it in your slide deck abstract.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                   {tracks.map((t, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedTrack(idx)}
-                      className="border border-input-border/30 rounded-3xl p-6 bg-white shadow-sm flex flex-col gap-3 relative overflow-hidden group hover:border-primary-green/30 transition-all duration-300 text-left cursor-pointer"
+                      className="border border-input-border/30 rounded-3xl p-6 bg-white shadow-sm flex flex-col gap-3 relative overflow-hidden group hover:border-primary-green/30 transition-all duration-300 text-left cursor-pointer dark:bg-gray-900 dark:border-gray-700"
                     >
                       <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${t.color}`} />
-                      <h4 className="text-base sm:text-lg font-extrabold text-primary-dark ml-2 group-hover:text-primary-green transition-colors">{t.title}</h4>
-                      <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold ml-2">{t.desc}</p>
+                      <h4 className="text-base sm:text-lg font-extrabold text-primary-dark ml-2 group-hover:text-primary-green transition-colors dark:text-gray-100">{t.title}</h4>
+                      <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold ml-2 dark:text-gray-400">{t.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -257,8 +257,8 @@ export default function HackathonPage() {
             {activeTab === "timeline" && (
               <div>
                 <div className="text-center mb-10 flex flex-col items-center gap-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight">Interactive Timeline</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg">Stay updated on submission closings and review stages.</p>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Interactive Timeline</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Stay updated on submission closings and review stages.</p>
                 </div>
                 <div className="relative max-w-3xl mx-auto">
                   {/* Vertical line */}
@@ -278,18 +278,18 @@ export default function HackathonPage() {
                         >
                           {/* Status dot */}
                           <div className="relative z-10 flex items-start pt-1">
-                            <div className={`w-10 h-10 rounded-full border-2 ${style.border} bg-white flex items-center justify-center`}>
+                            <div className={`w-10 h-10 rounded-full border-2 ${style.border} bg-white dark:bg-gray-900 flex items-center justify-center`}>
                               <div className={`w-3 h-3 rounded-full ${style.dot}`} />
                             </div>
                           </div>
 
                           {/* Content */}
-                          <div className={`flex-1 p-4 rounded-2xl border ${style.border} bg-white hover:shadow-md transition-all duration-200`}>
+                          <div className={`flex-1 p-4 rounded-2xl border ${style.border} bg-white hover:shadow-md transition-all duration-200 dark:bg-gray-900`}>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                              <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark">{step.title}</h4>
-                              <span className="text-[10px] text-gray-400 font-bold">{step.date}</span>
+                              <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark dark:text-gray-100">{step.title}</h4>
+                              <span className="text-[10px] text-gray-400 font-bold dark:text-gray-500">{step.date}</span>
                             </div>
-                            <p className="text-[11px] sm:text-xs text-gray-500 font-medium mt-1">{step.desc}</p>
+                            <p className="text-[11px] sm:text-xs text-gray-500 font-medium mt-1 dark:text-gray-400">{step.desc}</p>
                             <span className={`inline-block mt-2 text-[10px] font-bold uppercase tracking-wider ${style.text}`}>
                               {step.status}
                             </span>
@@ -306,14 +306,14 @@ export default function HackathonPage() {
             {activeTab === "rules" && (
               <div className="max-w-3xl mx-auto">
                 <div className="text-center mb-10 flex flex-col items-center gap-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight">Guidelines & Integrity</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg">All participating teams must comply with the academic guidelines vetted by the college board.</p>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Guidelines & Integrity</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">All participating teams must comply with the academic guidelines vetted by the college board.</p>
                 </div>
                 <div className="rounded-3xl border border-red-150/40 bg-red-50/5 p-6 flex flex-col gap-4">
                   {rules.map((rule, idx) => (
-                    <div key={idx} className="flex gap-3 items-start hover:bg-gray-50 p-2.5 rounded-xl transition-colors">
+                    <div key={idx} className="flex gap-3 items-start hover:bg-gray-50 p-2.5 rounded-xl transition-colors dark:hover:bg-gray-800">
                       <span className="h-5 w-5 rounded-full bg-primary-green text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">✓</span>
-                      <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold">{rule}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold dark:text-gray-400">{rule}</p>
                     </div>
                   ))}
                 </div>
@@ -324,17 +324,17 @@ export default function HackathonPage() {
             {activeTab === "faq" && (
               <div className="max-w-3xl mx-auto">
                 <div className="text-center mb-10 flex flex-col items-center gap-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight">Frequently Asked Questions</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg">Find answers regarding schedules, rules, support desks, and logistics.</p>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Frequently Asked Questions</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Find answers regarding schedules, rules, support desks, and logistics.</p>
                 </div>
                 <div className="flex flex-col gap-4">
                   {faqs.map((faq, idx) => (
-                    <div key={idx} className="bg-white border border-input-border/20 rounded-2xl p-5 flex flex-col gap-2 shadow-sm">
-                      <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark flex gap-2 items-center">
+                    <div key={idx} className="bg-white border border-input-border/20 rounded-2xl p-5 flex flex-col gap-2 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                      <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark flex gap-2 items-center dark:text-gray-100">
                         <HelpCircle className="h-4.5 w-4.5 text-primary-green shrink-0" />
                         <span>{faq.q}</span>
                       </h4>
-                      <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold pl-6">{faq.a}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold pl-6 dark:text-gray-400">{faq.a}</p>
                     </div>
                   ))}
                 </div>

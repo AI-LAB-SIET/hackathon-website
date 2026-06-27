@@ -43,10 +43,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   };
 
   const colors = {
-    success: "bg-white border-emerald-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border text-gray-800",
-    error: "bg-white border-red-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border text-gray-800",
-    warning: "bg-white border-amber-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border text-gray-800",
-    info: "bg-white border-blue-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border text-gray-800",
+    success: "bg-white border-emerald-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border text-gray-800 dark:bg-gray-900 dark:border-emerald-800 dark:text-gray-200",
+    error: "bg-white border-red-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border text-gray-800 dark:bg-gray-900 dark:border-red-800 dark:text-gray-200",
+    warning: "bg-white border-amber-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border text-gray-800 dark:bg-gray-900 dark:border-amber-800 dark:text-gray-200",
+    info: "bg-white border-blue-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border text-gray-800 dark:bg-gray-900 dark:border-blue-800 dark:text-gray-200",
   };
 
   return (
@@ -68,7 +68,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <p className="text-xs font-semibold flex-1 leading-relaxed">{t.message}</p>
               <button
                 onClick={() => removeToast(t.id)}
-                className="text-gray-400 hover:text-gray-600 p-0.5 rounded transition-colors cursor-pointer"
+                className="text-gray-400 hover:text-gray-600 p-0.5 rounded transition-colors cursor-pointer dark:hover:text-gray-300"
               >
                 <X className="h-4 w-4" />
               </button>

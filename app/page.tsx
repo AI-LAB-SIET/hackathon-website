@@ -73,14 +73,14 @@ export default function Home() {
   ];
 
   return (
-    <PageWrapper className="relative bg-white min-h-screen">
+    <PageWrapper className="relative bg-white min-h-screen dark:bg-gray-950">
       <Navbar />
 
       {/* Hero Section — cinematic looping video background */}
       <CinematicHero session={session} />
 
       {/* Statistics Section */}
-      <section className="py-12 bg-card-bg/35 border-y border-input-border/20 relative">
+      <section className="py-12 bg-card-bg/35 border-y border-input-border/20 relative dark:bg-gray-800/35 dark:border-gray-700">
         <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
             { value: `${stats.teams}+`, label: "Expected Teams", icon: <Users className="h-5 w-5" /> },
@@ -89,13 +89,13 @@ export default function Home() {
             { value: `${stats.mentors}+`, label: "Industry Mentors", icon: <Cpu className="h-5 w-5" /> },
           ].map((item, idx) => (
             <div key={idx} className="flex flex-col items-center gap-1 p-4">
-              <div className="h-10 w-10 rounded-xl bg-white border border-input-border/20 text-primary-green flex items-center justify-center shadow-sm">
+              <div className="h-10 w-10 rounded-xl bg-white border border-input-border/20 text-primary-green flex items-center justify-center shadow-sm dark:bg-gray-900 dark:border-gray-700">
                 {item.icon}
               </div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight mt-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight mt-2 dark:text-gray-100">
                 {item.value}
               </span>
-              <span className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-wider">
+              <span className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-wider dark:text-gray-400">
                 {item.label}
               </span>
             </div>
@@ -106,10 +106,10 @@ export default function Home() {
       {/* Features Grid */}
       <section className="py-16 md:py-24 max-w-[1440px] mx-auto px-6">
         <div className="text-center flex flex-col items-center gap-3 mb-12 sm:mb-16">
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-primary-dark tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">
             Why Participate in SIET AI_LAB?
           </h2>
-          <p className="max-w-2xl text-xs sm:text-sm text-gray-500 leading-relaxed">
+          <p className="max-w-2xl text-xs sm:text-sm text-gray-500 leading-relaxed dark:text-gray-400">
             Gain hands-on developer experience, accelerate your AI research projects, and collaborate with like-minded student developers in a highly competitive environment.
           </p>
         </div>
@@ -128,16 +128,16 @@ export default function Home() {
       </section>
 
       {/* Timeline Snapshot Section */}
-      <section className="py-16 bg-card-bg/20 border-t border-input-border/10">
+      <section className="py-16 bg-card-bg/20 border-t border-input-border/10 dark:bg-gray-800/20 dark:border-gray-700">
         <div className="max-w-[1440px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="flex flex-col items-start gap-4 max-w-md">
             <span className="px-2.5 py-1 rounded-lg bg-primary-green/10 text-primary-green font-bold text-[10px] sm:text-xs uppercase tracking-wider">
               Roadmap Preview
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight leading-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight leading-tight dark:text-gray-100">
               A Structured Journey to Prototype Deployment
             </h2>
-            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed dark:text-gray-400">
               We guide you from standard idea abstracts to functional deployment. Shortlisted groups will undergo structured developer clinics and live test reviews.
             </p>
             <Link
@@ -157,7 +157,7 @@ export default function Home() {
             ].map((step, idx) => (
               <div
                 key={idx}
-                className={`p-5 rounded-2xl border transition-all duration-200 flex gap-4 bg-white
+                className={`p-5 rounded-2xl border transition-all duration-200 flex gap-4 bg-white dark:bg-gray-900 dark:border-gray-700
                   ${
                     step.active
                       ? "border-primary-green shadow-md shadow-primary-green/5"
@@ -169,8 +169,8 @@ export default function Home() {
                   {step.num}
                 </span>
                 <div className="flex flex-col gap-0.5">
-                  <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark">{step.title}</h4>
-                  <p className="text-[11px] sm:text-xs text-gray-500">{step.desc}</p>
+                  <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark dark:text-gray-100">{step.title}</h4>
+                  <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">{step.desc}</p>
                 </div>
               </div>
             ))}
@@ -181,10 +181,10 @@ export default function Home() {
       {/* FAQ Section */}
       <section id="faq" className="py-16 md:py-24 max-w-[1440px] mx-auto px-6">
         <div className="text-center flex flex-col items-center gap-3 mb-12 sm:mb-16">
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-primary-dark tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">
             Frequently Asked Questions
           </h2>
-          <p className="max-w-2xl text-xs sm:text-sm text-gray-500 leading-relaxed">
+          <p className="max-w-2xl text-xs sm:text-sm text-gray-500 leading-relaxed dark:text-gray-400">
             Have questions about formatting, cloud platform credits, or criteria? Find quick resolutions below.
           </p>
         </div>

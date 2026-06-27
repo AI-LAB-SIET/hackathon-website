@@ -146,13 +146,13 @@ export default function ParticipantDashboard() {
   }, [team]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "participant") {
-    return <div className="flex h-screen items-center justify-center text-sm text-gray-400">Loading your workspace...</div>;
+    return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading your workspace...</div>;
   }
 
   if (!team) {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4">
-        <div className="text-gray-400 text-sm">No team found. Please register a team first.</div>
+        <div className="text-gray-400 text-sm dark:text-gray-500">No team found. Please register a team first.</div>
         <button onClick={() => router.push("/register")} className="px-4 py-2 bg-primary-green text-white rounded-xl text-sm font-semibold cursor-pointer">Register Team</button>
       </div>
     );
@@ -294,7 +294,7 @@ export default function ParticipantDashboard() {
 
   return (
     <PageWrapper>
-      <div className="flex min-h-screen bg-[#f8fafb]">
+      <div className="flex min-h-screen bg-[#f8fafb] dark:bg-gray-950">
         {/* Sidebar — the single source of navigation */}
         <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
 
@@ -387,8 +387,8 @@ export default function ParticipantDashboard() {
                 </div>
 
                 {/* Animated Journey Timeline */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                  <h2 className="font-bold text-primary-dark mb-6 flex items-center gap-2"><Layers className="h-5 w-5 text-primary-green" /> Hackathon Journey</h2>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700">
+                  <h2 className="font-bold text-primary-dark mb-6 flex items-center gap-2 dark:text-gray-100"><Layers className="h-5 w-5 text-primary-green" /> Hackathon Journey</h2>
                   <div className="relative">
                     {/* Connecting line */}
                     <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100" />
@@ -453,8 +453,8 @@ export default function ParticipantDashboard() {
 
                 {/* Quick cards row */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Latest Notifications</div>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3 dark:text-gray-500">Latest Notifications</div>
                     <div className="flex flex-col gap-2">
                       {notifications.filter((n) => !n.read).slice(0, 3).map((n) => (
                         <div key={n.id} className="flex items-start gap-2">
@@ -467,8 +467,8 @@ export default function ParticipantDashboard() {
                     <button onClick={() => setActiveTab("notifications")} className="mt-3 text-xs font-semibold text-primary-green hover:underline cursor-pointer">View all →</button>
                   </div>
 
-                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Upcoming Deadlines</div>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3 dark:text-gray-500">Upcoming Deadlines</div>
                     <div className="flex flex-col gap-2.5">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-red-400 shrink-0" />
@@ -481,8 +481,8 @@ export default function ParticipantDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Quick Actions</div>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3 dark:text-gray-500">Quick Actions</div>
                     <div className="flex flex-col gap-2">
                       <button onClick={() => { setActiveTab("project"); setProjectTab("submission"); }} className="text-xs font-semibold text-left text-primary-green hover:underline cursor-pointer flex items-center gap-1.5">
                         <Send className="h-3.5 w-3.5" /> Submit Idea Abstract
@@ -562,9 +562,9 @@ export default function ParticipantDashboard() {
 
                   {/* Members */}
                   <div className="space-y-4">
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="font-bold text-primary-dark text-sm">Members ({team.members.length}/4)</div>
+                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Members ({team.members.length}/4)</div>
                         {team.members.length < 4 && (
                           <button onClick={() => setShowAddMember(!showAddMember)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer">
                             <Plus className="h-3.5 w-3.5" /> Add Member

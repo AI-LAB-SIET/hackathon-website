@@ -66,7 +66,7 @@ export default function JudgeDashboard() {
   }, [session, router, mounted]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "judge") {
-    return <div className="flex h-screen items-center justify-center text-sm text-gray-400">Loading judge portal...</div>;
+    return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading judge portal...</div>;
   }
 
   const assignedTeams = teams.filter((t) => t.status === "APPROVED");
@@ -122,7 +122,7 @@ export default function JudgeDashboard() {
 
   return (
     <PageWrapper>
-      <div className="flex min-h-screen bg-[#f8fafb]">
+      <div className="flex min-h-screen bg-[#f8fafb] dark:bg-gray-950">
         <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
         <main className="flex-1 min-w-0 p-6 lg:p-8">
           {/* Header Bar — utility actions only; navigation handled by Sidebar */}
@@ -246,10 +246,10 @@ export default function JudgeDashboard() {
             {/* ─── REVIEW QUEUE ─── */}
             {activeTab === "queue" && (
               <motion.div key="queue" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Review Queue</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Review Queue</h2>
 
                 {/* Filters */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-3 items-center">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-3 items-center dark:bg-gray-900 dark:border-gray-700">
                   <div className="relative flex-1 min-w-48">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search teams..."
@@ -273,7 +273,7 @@ export default function JudgeDashboard() {
                   </select>
                 </div>
 
-                <div className="text-xs text-gray-400 font-semibold">{filteredQueue.length} teams</div>
+                <div className="text-xs text-gray-400 font-semibold dark:text-gray-500">{filteredQueue.length} teams</div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredQueue.map((team) => {
@@ -282,13 +282,13 @@ export default function JudgeDashboard() {
                     const myEval = team.evaluations?.find((e) => e.judgeEmail === session.email);
                     const teamAvgScore = myEval ? Math.round((myEval.innovation + myEval.feasibility + myEval.presentation + (myEval.technicalDepth ?? 0) + (myEval.aiUsage ?? 0)) / 5 * 10) / 10 : null;
                     return (
-                      <div key={team.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                      <div key={team.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow dark:bg-gray-900 dark:border-gray-700">
                         <div className="flex items-start gap-3">
                           <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
                             {team.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-bold text-primary-dark">{team.name}</div>
+                            <div className="font-bold text-primary-dark dark:text-gray-100">{team.name}</div>
                             <div className="text-xs text-gray-400">{track?.label || "—"} · {team.members.length} members</div>
                           </div>
                           <span className={`text-xs font-bold px-2 py-1 rounded-full ${reviewed ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
@@ -296,7 +296,7 @@ export default function JudgeDashboard() {
                           </span>
                         </div>
 
-                        <p className="text-xs text-gray-500 line-clamp-2">{team.projectDescription}</p>
+                        <p className="text-xs text-gray-500 line-clamp-2 dark:text-gray-400">{team.projectDescription}</p>
 
                         {reviewed && teamAvgScore !== null && (
                           <div className="flex items-center gap-2">
