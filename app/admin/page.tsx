@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/components/layout/ThemeProvider";
@@ -290,7 +291,7 @@ export default function AdminDashboard() {
               className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 activeTab === id
                   ? "bg-primary-green text-white"
-                  : "bg-white text-gray-600 border border-gray-200"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
               }`}
             >
               {tabLabels[id]}
@@ -337,10 +338,12 @@ export default function AdminDashboard() {
                 <UserPlus className="h-4 w-4 mr-1" /> Add Member
               </Button>
             )}
+            {/* Theme toggle */}
+            <ThemeToggle />
             {/* Notification Bell */}
             <div className="relative">
               <button onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-primary-green hover:text-primary-green transition-colors cursor-pointer"
+                className="relative p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-primary-green hover:text-primary-green transition-colors cursor-pointer"
               >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
@@ -352,10 +355,10 @@ export default function AdminDashboard() {
               <AnimatePresence>
                 {notifOpen && (
                   <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden"
+                    className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl z-50 overflow-hidden"
                   >
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                      <span className="font-bold text-sm text-primary-dark">Notifications</span>
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <span className="font-bold text-sm text-primary-dark dark:text-gray-100">Notifications</span>
                       {unreadCount > 0 && (
                         <button onClick={() => { markAllNotificationsRead(); toast("All notifications marked as read", "info"); }}
                           className="text-xs font-semibold text-primary-green hover:underline cursor-pointer"
@@ -363,15 +366,15 @@ export default function AdminDashboard() {
                       )}
                     </div>
                     <div className="max-h-72 overflow-y-auto">
-                      {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400">No notifications</div>}
+                      {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">No notifications</div>}
                       {notifications.slice(0, 10).map((n) => (
                         <div key={n.id} onClick={() => markNotificationRead(n.id)}
-                          className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? "bg-emerald-50/50" : ""}`}
+                          className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!n.read ? "bg-emerald-50/50 dark:bg-emerald-900/20" : ""}`}
                         >
-                          <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-primary-green" : "bg-gray-300"}`} />
+                          <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-primary-green" : "bg-gray-300 dark:bg-gray-600"}`} />
                           <div className="flex-1 min-w-0">
-                            <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
-                            <div className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</div>
+                            <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}>{n.title}</div>
+                            <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-2">{n.body}</div>
                           </div>
                         </div>
                       ))}
@@ -440,24 +443,24 @@ export default function AdminDashboard() {
 
             {/* ═══════════════════════════════════════════ MEMBERS TAB ═══════════════════════════════════════════ */}
             {activeTab === "members" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-5">
-                <h3 className="text-base font-bold text-primary-dark border-b border-gray-150 pb-3">Members & Roles</h3>
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
+                <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-3">Members & Roles</h3>
                 <div className="flex flex-col gap-3">
                   {members.map((m) => (
-                    <div key={m.id} className="p-4 rounded-2xl border border-gray-100 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs">
+                    <div key={m.id} className="p-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs">
                       <div className="flex items-center gap-3">
                         <Avatar name={m.name} size="sm" />
                         <div>
-                          <p className="font-extrabold text-primary-dark">{m.name}</p>
-                          <p className="text-[10px] text-gray-500 mt-0.5">{m.email}</p>
+                          <p className="font-extrabold text-primary-dark dark:text-gray-100">{m.name}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{m.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={roleBadgeVariant(m.role)}>{m.role.toUpperCase()}</Badge>
-                        <button onClick={() => openEditMember(m)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-primary-dark cursor-pointer transition-colors">
+                        <button onClick={() => openEditMember(m)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-primary-dark cursor-pointer transition-colors">
                           <Edit3 className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => handleRemoveMember(m.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 cursor-pointer transition-colors">
+                        <button onClick={() => handleRemoveMember(m.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 cursor-pointer transition-colors">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -469,16 +472,16 @@ export default function AdminDashboard() {
 
             {/* ═══════════════════════════════════════════ PARTICIPANTS TAB ═══════════════════════════════════════════ */}
             {activeTab === "participants" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-5">
-                <h3 className="text-base font-bold text-primary-dark border-b border-gray-150 pb-3">All Participants</h3>
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
+                <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-3">All Participants</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-gray-100">
-                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Name</th>
-                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Team</th>
-                        <th className="text-center py-3 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Leader</th>
-                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Role</th>
+                      <tr className="border-b border-gray-100 dark:border-gray-700">
+                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Team</th>
+                        <th className="text-center py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Leader</th>
+                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Role</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -489,17 +492,17 @@ export default function AdminDashboard() {
                           teamId: t.id,
                         }))
                       ).map((p, idx) => (
-                        <tr key={`${p.teamId}-${p.email}-${idx}`} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                        <tr key={`${p.teamId}-${p.email}-${idx}`} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-2">
                               <Avatar name={p.name} size="sm" />
                               <div>
-                                <p className="font-bold text-primary-dark">{p.name}</p>
-                                <p className="text-[10px] text-gray-400">{p.email}</p>
+                                <p className="font-bold text-primary-dark dark:text-gray-100">{p.name}</p>
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500">{p.email}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="py-3 px-3 text-gray-600">{p.teamName}</td>
+                          <td className="py-3 px-3 text-gray-600 dark:text-gray-300">{p.teamName}</td>
                           <td className="py-3 px-3 text-center">
                             {p.isLeader ? (
                               <CheckCircle className="h-4 w-4 text-emerald-500 mx-auto" />
@@ -527,29 +530,29 @@ export default function AdminDashboard() {
 
             {/* ═══════════════════════════════════════════ ANNOUNCEMENTS TAB ═══════════════════════════════════════════ */}
             {activeTab === "announcements" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-5">
-                <h3 className="text-base font-bold text-primary-dark border-b border-gray-150 pb-3 flex items-center gap-2">
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
+                <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-3 flex items-center gap-2">
                   <Megaphone className="h-4.5 w-4.5 text-primary-green" /> Announcements
                 </h3>
                 <div className="flex flex-col gap-3">
                   {announcements.map((ann) => (
-                    <div key={ann.id} className="p-4 rounded-2xl border border-gray-100 bg-white text-xs">
+                    <div key={ann.id} className="p-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs">
                       <div className="flex justify-between items-start gap-3">
                         <div className="flex gap-3 items-start">
                           <span className={`mt-0.5 h-2.5 w-2.5 rounded-full shrink-0 ${
                             ann.type === "warning" ? "bg-amber-500" : ann.type === "success" ? "bg-emerald-500" : "bg-blue-500"
                           }`} />
                           <div>
-                            <p className="font-bold text-primary-dark">{ann.title}</p>
-                            <p className="text-gray-500 mt-1 leading-relaxed">{ann.content}</p>
-                            <p className="text-[10px] text-gray-400 font-semibold mt-2">{ann.date}</p>
+                            <p className="font-bold text-primary-dark dark:text-gray-100">{ann.title}</p>
+                            <p className="text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{ann.content}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold mt-2">{ann.date}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => handleEditAnnouncement(ann)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 cursor-pointer transition-colors">
+                          <button onClick={() => handleEditAnnouncement(ann)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-pointer transition-colors">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => handleDeleteAnnouncement(ann.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 cursor-pointer transition-colors">
+                          <button onClick={() => handleDeleteAnnouncement(ann.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 cursor-pointer transition-colors">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -570,7 +573,7 @@ export default function AdminDashboard() {
                   const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
                   const isExpanded = expandedPs === ps.id;
                   return (
-                    <div key={ps.id} className="rounded-3xl border border-input-border/30 bg-white overflow-hidden shadow-sm">
+                    <div key={ps.id} className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
                       <button
                         onClick={() => setExpandedPs(isExpanded ? null : ps.id)}
                         className="w-full p-5 flex items-center justify-between text-left cursor-pointer bg-transparent border-0"
@@ -580,8 +583,8 @@ export default function AdminDashboard() {
                             {ps.status.toUpperCase()}
                           </Badge>
                           <div>
-                            <h4 className="text-sm font-bold text-primary-dark">{ps.title}</h4>
-                            <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                            <h4 className="text-sm font-bold text-primary-dark dark:text-gray-100">{ps.title}</h4>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold mt-0.5">
                               {track?.label || "—"} · Created {new Date(ps.createdAt).toLocaleDateString()}
                             </p>
                           </div>
@@ -589,10 +592,10 @@ export default function AdminDashboard() {
                         <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                       </button>
                       {isExpanded && (
-                        <div className="px-5 pb-5 border-t border-gray-100 pt-4">
-                          <p className="text-xs text-gray-600 leading-relaxed mb-4">{ps.description}</p>
+                        <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 pt-4">
+                          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-4">{ps.description}</p>
                           <div className="flex gap-2">
-                            <button onClick={() => handleEditPs(ps)} className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-[11px] font-bold hover:bg-gray-200 cursor-pointer transition-colors flex items-center gap-1">
+                            <button onClick={() => handleEditPs(ps)} className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] font-bold hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center gap-1">
                               <Edit3 className="h-3 w-3" /> Edit
                             </button>
                             {ps.status !== "published" && (
@@ -612,9 +615,9 @@ export default function AdminDashboard() {
                   );
                 })}
                 {problemStatements.length === 0 && (
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-10 text-center shadow-sm">
-                    <BookOpen className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">No problem statements yet. Click &quot;Create&quot; to add one.</p>
+                  <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-10 text-center shadow-sm">
+                    <BookOpen className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-400 dark:text-gray-500 text-sm">No problem statements yet. Click &quot;Create&quot; to add one.</p>
                   </div>
                 )}
               </div>
@@ -622,13 +625,13 @@ export default function AdminDashboard() {
 
             {/* ═══════════════════════════════════════════ QR SCANNER TAB ═══════════════════════════════════════════ */}
             {activeTab === "scanner" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-8 shadow-sm flex flex-col gap-6 items-center text-center">
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-8 shadow-sm flex flex-col gap-6 items-center text-center">
                 <div className="h-16 w-16 rounded-2xl bg-primary-green/10 flex items-center justify-center">
                   <QrCode className="h-8 w-8 text-primary-green" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-primary-dark mb-1">Global QR Scanner</h3>
-                  <p className="text-xs text-gray-500 max-w-sm">
+                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 mb-1">Global QR Scanner</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
                     Scan a team QR code or search by team name to look up any team and navigate to the appropriate workflow.
                   </p>
                 </div>
@@ -640,8 +643,8 @@ export default function AdminDashboard() {
 
             {/* ═══════════════════════════════════════════ APPROVED TEAMS TAB ═══════════════════════════════════════════ */}
             {activeTab === "teams" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm flex flex-col gap-5">
-                <h3 className="text-base font-bold text-primary-dark border-b border-gray-150 pb-3">Approved Teams</h3>
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
+                <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-3">Approved Teams</h3>
                 <div className="flex flex-col gap-3">
                   {approvedTeams.map((team) => {
                     const track = HACK_TRACKS.find((t) => t.id === team.trackId);
@@ -649,21 +652,21 @@ export default function AdminDashboard() {
                       <button
                         key={team.id}
                         onClick={() => { setDetailTeam(team); setTeamDetailOpen(true); }}
-                        className="p-4 rounded-2xl border border-gray-100 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs cursor-pointer hover:border-primary-green/30 hover:bg-emerald-50/30 transition-all text-left"
+                        className="p-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs cursor-pointer hover:border-primary-green/30 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-all text-left"
                       >
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
                             {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
                           </div>
                           <div>
-                            <p className="font-extrabold text-primary-dark">{team.name}</p>
-                            <p className="text-[10px] text-gray-400 font-semibold">{team.size} members · {track?.label || "—"}</p>
+                            <p className="font-extrabold text-primary-dark dark:text-gray-100">{team.name}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold">{team.size} members · {track?.label || "—"}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <p className="text-[10px] text-gray-400 font-semibold">Created</p>
-                            <p className="font-bold text-gray-600">{new Date(team.createdAt).toLocaleDateString()}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold">Created</p>
+                            <p className="font-bold text-gray-600 dark:text-gray-300">{new Date(team.createdAt).toLocaleDateString()}</p>
                           </div>
                           <Badge variant={team.attendance?.checkedIn ? "success" : "warning"}>
                             {team.attendance?.checkedIn ? "Checked In" : "Not Arrived"}
@@ -695,7 +698,7 @@ export default function AdminDashboard() {
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         profileTab === tab.id
                           ? "bg-primary-green text-white shadow-sm"
-                          : "bg-white text-gray-600 border border-gray-200 hover:border-primary-green/30"
+                          : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-primary-green/30"
                       }`}
                     >
                       {tab.label}
@@ -704,18 +707,18 @@ export default function AdminDashboard() {
                 </div>
 
                 {profileTab === "edit" && (
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-6 shadow-sm flex flex-col gap-5">
-                    <h3 className="text-base font-bold text-primary-dark border-b border-gray-150 pb-2">Edit Profile</h3>
+                  <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-6 shadow-sm flex flex-col gap-5">
+                    <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-2">Edit Profile</h3>
                     <div className="flex flex-col gap-4">
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Email</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Email</label>
                         <input
                           type="email"
                           value={session.email || ""}
                           disabled
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
                         />
-                        <p className="text-[10px] text-gray-400 mt-1">Email cannot be changed.</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Email cannot be changed.</p>
                       </div>
                       <Input
                         label="Display Name"
@@ -724,13 +727,13 @@ export default function AdminDashboard() {
                         placeholder="Your display name"
                       />
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Bio</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>
                         <textarea
                           rows={3}
                           value={profileForm.bio}
                           onChange={(e) => setProfileForm((p) => ({ ...p, bio: e.target.value }))}
                           placeholder="A short bio about yourself..."
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                         />
                       </div>
                       <Input
@@ -745,25 +748,14 @@ export default function AdminDashboard() {
                 )}
 
                 {profileTab === "appearance" && (
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-6 shadow-sm flex flex-col gap-6 max-w-md">
-                    <h3 className="text-base font-bold text-primary-dark border-b border-gray-150 pb-2">Appearance</h3>
+                  <div className="rounded-3xl border border-input-border/30 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm flex flex-col gap-6 max-w-md">
+                    <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-2">Appearance</h3>
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-sm font-bold text-gray-800">Dark Mode</p>
-                        <p className="text-[11px] text-gray-400">Toggle between light and dark themes.</p>
+                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Dark Mode</p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500">Toggle between light and dark themes. Also available beside the notification bell.</p>
                       </div>
-                      <button
-                        onClick={toggleTheme}
-                        className="relative w-12 h-7 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer flex items-center px-1"
-                      >
-                        <motion.div
-                          animate={{ x: theme === "dark" ? 20 : 0 }}
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          className="h-5 w-5 rounded-full bg-white shadow-sm flex items-center justify-center"
-                        >
-                          {theme === "dark" ? <Moon className="h-3 w-3 text-indigo-600" /> : <Sun className="h-3 w-3 text-amber-500" />}
-                        </motion.div>
-                      </button>
+                      <ThemeToggle />
                     </div>
                   </div>
                 )}
@@ -792,11 +784,11 @@ export default function AdminDashboard() {
             placeholder="email@college.edu"
           />
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Role</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Role</label>
             <select
               value={memberForm.role}
               onChange={(e) => setMemberForm((p) => ({ ...p, role: e.target.value as Member["role"] }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
             >
               <option value="admin">Admin</option>
               <option value="organizer">Organizer</option>
@@ -828,21 +820,21 @@ export default function AdminDashboard() {
             placeholder="Announcement title"
           />
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Content *</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Content *</label>
             <textarea
               rows={4}
               value={annForm.content}
               onChange={(e) => setAnnForm((p) => ({ ...p, content: e.target.value }))}
               placeholder="Write your announcement here..."
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Type</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Type</label>
             <select
               value={annForm.type}
               onChange={(e) => setAnnForm((p) => ({ ...p, type: e.target.value as "info" | "warning" | "success" }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
             >
               <option value="info">Info</option>
               <option value="warning">Warning</option>
@@ -850,14 +842,14 @@ export default function AdminDashboard() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Schedule Date (optional)</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Schedule Date (optional)</label>
             <input
               type="date"
               value={annForm.scheduleDate}
               onChange={(e) => setAnnForm((p) => ({ ...p, scheduleDate: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             />
-            <p className="text-[10px] text-gray-400 mt-1">Scheduling is a future feature. Date is saved but not yet used.</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Scheduling is a future feature. Date is saved but not yet used.</p>
           </div>
           <Button onClick={handleSaveAnnouncement} className="w-full text-xs">
             {annEditId ? "Update Announcement" : "Publish Announcement"}
@@ -875,21 +867,21 @@ export default function AdminDashboard() {
             placeholder="Problem statement title"
           />
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Description *</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Description *</label>
             <textarea
               rows={5}
               value={psForm.description}
               onChange={(e) => setPsForm((p) => ({ ...p, description: e.target.value }))}
               placeholder="Describe the problem statement..."
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Track</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Track</label>
             <select
               value={psForm.trackId}
               onChange={(e) => setPsForm((p) => ({ ...p, trackId: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
             >
               {HACK_TRACKS.map((tr) => (
                 <option key={tr.id} value={tr.id}>{tr.label}</option>
@@ -897,11 +889,11 @@ export default function AdminDashboard() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Status</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Status</label>
             <select
               value={psForm.status}
               onChange={(e) => setPsForm((p) => ({ ...p, status: e.target.value as "draft" | "published" | "archived" }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
             >
               <option value="draft">Draft</option>
               <option value="published">Published</option>
@@ -923,31 +915,31 @@ export default function AdminDashboard() {
                 {detailTeam.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
               </div>
               <div>
-                <h4 className="font-extrabold text-primary-dark">{detailTeam.name}</h4>
-                <p className="text-[11px] text-gray-400">{detailTeam.size} members · {HACK_TRACKS.find((t) => t.id === detailTeam.trackId)?.label || "—"}</p>
+                <h4 className="font-extrabold text-primary-dark dark:text-gray-100">{detailTeam.name}</h4>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">{detailTeam.size} members · {HACK_TRACKS.find((t) => t.id === detailTeam.trackId)?.label || "—"}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Created</p>
-                <p className="font-bold text-primary-dark">{new Date(detailTeam.createdAt).toLocaleDateString()}</p>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase">Created</p>
+                <p className="font-bold text-primary-dark dark:text-gray-100">{new Date(detailTeam.createdAt).toLocaleDateString()}</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Attendance</p>
-                <p className={`font-bold ${detailTeam.attendance?.checkedIn ? "text-emerald-600" : "text-gray-500"}`}>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase">Attendance</p>
+                <p className={`font-bold ${detailTeam.attendance?.checkedIn ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500 dark:text-gray-400"}`}>
                   {detailTeam.attendance?.checkedIn ? "Checked In" : "Not Arrived"}
                 </p>
               </div>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Members</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mb-2">Members</p>
               <div className="flex flex-col gap-2">
                 {detailTeam.members.map((m) => (
-                  <div key={m.email} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 text-xs">
+                  <div key={m.email} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-xs">
                     <Avatar name={m.name} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-primary-dark">{m.name} {m.isLeader && <span className="text-[10px] text-amber-600">(Leader)</span>}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{m.email} · {m.department}</p>
+                      <p className="font-bold text-primary-dark dark:text-gray-100">{m.name} {m.isLeader && <span className="text-[10px] text-amber-600 dark:text-amber-400">(Leader)</span>}</p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{m.email} · {m.department}</p>
                     </div>
                   </div>
                 ))}
@@ -955,8 +947,8 @@ export default function AdminDashboard() {
             </div>
             {detailTeam.projectDescription && (
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Project</p>
-                <p className="text-xs text-gray-600 bg-gray-50 rounded-xl p-3">{detailTeam.projectDescription}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Project</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-xl p-3">{detailTeam.projectDescription}</p>
               </div>
             )}
           </div>

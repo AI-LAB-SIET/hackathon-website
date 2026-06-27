@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/components/layout/ThemeProvider";
@@ -196,6 +197,7 @@ export default function OrganizerDashboard() {
           {/* Header Bar — utility actions only; navigation handled by Sidebar */}
           <div className="flex items-center justify-end gap-2 mb-8">
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <button onClick={() => setScannerOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
               ><QrCode className="h-4 w-4" /> Scan QR</button>
@@ -206,7 +208,7 @@ export default function OrganizerDashboard() {
               {/* Notification Bell */}
               <div className="relative">
                 <button onClick={() => setNotifOpen(!notifOpen)}
-                  className="relative p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600 transition-colors cursor-pointer"
+                  className="relative p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-amber-300 hover:text-amber-600 transition-colors cursor-pointer"
                 >
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
@@ -218,10 +220,10 @@ export default function OrganizerDashboard() {
                 <AnimatePresence>
                   {notifOpen && (
                     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                      className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden"
+                      className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl z-50 overflow-hidden"
                     >
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                        <span className="font-bold text-sm text-primary-dark">Notifications</span>
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                        <span className="font-bold text-sm text-primary-dark dark:text-gray-100">Notifications</span>
                         {unreadCount > 0 && (
                           <button onClick={() => { markAllNotificationsRead(); toast("All notifications marked as read", "info"); }}
                             className="text-xs font-semibold text-amber-600 hover:underline cursor-pointer"
@@ -229,15 +231,15 @@ export default function OrganizerDashboard() {
                         )}
                       </div>
                       <div className="max-h-72 overflow-y-auto">
-                        {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400">No notifications</div>}
+                        {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">No notifications</div>}
                         {notifications.slice(0, 10).map((n) => (
                           <div key={n.id} onClick={() => markNotificationRead(n.id)}
-                            className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? "bg-amber-50" : ""}`}
+                            className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!n.read ? "bg-amber-50 dark:bg-amber-900/20" : ""}`}
                           >
-                            <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-amber-500" : "bg-gray-300"}`} />
+                            <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-amber-500" : "bg-gray-300 dark:bg-gray-600"}`} />
                             <div className="flex-1 min-w-0">
-                              <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
-                              <div className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</div>
+                              <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}>{n.title}</div>
+                              <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-2">{n.body}</div>
                             </div>
                           </div>
                         ))}
@@ -271,24 +273,24 @@ export default function OrganizerDashboard() {
                     { label: "Open Tickets", value: openTickets.length, icon: <Ticket className="h-5 w-5 text-orange-500" />, bg: "bg-orange-50" },
                     { label: "Rejected", value: rejectedTeams.length, icon: <XCircle className="h-5 w-5 text-red-500" />, bg: "bg-red-50" },
                   ].map((k) => (
-                    <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-2">
+                    <div key={k.label} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex flex-col gap-2">
                       <div className={`p-2 rounded-xl w-fit ${k.bg}`}>{k.icon}</div>
-                      <div className="text-2xl font-extrabold text-primary-dark">{k.value}</div>
-                      <div className="text-xs text-gray-400 font-semibold">{k.label}</div>
+                      <div className="text-2xl font-extrabold text-primary-dark dark:text-gray-100">{k.value}</div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 font-semibold">{k.label}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Broadcast Announcement */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-                  <div className="font-bold text-primary-dark text-sm">Broadcast Announcement</div>
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
+                  <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">Broadcast Announcement</div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <input type="text" value={annForm.title} onChange={(e) => setAnnForm((p) => ({ ...p, title: e.target.value }))}
-                      placeholder="Title..." className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                      placeholder="Title..." className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                     <input type="text" value={annForm.content} onChange={(e) => setAnnForm((p) => ({ ...p, content: e.target.value }))}
-                      placeholder="Message..." className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                      placeholder="Message..." className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                     <select value={annForm.type} onChange={(e) => setAnnForm((p) => ({ ...p, type: e.target.value as typeof annForm.type }))}
-                      className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer">
+                      className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer">
                       <option value="info">Info</option>
                       <option value="success">Success</option>
                       <option value="warning">Warning</option>
@@ -311,31 +313,31 @@ export default function OrganizerDashboard() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search teams..."
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden dark:bg-gray-900 dark:border-gray-700">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-100">
+                    <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                       <tr>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Team</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Track</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Size</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Status</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Attendance</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Actions</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Team</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Track</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Size</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Status</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Attendance</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {teams.filter((t) => !search || t.name.toLowerCase().includes(search.toLowerCase())).map((t) => {
                         const track = HACK_TRACKS.find((tr) => tr.id === t.trackId);
                         return (
-                          <tr key={t.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                          <tr key={t.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                             <td className="px-5 py-3">
-                              <div className="font-semibold text-primary-dark">{t.name}</div>
-                              <div className="text-xs text-gray-400 font-mono">{t.qrToken?.split("-").slice(0, 3).join("-")}</div>
+                              <div className="font-semibold text-primary-dark dark:text-gray-100">{t.name}</div>
+                              <div className="text-xs text-gray-400 dark:text-gray-500 font-mono">{t.qrToken?.split("-").slice(0, 3).join("-")}</div>
                             </td>
-                            <td className="px-5 py-3 text-xs text-gray-500">{track?.label || "—"}</td>
-                            <td className="px-5 py-3 text-gray-600">{t.size}</td>
+                            <td className="px-5 py-3 text-xs text-gray-500 dark:text-gray-400">{track?.label || "—"}</td>
+                            <td className="px-5 py-3 text-gray-600 dark:text-gray-300">{t.size}</td>
                             <td className="px-5 py-3">
                               <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : t.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>{t.status}</span>
                             </td>
@@ -408,16 +410,16 @@ export default function OrganizerDashboard() {
                     const regPct = Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100);
                     return (
                       <div key={team.id} onClick={() => setSelectedTeam(team)}
-                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all"
+                        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all"
                       >
                         <div className="flex items-start gap-4 flex-wrap">
                           <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold shrink-0">
                             {team.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-extrabold text-primary-dark">{team.name}</div>
-                            <div className="text-xs text-gray-400">{track?.label || "—"} · {team.size} members · Leader: {leader?.name}</div>
-                            <div className="text-xs text-gray-500 mt-1 line-clamp-1">{team.projectDescription}</div>
+                            <div className="font-extrabold text-primary-dark dark:text-gray-100">{team.name}</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">{track?.label || "—"} · {team.size} members · Leader: {leader?.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{team.projectDescription}</div>
                           </div>
                           <span className={`text-xs font-bold px-3 py-1.5 rounded-full shrink-0 ${team.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : team.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
                             {team.status}
@@ -427,10 +429,10 @@ export default function OrganizerDashboard() {
 
                         {/* Registration checklist */}
                         <div className="mt-4 flex items-center gap-3">
-                          <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                          <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-1.5">
                             <div className="h-1.5 rounded-full bg-amber-400 transition-all" style={{ width: `${regPct}%` }} />
                           </div>
-                          <span className="text-xs font-semibold text-gray-500 shrink-0">{regPct}%</span>
+                          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0">{regPct}%</span>
                           <div className="flex gap-2">
                             {regChecklist.map((item) => (
                               <div key={item.label} title={item.label}>
@@ -459,18 +461,18 @@ export default function OrganizerDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {volunteers.map((vol) => (
                     <div key={vol.id} onClick={() => openVolunteerModal(vol)}
-                      className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all"
+                      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all"
                     >
                       <div className="flex items-center gap-3 mb-3">
                         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
                           {vol.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-bold text-primary-dark text-sm truncate">{vol.name}</div>
+                          <div className="font-bold text-primary-dark dark:text-gray-100 text-sm truncate">{vol.name}</div>
                           <div className="text-xs text-amber-600 font-semibold">{vol.assignedArea || "Unassigned"}</div>
                         </div>
                       </div>
-                      <div className="space-y-1.5 text-xs text-gray-500">
+                      <div className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-2"><Mail className="h-3 w-3 shrink-0" /> <span className="truncate">{vol.email}</span></div>
                         <div className="flex items-center gap-2"><Phone className="h-3 w-3 shrink-0" /> {vol.phone || "—"}</div>
                       </div>
@@ -516,16 +518,16 @@ export default function OrganizerDashboard() {
                       Closed: "bg-gray-100 text-gray-500",
                     };
                     return (
-                      <div key={ticket.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <div key={ticket.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
                         <div className="flex items-start gap-4 flex-wrap">
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-primary-dark text-sm">{team?.name || "Unknown Team"}</span>
+                              <span className="font-bold text-primary-dark dark:text-gray-100 text-sm">{team?.name || "Unknown Team"}</span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityColors[ticket.priority]}`}>{ticket.priority}</span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColors[ticket.status]}`}>{ticket.status}</span>
                             </div>
-                            <div className="text-xs text-gray-500 line-clamp-2">{ticket.description}</div>
-                            <div className="flex items-center gap-3 text-[11px] text-gray-400">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{ticket.description}</div>
+                            <div className="flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500">
                               <span>Category: {ticket.category}</span>
                               <span>Raised by: {ticket.raisedBy}</span>
                               {ticket.assignedTo && <span>Assigned: {ticket.assignedTo}</span>}
@@ -539,7 +541,7 @@ export default function OrganizerDashboard() {
                                   Assign
                                 </button>
                                 <select value={ticket.status} onChange={(e) => updateTicketStatus(ticket.id, e.target.value as SupportTicket["status"])}
-                                  className="px-2 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none">
+                                  className="px-2 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 cursor-pointer focus:outline-none">
                                   <option value="Open">Open</option>
                                   <option value="Assigned">Assigned</option>
                                   <option value="In Progress">In Progress</option>
@@ -565,40 +567,40 @@ export default function OrganizerDashboard() {
                 <div className="flex gap-2 flex-wrap">
                   {(["edit", "appearance"] as const).map((t) => (
                     <button key={t} onClick={() => setProfileTab(t)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${profileTab === t ? "bg-amber-500 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${profileTab === t ? "bg-amber-500 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`}
                     >{t === "edit" ? "Edit Profile" : "Appearance"}</button>
                   ))}
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
                   {profileTab === "edit" && (
                     <div className="space-y-6">
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
                         <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
                           {(session.name || "O").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-extrabold text-primary-dark text-lg">{session.name || "Organizer"}</div>
-                          <div className="text-gray-400 text-sm">{session.email}</div>
+                          <div className="font-extrabold text-primary-dark dark:text-gray-100 text-lg">{session.name || "Organizer"}</div>
+                          <div className="text-gray-400 dark:text-gray-500 text-sm">{session.email}</div>
                           <div className="text-xs font-semibold text-amber-600 mt-0.5">Organizer · SIET AI Hack Lab 2026</div>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Full Name</label>
+                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Full Name</label>
                           <input type="text" defaultValue={session.name || ""} readOnly
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-700" />
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300" />
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Email</label>
+                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Email</label>
                           <input type="email" value={session.email || ""} readOnly
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
-                          <p className="text-[11px] text-gray-400 mt-1">Email cannot be changed</p>
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Email cannot be changed</p>
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Bio</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>
                         <textarea rows={3} defaultValue="" placeholder="Tell us about yourself..."
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                       </div>
                       <button onClick={() => toast("Profile updated successfully", "success")}
                         className="px-6 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-colors cursor-pointer">
@@ -610,19 +612,9 @@ export default function OrganizerDashboard() {
                   {profileTab === "appearance" && (
                     <div className="space-y-6">
                       <div>
-                        <div className="font-bold text-primary-dark text-sm mb-3">Theme</div>
-                        <div className="flex gap-3">
-                          <button onClick={() => theme !== "light" && toggleTheme()}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${theme === "light" ? "border-amber-500 bg-amber-50 text-amber-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
-                          >
-                            <Sun className="h-4 w-4" /> Light
-                          </button>
-                          <button onClick={() => theme !== "dark" && toggleTheme()}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${theme === "dark" ? "border-amber-500 bg-amber-50 text-amber-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
-                          >
-                            <Moon className="h-4 w-4" /> Dark
-                          </button>
-                        </div>
+                        <div className="font-bold text-primary-dark text-sm mb-3 dark:text-gray-100">Theme</div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Toggle between light and dark mode. You can also switch anytime using the icon beside the notification bell.</p>
+                        <ThemeToggle />
                       </div>
                     </div>
                   )}
@@ -765,29 +757,29 @@ export default function OrganizerDashboard() {
           <Modal isOpen={volModalOpen} onClose={() => { setVolModalOpen(false); setEditingVolunteer(null); }} title={editingVolunteer ? "Edit Volunteer" : "Add Volunteer"}>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Name *</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Name *</label>
                 <input type="text" value={volForm.name} onChange={(e) => setVolForm((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="Full name" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                  placeholder="Full name" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Email *</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Email *</label>
                 <input type="email" value={volForm.email} onChange={(e) => setVolForm((p) => ({ ...p, email: e.target.value }))}
-                  placeholder="email@example.com" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                  placeholder="email@example.com" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Phone</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Phone</label>
                 <input type="tel" value={volForm.phone} onChange={(e) => setVolForm((p) => ({ ...p, phone: e.target.value }))}
-                  placeholder="Phone number" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                  placeholder="Phone number" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Assigned Area</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Assigned Area</label>
                 <input type="text" value={volForm.assignedArea} onChange={(e) => setVolForm((p) => ({ ...p, assignedArea: e.target.value }))}
-                  placeholder="e.g. Registration Desk, Venue" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                  placeholder="e.g. Registration Desk, Venue" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Assigned Responsibilities</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Assigned Responsibilities</label>
                 <textarea rows={3} value={volForm.assignedResponsibilities} onChange={(e) => setVolForm((p) => ({ ...p, assignedResponsibilities: e.target.value }))}
-                  placeholder="Describe responsibilities..." className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                  placeholder="Describe responsibilities..." className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={handleSaveVolunteer}
@@ -808,14 +800,14 @@ export default function OrganizerDashboard() {
           <Modal isOpen={ticketModalOpen} onClose={() => { setTicketModalOpen(false); setSelectedTicket(null); setAssignVolEmail(""); }} title="Assign Volunteer to Ticket">
             {selectedTicket && (
               <div className="space-y-4">
-                <div className="bg-gray-50 rounded-xl p-3 text-sm">
-                  <div className="font-semibold text-primary-dark">{teams.find((t) => t.id === selectedTicket.teamId)?.name || "Unknown Team"}</div>
-                  <div className="text-xs text-gray-500 mt-1">{selectedTicket.category} · {selectedTicket.description}</div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-sm">
+                  <div className="font-semibold text-primary-dark dark:text-gray-100">{teams.find((t) => t.id === selectedTicket.teamId)?.name || "Unknown Team"}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{selectedTicket.category} · {selectedTicket.description}</div>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Assign to Volunteer</label>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Assign to Volunteer</label>
                   <select value={assignVolEmail} onChange={(e) => setAssignVolEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer">
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer">
                     <option value="">Select a volunteer...</option>
                     {volunteers.map((v) => (
                       <option key={v.id} value={v.email}>{v.name} ({v.assignedArea || "Unassigned"})</option>

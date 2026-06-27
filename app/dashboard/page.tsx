@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { useToast } from "@/components/ui/toast";
@@ -304,10 +305,13 @@ export default function ParticipantDashboard() {
               holds utility actions (search, notifications, profile menu). */}
           <div className="flex items-center justify-end gap-4 mb-8">
             <div className="flex items-center gap-3 shrink-0">
+              {/* Theme toggle */}
+              <ThemeToggle />
+
               {/* Notifications bell */}
               <button
                 onClick={() => setActiveTab("notifications")}
-                className="relative p-2.5 rounded-xl bg-card-bg border border-input-border/30 text-gray-600 hover:text-primary-green hover:border-primary-green/30 transition-colors cursor-pointer"
+                className="relative p-2.5 rounded-xl bg-card-bg dark:bg-gray-800 border border-input-border/30 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:text-primary-green hover:border-primary-green/30 transition-colors cursor-pointer"
                 title="Notifications"
               >
                 <Bell className="h-4 w-4" />
@@ -322,13 +326,13 @@ export default function ParticipantDashboard() {
               <div className="relative">
                 <button
                   onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-card-bg border border-input-border/30 text-primary-dark hover:bg-emerald-100/50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-card-bg dark:bg-gray-800 border border-input-border/30 dark:border-gray-700 text-primary-dark dark:text-gray-100 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-colors cursor-pointer"
                 >
                   <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs">
                     {(session.name || session.email || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <span className="text-sm font-bold hidden sm:inline">{session.name?.split(" ")[0] || "Profile"}</span>
-                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 <AnimatePresence>
@@ -338,24 +342,24 @@ export default function ParticipantDashboard() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+                      className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 dark:bg-gray-900 dark:border-gray-700"
                     >
                       <button
                         onClick={() => { setProfileTab("edit"); setActiveTab("profile"); setProfileMenuOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer text-left"
                       >
                         <User className="h-4 w-4 text-primary-green" /> My Profile
                       </button>
                       <button
                         onClick={() => { setProfileTab("appearance"); setActiveTab("profile"); setProfileMenuOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer text-left"
                       >
                         <LayoutDashboard className="h-4 w-4 text-primary-green" /> Theme
                       </button>
-                      <div className="border-t border-gray-100" />
+                      <div className="border-t border-gray-100 dark:border-gray-800" />
                       <button
                         onClick={() => { setProfileMenuOpen(false); handleLogout(); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer text-left"
                       >
                         <LogOut className="h-4 w-4" /> Logout
                       </button>
@@ -391,7 +395,7 @@ export default function ParticipantDashboard() {
                   <h2 className="font-bold text-primary-dark mb-6 flex items-center gap-2 dark:text-gray-100"><Layers className="h-5 w-5 text-primary-green" /> Hackathon Journey</h2>
                   <div className="relative">
                     {/* Connecting line */}
-                    <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100" />
+                    <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100 dark:bg-gray-700" />
                     <div className="flex flex-col gap-1">
                       {JOURNEY_STAGES.map((stage, idx) => {
                         const status = getStageStatus(stage.id);
@@ -400,25 +404,25 @@ export default function ParticipantDashboard() {
                           <div key={stage.id}>
                             <button
                               onClick={() => setActiveJourneyStage(isActive ? null : stage.id)}
-                              className="relative w-full flex items-center gap-4 py-3 pl-2 pr-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group text-left"
+                              className="relative w-full flex items-center gap-4 py-3 pl-2 pr-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group text-left"
                             >
                               {/* Icon */}
                               <div className={`relative z-10 h-10 w-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-all ${
-                                status === "completed" ? "bg-emerald-100" :
-                                status === "current" ? "bg-amber-100 ring-2 ring-amber-400 ring-offset-2" :
-                                status === "upcoming" ? "bg-blue-50" : "bg-gray-50"
+                                status === "completed" ? "bg-emerald-100 dark:bg-emerald-900/50" :
+                                status === "current" ? "bg-amber-100 dark:bg-amber-900/50 ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-gray-900" :
+                                status === "upcoming" ? "bg-blue-50 dark:bg-blue-900/30" : "bg-gray-50 dark:bg-gray-800"
                               }`}>
                                 {status === "completed" ? "✅" : status === "current" ? "🟡" : status === "upcoming" ? "⚪" : "🔒"}
                               </div>
 
                               <div className="flex-1 min-w-0">
-                                <div className={`font-semibold text-sm ${status === "locked" ? "text-gray-400" : "text-primary-dark"}`}>{stage.label}</div>
+                                <div className={`font-semibold text-sm ${status === "locked" ? "text-gray-400 dark:text-gray-500" : "text-primary-dark dark:text-gray-100"}`}>{stage.label}</div>
                                 <div className={`text-xs ${status === "current" ? "text-amber-600 font-semibold" : status === "completed" ? "text-emerald-600" : "text-gray-400"}`}>
                                   {status === "completed" ? "Completed" : status === "current" ? "In Progress" : status === "upcoming" ? "Up Next" : "Locked"}
                                 </div>
                               </div>
 
-                              <ChevronRight className={`h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-transform ${isActive ? "rotate-90" : ""}`} />
+                              <ChevronRight className={`h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-transform ${isActive ? "rotate-90" : ""}`} />
                             </button>
 
                             {/* Expandable detail */}
@@ -430,8 +434,8 @@ export default function ParticipantDashboard() {
                                   exit={{ opacity: 0, height: 0 }}
                                   className="overflow-hidden"
                                 >
-                                  <div className="ml-14 mr-4 mb-2 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                    <p className="text-sm text-gray-600">{stage.desc}</p>
+                                  <div className="ml-14 mr-4 mb-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{stage.desc}</p>
                                     {status === "current" && (
                                       <button
                                         onClick={() => setActiveTab(stage.id === "idea" ? "project" : "team")}
@@ -459,10 +463,10 @@ export default function ParticipantDashboard() {
                       {notifications.filter((n) => !n.read).slice(0, 3).map((n) => (
                         <div key={n.id} className="flex items-start gap-2">
                           <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${notifTypeStyles[n.type]?.dot || "bg-gray-400"}`} />
-                          <div className="text-xs text-gray-600 leading-tight">{n.title}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 leading-tight">{n.title}</div>
                         </div>
                       ))}
-                      {notifications.filter((n) => !n.read).length === 0 && <div className="text-xs text-gray-400">All caught up ✓</div>}
+                      {notifications.filter((n) => !n.read).length === 0 && <div className="text-xs text-gray-400 dark:text-gray-500">All caught up ✓</div>}
                     </div>
                     <button onClick={() => setActiveTab("notifications")} className="mt-3 text-xs font-semibold text-primary-green hover:underline cursor-pointer">View all →</button>
                   </div>
@@ -472,11 +476,11 @@ export default function ParticipantDashboard() {
                     <div className="flex flex-col gap-2.5">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-red-400 shrink-0" />
-                        <div><div className="text-xs font-semibold text-gray-700">Idea Submission</div><div className="text-xs text-gray-400">July 5, 2026</div></div>
+                        <div><div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Idea Submission</div><div className="text-xs text-gray-400 dark:text-gray-500">July 5, 2026</div></div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-amber-400 shrink-0" />
-                        <div><div className="text-xs font-semibold text-gray-700">Hackathon Day</div><div className="text-xs text-gray-400">July 18, 2026</div></div>
+                        <div><div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Hackathon Day</div><div className="text-xs text-gray-400 dark:text-gray-500">July 18, 2026</div></div>
                       </div>
                     </div>
                   </div>
@@ -510,29 +514,29 @@ export default function ParticipantDashboard() {
                     <QRTeamPass team={team} />
 
                     {/* Individual Participant QR */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="font-bold text-primary-dark text-sm">Your Personal QR</div>
-                        <div className="text-xs text-gray-400">For attendance & identity</div>
+                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Your Personal QR</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">For attendance & identity</div>
                       </div>
                       <div className="flex items-center gap-5">
                         <div className="flex flex-col items-center gap-2">
                           {participantQrDataUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={participantQrDataUrl} alt="Your QR Code" className="w-32 h-32 rounded-xl border-2 border-gray-100" />
+                            <img src={participantQrDataUrl} alt="Your QR Code" className="w-32 h-32 rounded-xl border-2 border-gray-100 dark:border-gray-700" />
                           ) : (
-                            <div className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center">
-                              <QrCode className="h-8 w-8 text-gray-300" />
+                            <div className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                              <QrCode className="h-8 w-8 text-gray-300 dark:text-gray-600" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 flex flex-col gap-2">
-                          <div className="font-semibold text-primary-dark">{currentUser.name}</div>
-                          <div className="text-xs text-gray-400">{currentUser.email}</div>
-                          <div className="text-xs text-gray-400">{currentUser.department} · {currentUser.year}</div>
+                          <div className="font-semibold text-primary-dark dark:text-gray-100">{currentUser.name}</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">{currentUser.email}</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">{currentUser.department} · {currentUser.year}</div>
                           <button
                             onClick={handleDownloadParticipantQR}
-                            className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors cursor-pointer w-fit"
+                            className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer w-fit"
                           >
                             <Download className="h-4 w-4" /> Download QR
                           </button>
@@ -541,19 +545,19 @@ export default function ParticipantDashboard() {
                     </div>
 
                     {/* Registration Progress */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="font-bold text-primary-dark text-sm">Registration Progress</div>
+                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Registration Progress</div>
                         <div className="text-2xl font-extrabold text-primary-green">{regPercent}%</div>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
+                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mb-4">
                         <motion.div initial={{ width: 0 }} animate={{ width: `${regPercent}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-gradient-to-r from-primary-green to-teal-400" />
                       </div>
                       <div className="flex flex-col gap-2">
                         {regChecklist.map((item) => (
                           <div key={item.label} className="flex items-center gap-2">
                             {item.done ? <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" /> : <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />}
-                            <span className={`text-sm ${item.done ? "text-gray-700" : "text-amber-600 font-medium"}`}>{item.label}</span>
+                            <span className={`text-sm ${item.done ? "text-gray-700 dark:text-gray-300" : "text-amber-600 dark:text-amber-400 font-medium"}`}>{item.label}</span>
                           </div>
                         ))}
                       </div>
@@ -566,27 +570,27 @@ export default function ParticipantDashboard() {
                       <div className="flex items-center justify-between mb-4">
                         <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Members ({team.members.length}/4)</div>
                         {team.members.length < 4 && (
-                          <button onClick={() => setShowAddMember(!showAddMember)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer">
+                          <button onClick={() => setShowAddMember(!showAddMember)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer">
                             <Plus className="h-3.5 w-3.5" /> Add Member
                           </button>
                         )}
                       </div>
                       <div className="flex flex-col gap-3">
                         {team.members.map((m) => (
-                          <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                          <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
                             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
                               {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-primary-dark text-sm flex items-center gap-2">
+                              <div className="font-semibold text-primary-dark text-sm flex items-center gap-2 dark:text-gray-100">
                                 {m.name}
-                                {m.isLeader && <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 rounded-full">Leader</span>}
+                                {m.isLeader && <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-1.5 rounded-full">Leader</span>}
                               </div>
-                              <div className="text-xs text-gray-400">{m.department} · {m.year}</div>
-                              <div className="text-xs text-gray-400">{m.email}</div>
+                              <div className="text-xs text-gray-400 dark:text-gray-500">{m.department} · {m.year}</div>
+                              <div className="text-xs text-gray-400 dark:text-gray-500">{m.email}</div>
                             </div>
                             {!m.isLeader && (
-                              <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50">
+                              <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             )}
@@ -599,10 +603,10 @@ export default function ParticipantDashboard() {
                     <AnimatePresence>
                       {showAddMember && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                          <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 space-y-4">
+                          <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 space-y-4 dark:bg-gray-900 dark:border-emerald-800">
                             <div className="flex items-center justify-between">
-                              <div className="font-bold text-primary-dark text-sm">Register New Member</div>
-                              <button onClick={() => setShowAddMember(false)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X className="h-4 w-4" /></button>
+                              <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Register New Member</div>
+                              <button onClick={() => setShowAddMember(false)} className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 cursor-pointer"><X className="h-4 w-4" /></button>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               {[
@@ -612,38 +616,38 @@ export default function ParticipantDashboard() {
                                 { label: "Phone", field: "phone" as const, placeholder: "98765..." },
                               ].map(({ label, field, placeholder }) => (
                                 <div key={field}>
-                                  <label className="text-xs font-semibold text-gray-500 block mb-1">{label}</label>
+                                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">{label}</label>
                                   <input
                                     type="text"
                                     placeholder={placeholder}
                                     value={newMember[field]}
                                     onChange={(e) => setNewMember((p) => ({ ...p, [field]: e.target.value }))}
-                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                                   />
                                 </div>
                               ))}
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="text-xs font-semibold text-gray-500 block mb-1">Department</label>
+                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Department</label>
                                 <select value={newMember.department} onChange={(e) => setNewMember((p) => ({ ...p, department: e.target.value }))}
-                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                                   {DEPT_OPTIONS.map((d) => <option key={d}>{d}</option>)}
                                 </select>
                               </div>
                               <div>
-                                <label className="text-xs font-semibold text-gray-500 block mb-1">Year</label>
+                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Year</label>
                                 <select value={newMember.year} onChange={(e) => setNewMember((p) => ({ ...p, year: e.target.value }))}
-                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                                   {YEAR_OPTIONS.map((y) => <option key={y}>{y}</option>)}
                                 </select>
                               </div>
                             </div>
                             <div>
-                              <label className="text-xs font-semibold text-gray-500 block mb-1">Skills (press Enter to add)</label>
+                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Skills (press Enter to add)</label>
                               <div className="flex flex-wrap gap-1.5 mb-2">
                                 {newMember.skills.map((s) => (
-                                  <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                  <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
                                     {s}
                                     <button onClick={() => setNewMember((p) => ({ ...p, skills: p.skills.filter((sk) => sk !== s) }))} className="cursor-pointer"><X className="h-3 w-3" /></button>
                                   </span>
@@ -661,7 +665,7 @@ export default function ParticipantDashboard() {
                                       setMemberNewSkill("");
                                     }
                                   }}
-                                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                                 />
                               </div>
                             </div>
@@ -685,52 +689,52 @@ export default function ParticipantDashboard() {
                 <div className="flex gap-2 flex-wrap">
                   {(["overview", "repo", "submission"] as const).map((t) => (
                     <button key={t} onClick={() => setProjectTab(t)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer capitalize ${projectTab === t ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer capitalize ${projectTab === t ? "bg-primary-green text-white" : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-primary-green/40"}`}
                     >{t}</button>
                   ))}
                 </div>
 
                 {projectTab === "overview" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Track</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
                       <select value={projectEdit.trackId} onChange={(e) => setProjectEdit((p) => ({ ...p, trackId: e.target.value }))}
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <option value="">Select a track...</option>
                         {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Project Description</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Project Description</label>
                       <textarea rows={4} value={projectEdit.projectDescription}
                         onChange={(e) => setProjectEdit((p) => ({ ...p, projectDescription: e.target.value }))}
                         placeholder="Describe your AI project..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">AI Tool Disclosure</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">AI Tool Disclosure</label>
                       <textarea rows={2} value={projectEdit.aiDisclosure}
                         onChange={(e) => setProjectEdit((p) => ({ ...p, aiDisclosure: e.target.value }))}
                         placeholder="List any AI tools used (Copilot, ChatGPT, etc.)..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       />
                     </div>
                     <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Changes</button>
 
                     {/* Judge Feedback */}
                     {(team.evaluations || []).length > 0 && (
-                      <div className="mt-6 border-t border-gray-100 pt-4">
-                        <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Judge Evaluations</div>
+                      <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4">
+                        <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Judge Evaluations</div>
                         {team.evaluations!.map((ev, i) => {
                           const avg = Math.round((ev.innovation + ev.feasibility + ev.presentation) / 3);
                           return (
-                            <div key={i} className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                            <div key={i} className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
                               <div className="flex items-center gap-3 mb-2">
-                                <span className="text-2xl font-extrabold text-blue-700">{avg}/10</span>
-                                <div className="text-xs text-blue-600">Innovation: {ev.innovation} · Feasibility: {ev.feasibility} · Presentation: {ev.presentation}</div>
+                                <span className="text-2xl font-extrabold text-blue-700 dark:text-blue-400">{avg}/10</span>
+                                <div className="text-xs text-blue-600 dark:text-blue-300">Innovation: {ev.innovation} · Feasibility: {ev.feasibility} · Presentation: {ev.presentation}</div>
                               </div>
-                              <p className="text-sm text-blue-800">{ev.feedback}</p>
+                              <p className="text-sm text-blue-800 dark:text-blue-200">{ev.feedback}</p>
                             </div>
                           );
                         })}
@@ -740,19 +744,19 @@ export default function ParticipantDashboard() {
                 )}
 
                 {projectTab === "repo" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
                     {[
                       { label: "GitHub Repository URL", field: "githubUrl" as const, icon: <Github className="h-4 w-4" />, placeholder: "https://github.com/your-team/project" },
                       { label: "Demo Video URL", field: "videoUrl" as const, icon: <Video className="h-4 w-4" />, placeholder: "https://youtube.com/..." },
                       { label: "Live Demo URL", field: "demoUrl" as const, icon: <Globe className="h-4 w-4" />, placeholder: "https://your-demo.vercel.app" },
                     ].map(({ label, field, icon, placeholder }) => (
                       <div key={field}>
-                        <label className="text-xs font-semibold text-gray-500 block mb-1.5">{label}</label>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
                         <div className="relative">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">{icon}</div>
                           <input type="text" value={projectEdit[field]} placeholder={placeholder}
                             onChange={(e) => setProjectEdit((p) => ({ ...p, [field]: e.target.value }))}
-                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                           />
                         </div>
                       </div>
@@ -762,17 +766,17 @@ export default function ParticipantDashboard() {
                 )}
 
                 {projectTab === "submission" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
                     <div className={`p-4 rounded-xl ${team.ideaSubmitted ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"}`}>
                       <div className="flex items-center gap-2 font-bold text-sm mb-1">
                         {team.ideaSubmitted ? <><CheckCircle className="h-4 w-4 text-emerald-600" /><span className="text-emerald-700">Idea Submitted</span></> : <><Clock className="h-4 w-4 text-amber-600" /><span className="text-amber-700">Submission Pending</span></>}
                       </div>
-                      <p className="text-xs text-gray-600">Upload your 2-page idea abstract PDF. Deadline: July 5, 2026 at 11:59 PM.</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">Upload your 2-page idea abstract PDF. Deadline: July 5, 2026 at 11:59 PM.</p>
                     </div>
-                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
+                    <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center">
                       <div className="text-4xl mb-3">📄</div>
-                      <div className="font-semibold text-gray-600 mb-1">Drop your PDF here</div>
-                      <div className="text-xs text-gray-400 mb-4">Maximum 10 MB · PDF format only</div>
+                      <div className="font-semibold text-gray-600 dark:text-gray-300 mb-1">Drop your PDF here</div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mb-4">Maximum 10 MB · PDF format only</div>
                       <button
                         onClick={() => { updateProjectDetails(team.id, { ideaSubmitted: true }); toast("Idea abstract submitted!", "success"); }}
                         className="px-5 py-2 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer"
@@ -797,7 +801,7 @@ export default function ParticipantDashboard() {
                 <div className="flex flex-wrap gap-2">
                   {(["all", "approval", "deadline", "mentor", "judge", "action", "system"] as const).map((f) => (
                     <button key={f} onClick={() => setNotifFilter(f)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer capitalize ${notifFilter === f ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer capitalize ${notifFilter === f ? "bg-primary-green text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green/40"}`}
                     >
                       {f === "all" ? "All" : notifTypeStyles[f]?.label || f}
                       {f === "all" && unreadCount > 0 && <span className="ml-1 px-1 bg-red-500 text-white rounded-full text-[10px]">{unreadCount}</span>}
@@ -811,17 +815,17 @@ export default function ParticipantDashboard() {
                     const style = notifTypeStyles[n.type] || notifTypeStyles.system;
                     return (
                       <motion.div key={n.id} layout
-                        className={`flex items-start gap-3 p-4 rounded-xl border ${!n.read ? style.bg : "bg-white border-gray-100"} transition-colors`}
+                        className={`flex items-start gap-3 p-4 rounded-xl border ${!n.read ? style.bg : "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700"} transition-colors`}
                         onClick={() => markNotificationRead(n.id)}
                       >
                         <div className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${style.dot}`} />
                         <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-semibold ${!n.read ? "text-primary-dark" : "text-gray-600"}`}>{n.title}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{n.body}</div>
-                          <div className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
+                          <div className={`text-sm font-semibold ${!n.read ? "text-primary-dark dark:text-gray-100" : "text-gray-600 dark:text-gray-300"}`}>{n.title}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.body}</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
                         </div>
-                        {n.priority === "high" && !n.read && <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full shrink-0">Urgent</span>}
-                        {n.read && <span className="text-xs text-gray-300 shrink-0">Read</span>}
+                        {n.priority === "high" && !n.read && <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-full shrink-0">Urgent</span>}
+                        {n.read && <span className="text-xs text-gray-300 dark:text-gray-600 shrink-0">Read</span>}
                       </motion.div>
                     );
                   })}
@@ -837,7 +841,7 @@ export default function ParticipantDashboard() {
                 <div className="flex gap-2 flex-wrap">
                   {(Object.keys(resourceData) as (keyof typeof resourceData)[]).map((k) => (
                     <button key={k} onClick={() => setResourceTab(k)}
-                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${resourceTab === k ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40 hover:text-primary-green"}`}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${resourceTab === k ? "bg-primary-green text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green/40 hover:text-primary-green"}`}
                     >
                       {k === "templates" && <Code2 className="h-4 w-4" />}
                       {k === "datasets" && <Database className="h-4 w-4" />}
@@ -850,7 +854,7 @@ export default function ParticipantDashboard() {
                 </div>
 
                 <div className="flex items-center gap-3 mb-2">
-                  <p className="text-sm text-gray-500">{resourceData[resourceTab].desc}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{resourceData[resourceTab].desc}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -863,19 +867,19 @@ export default function ParticipantDashboard() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04, duration: 0.3 }}
-                      className="group flex flex-col gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300 cursor-pointer"
+                      className="group flex flex-col gap-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300 cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-primary-dark text-sm leading-tight group-hover:text-primary-green transition-colors">{item.title}</h3>
+                        <h3 className="font-bold text-primary-dark dark:text-gray-100 text-sm leading-tight group-hover:text-primary-green transition-colors">{item.title}</h3>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {item.badge && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${item.badgeColor}`}>{item.badge}</span>}
                           <ExternalLink className="h-4 w-4 text-gray-300 group-hover:text-primary-green transition-colors" />
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 leading-relaxed flex-1">{item.description}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex-1">{item.description}</p>
                       <div className="flex flex-wrap gap-1.5 mt-auto">
                         {item.tags.map((tag) => (
-                          <span key={tag} className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{tag}</span>
+                          <span key={tag} className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{tag}</span>
                         ))}
                       </div>
                     </motion.a>
@@ -892,48 +896,48 @@ export default function ParticipantDashboard() {
                 {/* Raise Ticket + Track Tickets */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Raise Ticket form */}
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-                    <div className="font-bold text-primary-dark text-sm">Raise a Ticket</div>
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
+                    <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Raise a Ticket</div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-semibold text-gray-500 block mb-1">Category</label>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Category</label>
                         <select value={ticketCategory} onChange={(e) => setTicketCategory(e.target.value as SupportTicketCategory)}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                           {(["Internet", "Power", "Mentor Needed", "Hardware", "Food", "Venue", "Other"] as SupportTicketCategory[]).map((c) => <option key={c}>{c}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-gray-500 block mb-1">Priority</label>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Priority</label>
                         <select value={ticketPriority} onChange={(e) => setTicketPriority(e.target.value as SupportTicketPriority)}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                           {(["Low", "Medium", "High", "Critical"] as SupportTicketPriority[]).map((p) => <option key={p}>{p}</option>)}
                         </select>
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">Describe your issue</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Describe your issue</label>
                       <textarea rows={3} value={ticketDescription} onChange={(e) => setTicketDescription(e.target.value)}
                         placeholder="Tell us what's wrong..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                     </div>
                     <button onClick={handleRaiseTicket} className="w-full py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Submit Ticket</button>
                   </div>
 
                   {/* Track Tickets */}
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-3">
-                    <div className="font-bold text-primary-dark text-sm">Your Tickets</div>
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-3">
+                    <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">Your Tickets</div>
                     {(team.supportTickets || []).length === 0 ? (
-                      <div className="text-sm text-gray-400 py-8 text-center">No tickets raised yet.</div>
+                      <div className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">No tickets raised yet.</div>
                     ) : (
                       <div className="flex flex-col gap-2">
                         {(team.supportTickets || []).map((tk) => (
-                          <div key={tk.id} className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                          <div key={tk.id} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
                             <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="text-xs font-bold text-primary-dark">{tk.category}</span>
+                              <span className="text-xs font-bold text-primary-dark dark:text-gray-100">{tk.category}</span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tk.status === "Resolved" || tk.status === "Closed" ? "bg-emerald-100 text-emerald-700" : tk.status === "Open" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{tk.status}</span>
                             </div>
-                            <p className="text-xs text-gray-500">{tk.description}</p>
-                            <div className="text-[10px] text-gray-400 mt-1">{tk.priority} · {new Date(tk.createdAt).toLocaleString()}</div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{tk.description}</p>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{tk.priority} · {new Date(tk.createdAt).toLocaleString()}</div>
                           </div>
                         ))}
                       </div>
@@ -942,22 +946,22 @@ export default function ParticipantDashboard() {
                 </div>
 
                 {/* FAQs */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-3">
-                  <div className="font-bold text-primary-dark text-sm flex items-center gap-2"><Info className="h-4 w-4 text-primary-green" /> FAQs</div>
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-3">
+                  <div className="font-bold text-primary-dark dark:text-gray-100 text-sm flex items-center gap-2"><Info className="h-4 w-4 text-primary-green" /> FAQs</div>
                   <div className="flex flex-col gap-2">
                     {INITIAL_FAQS.map((faq) => {
                       const open = ticketFaqOpen === faq.id;
                       return (
-                        <div key={faq.id} className="rounded-xl border border-gray-100 overflow-hidden">
+                        <div key={faq.id} className="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
                           <button onClick={() => setTicketFaqOpen(open ? null : faq.id)}
-                            className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors cursor-pointer">
-                            <span className="text-sm font-semibold text-gray-700">{faq.question}</span>
+                            className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{faq.question}</span>
                             <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
                           </button>
                           <AnimatePresence>
                             {open && (
                               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                                <p className="px-4 pb-4 text-xs text-gray-500 leading-relaxed">{faq.answer}</p>
+                                <p className="px-4 pb-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{faq.answer}</p>
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -970,19 +974,19 @@ export default function ParticipantDashboard() {
                 {/* Discord + Emergency Contact */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <a href="https://discord.gg/siet-ai-lab" target="_blank" rel="noopener noreferrer"
-                    className="group flex items-center gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:border-primary-green/30 hover:shadow-md transition-all cursor-pointer">
-                    <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600"><MessageCircle className="h-5 w-5" /></div>
+                    className="group flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:border-primary-green/30 hover:shadow-md transition-all cursor-pointer">
+                    <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"><MessageCircle className="h-5 w-5" /></div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-primary-dark text-sm">Discord Community</div>
-                      <div className="text-xs text-gray-500">Get instant help from mentors & organizers</div>
+                      <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">Discord Community</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Get instant help from mentors & organizers</div>
                     </div>
                     <ExternalLink className="h-4 w-4 text-gray-300 group-hover:text-primary-green transition-colors" />
                   </a>
-                  <div className="group flex items-center gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                    <div className="p-2.5 rounded-xl bg-red-50 text-red-600"><AlertTriangle className="h-5 w-5" /></div>
+                  <div className="group flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm">
+                    <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"><AlertTriangle className="h-5 w-5" /></div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-primary-dark text-sm">Emergency Contact</div>
-                      <div className="text-xs text-gray-500">Help Desk: +91 98765 43210 · helpdesk@ai-lab.in</div>
+                      <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">Emergency Contact</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Help Desk: +91 98765 43210 · helpdesk@ai-lab.in</div>
                     </div>
                   </div>
                 </div>
@@ -996,15 +1000,15 @@ export default function ParticipantDashboard() {
                 <div className="flex gap-2 flex-wrap mb-4">
                   {(["edit", "appearance"] as const).map((t) => (
                     <button key={t} onClick={() => setProfileTab(t)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors cursor-pointer ${profileTab === t ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors cursor-pointer ${profileTab === t ? "bg-primary-green text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green/40"}`}
                     >{t === "edit" ? "Edit Profile" : "Appearance"}</button>
                   ))}
                 </div>
 
                 {profileTab === "edit" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-6">
                     {/* Profile Header */}
-                    <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                    <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
                       <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl shrink-0">
                         {profileEdit.profilePicture ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -1015,43 +1019,43 @@ export default function ParticipantDashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-extrabold text-primary-dark text-lg">{currentUser.name}</div>
-                        <div className="text-gray-400 text-sm">{currentUser.email}</div>
+                        <div className="text-gray-400 dark:text-gray-500 text-sm">{currentUser.email}</div>
                         <div className="text-xs font-semibold text-primary-green mt-0.5">{team.name} · {currentUser.isLeader ? "Team Leader" : "Team Member"}</div>
                       </div>
                     </div>
 
                     {/* Email (Immutable) */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-400 block mb-1">Email (immutable)</label>
-                      <div className="px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700">{session.email}</div>
+                      <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 block mb-1">Email (immutable)</label>
+                      <div className="px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">{session.email}</div>
                     </div>
 
                     {/* Profile Picture URL */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Profile Picture URL</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Profile Picture URL</label>
                       <input type="text" value={profileEdit.profilePicture}
                         onChange={(e) => setProfileEdit((p) => ({ ...p, profilePicture: e.target.value }))}
                         placeholder="https://example.com/avatar.jpg"
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       />
                     </div>
 
                     {/* Bio */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Bio</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Bio</label>
                       <textarea rows={3} value={profileEdit.bio}
                         onChange={(e) => setProfileEdit((p) => ({ ...p, bio: e.target.value }))}
                         placeholder="Tell us about yourself..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       />
                     </div>
 
                     {/* Skills */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Skills (press Enter to add)</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Skills (press Enter to add)</label>
                       <div className="flex flex-wrap gap-1.5 mb-2">
                         {profileEdit.skills.map((s) => (
-                          <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                          <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
                             {s}
                             <button onClick={() => setProfileEdit((p) => ({ ...p, skills: p.skills.filter((sk) => sk !== s) }))} className="cursor-pointer"><X className="h-3 w-3" /></button>
                           </span>
@@ -1065,30 +1069,30 @@ export default function ParticipantDashboard() {
                             setProfileNewSkill("");
                           }
                         }}
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       />
                     </div>
 
                     {/* Social Links */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Social Links</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Social Links</label>
                       <div className="flex flex-col gap-2 mb-2">
                         {profileEdit.socialLinks.map((link, i) => (
                           <div key={i} className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-gray-500 w-20 shrink-0">{link.platform}</span>
-                            <span className="text-sm text-gray-700 flex-1 truncate">{link.url}</span>
-                            <button onClick={() => setProfileEdit((p) => ({ ...p, socialLinks: p.socialLinks.filter((_, idx) => idx !== i) }))} className="p-1 text-gray-300 hover:text-red-500 cursor-pointer"><X className="h-3.5 w-3.5" /></button>
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 w-20 shrink-0">{link.platform}</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">{link.url}</span>
+                            <button onClick={() => setProfileEdit((p) => ({ ...p, socialLinks: p.socialLinks.filter((_, idx) => idx !== i) }))} className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 cursor-pointer"><X className="h-3.5 w-3.5" /></button>
                           </div>
                         ))}
                       </div>
                       <div className="flex gap-2">
                         <input type="text" placeholder="Platform" value={newSocialPlatform}
                           onChange={(e) => setNewSocialPlatform(e.target.value)}
-                          className="w-28 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                          className="w-28 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                         />
                         <input type="text" placeholder="URL" value={newSocialUrl}
                           onChange={(e) => setNewSocialUrl(e.target.value)}
-                          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                         />
                         <button onClick={() => {
                           if (newSocialPlatform.trim() && newSocialUrl.trim()) {
@@ -1096,7 +1100,7 @@ export default function ParticipantDashboard() {
                             setNewSocialPlatform("");
                             setNewSocialUrl("");
                           }
-                        }} className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 cursor-pointer"><Plus className="h-4 w-4" /></button>
+                        }} className="px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 cursor-pointer"><Plus className="h-4 w-4" /></button>
                       </div>
                     </div>
 
@@ -1105,15 +1109,10 @@ export default function ParticipantDashboard() {
                 )}
 
                 {profileTab === "appearance" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-                    <div className="text-sm font-semibold text-gray-700">Theme</div>
-                    <div className="flex gap-3">
-                      {(["light", "dark"] as const).map((t) => (
-                        <button key={t} onClick={() => setTheme(t)}
-                          className={`px-4 py-2 rounded-xl text-sm font-semibold border cursor-pointer transition-colors ${theme === t ? "bg-primary-green text-white border-primary-green" : "border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
-                        >{t === "light" ? "Light" : "Dark"}</button>
-                      ))}
-                    </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
+                    <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">Theme</div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Toggle between light and dark mode. You can also switch anytime using the icon beside the notification bell.</p>
+                    <ThemeToggle />
                   </div>
                 )}
               </motion.div>

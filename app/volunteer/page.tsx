@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { useToast } from "@/components/ui/toast";
@@ -147,7 +148,7 @@ export default function VolunteerDashboard() {
               className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 activeTab === item.id
                   ? "bg-primary-green text-white"
-                  : "bg-white text-gray-600 border border-gray-200"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
               }`}
             >
               {item.label}
@@ -169,11 +170,13 @@ export default function VolunteerDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <ThemeToggle />
             {/* Notification Bell */}
             <div className="relative">
               <button
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-primary-green hover:text-primary-green transition-colors cursor-pointer"
+                className="relative p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-primary-green hover:text-primary-green transition-colors cursor-pointer"
               >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
@@ -188,10 +191,10 @@ export default function VolunteerDashboard() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden"
+                    className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl z-50 overflow-hidden"
                   >
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                      <span className="font-bold text-sm text-primary-dark">Notifications</span>
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <span className="font-bold text-sm text-primary-dark dark:text-gray-100">Notifications</span>
                       {unreadCount > 0 && (
                         <button
                           onClick={() => {
@@ -208,13 +211,13 @@ export default function VolunteerDashboard() {
                       {notifications.slice(0, 10).map((n) => (
                         <div
                           key={n.id}
-                          className={`px-4 py-3 border-b border-gray-50 text-xs ${!n.read ? "bg-emerald-50/50" : ""}`}
+                          className={`px-4 py-3 border-b border-gray-50 dark:border-gray-800 text-xs ${!n.read ? "bg-emerald-50/50 dark:bg-emerald-900/20" : ""}`}
                         >
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className="font-bold text-primary-dark">{n.title}</span>
+                            <span className="font-bold text-primary-dark dark:text-gray-100">{n.title}</span>
                             {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-primary-green shrink-0" />}
                           </div>
-                          <p className="text-gray-500 line-clamp-2">{n.body}</p>
+                          <p className="text-gray-500 dark:text-gray-400 line-clamp-2">{n.body}</p>
                         </div>
                       ))}
                       {notifications.length === 0 && (
@@ -309,11 +312,11 @@ export default function VolunteerDashboard() {
                     {myTickets.slice(0, 5).map((ticket) => (
                       <div
                         key={ticket.id}
-                        className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 bg-white text-xs"
+                        className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-gray-800">
+                            <span className="font-bold text-gray-800 dark:text-gray-100">
                               {ticket.teamName || getTeamName(ticket.teamId)}
                             </span>
                             <span
@@ -331,7 +334,7 @@ export default function VolunteerDashboard() {
                               {ticket.status}
                             </span>
                           </div>
-                          <p className="text-[10px] text-gray-400 font-semibold mt-0.5 line-clamp-1">
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold mt-0.5 line-clamp-1">
                             {ticket.category} · {ticket.description}
                           </p>
                         </div>
@@ -359,7 +362,7 @@ export default function VolunteerDashboard() {
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                           ticketFilter === f
                             ? "bg-primary-green text-white"
-                            : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"
+                            : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green/40"
                         }`}
                       >
                         {f === "all" ? "All" : f}
@@ -399,8 +402,8 @@ export default function VolunteerDashboard() {
                               {ticket.status}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-500 mt-1 line-clamp-2">{ticket.description}</div>
-                          <div className="flex items-center gap-3 text-[11px] text-gray-400 mt-1">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{ticket.description}</div>
+                          <div className="flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500 mt-1">
                             <span>Category: {ticket.category}</span>
                             <span>Raised by: {ticket.raisedBy}</span>
                             {ticket.assignedTo && <span>Assigned: {ticket.assignedTo}</span>}
@@ -549,29 +552,9 @@ export default function VolunteerDashboard() {
                   {profileTab === "appearance" && (
                     <div className="space-y-6">
                       <div>
-                        <div className="font-bold text-primary-dark text-sm mb-3">Theme</div>
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => theme !== "light" && toggleTheme()}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${
-                              theme === "light"
-                                ? "border-primary-green bg-primary-green/5 text-primary-green"
-                                : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                            }`}
-                          >
-                            <Sun className="h-4 w-4" /> Light
-                          </button>
-                          <button
-                            onClick={() => theme !== "dark" && toggleTheme()}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${
-                              theme === "dark"
-                                ? "border-primary-green bg-primary-green/5 text-primary-green"
-                                : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                            }`}
-                          >
-                            <Moon className="h-4 w-4" /> Dark
-                          </button>
-                        </div>
+                        <div className="font-bold text-primary-dark text-sm mb-3 dark:text-gray-100">Theme</div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Toggle between light and dark mode. You can also switch anytime using the icon beside the notification bell.</p>
+                        <ThemeToggle />
                       </div>
                     </div>
                   )}

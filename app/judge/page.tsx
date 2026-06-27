@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/components/layout/ThemeProvider";
@@ -128,6 +129,8 @@ export default function JudgeDashboard() {
           {/* Header Bar — utility actions only; navigation handled by Sidebar */}
           <div className="flex items-center justify-end gap-2 mb-8">
             <div className="flex items-center gap-2">
+              <ThemeToggle />
+
               <button onClick={() => setScannerOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
               >
@@ -137,7 +140,7 @@ export default function JudgeDashboard() {
               {/* Notification Bell */}
               <div className="relative">
                 <button onClick={() => setNotifOpen(!notifOpen)}
-                  className="relative p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors cursor-pointer"
+                  className="relative p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-300 hover:text-blue-600 transition-colors cursor-pointer"
                 >
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
@@ -149,10 +152,10 @@ export default function JudgeDashboard() {
                 <AnimatePresence>
                   {notifOpen && (
                     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                      className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden"
+                      className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl z-50 overflow-hidden"
                     >
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                        <span className="font-bold text-sm text-primary-dark">Notifications</span>
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                        <span className="font-bold text-sm text-primary-dark dark:text-gray-100">Notifications</span>
                         {unreadCount > 0 && (
                           <button onClick={() => { markAllNotificationsRead(); toast("All notifications marked as read", "info"); }}
                             className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
@@ -160,15 +163,15 @@ export default function JudgeDashboard() {
                         )}
                       </div>
                       <div className="max-h-72 overflow-y-auto">
-                        {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400">No notifications</div>}
+                        {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">No notifications</div>}
                         {notifications.slice(0, 10).map((n) => (
                           <div key={n.id} onClick={() => markNotificationRead(n.id)}
-                            className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? "bg-blue-50" : ""}`}
+                            className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!n.read ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
                           >
-                            <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-blue-500" : "bg-gray-300"}`} />
+                            <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-blue-500" : "bg-gray-300 dark:bg-gray-600"}`} />
                             <div className="flex-1 min-w-0">
-                              <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
-                              <div className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</div>
+                              <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}>{n.title}</div>
+                              <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-2">{n.body}</div>
                             </div>
                           </div>
                         ))}
@@ -198,40 +201,40 @@ export default function JudgeDashboard() {
                     { label: "Remaining", value: pendingTeams.length, icon: <Clock className="h-5 w-5 text-amber-500" />, bg: "bg-amber-50" },
                     { label: "Avg Score", value: `${avgScore}/10`, icon: <Star className="h-5 w-5 text-purple-500" />, bg: "bg-purple-50" },
                   ].map((k) => (
-                    <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-2">
+                    <div key={k.label} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 flex flex-col gap-2">
                       <div className={`p-2 rounded-xl w-fit ${k.bg}`}>{k.icon}</div>
-                      <div className="text-2xl font-extrabold text-primary-dark">{k.value}</div>
-                      <div className="text-xs text-gray-400 font-semibold">{k.label}</div>
+                      <div className="text-2xl font-extrabold text-primary-dark dark:text-gray-100">{k.value}</div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 font-semibold">{k.label}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Progress bar */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="font-bold text-primary-dark text-sm">Review Progress</div>
+                    <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">Review Progress</div>
                     <div className="text-sm font-semibold text-blue-600">{reviewedTeams.length} / {assignedTeams.length}</div>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${assignedTeams.length > 0 ? (reviewedTeams.length / assignedTeams.length) * 100 : 0}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
                   </div>
                 </div>
 
                 {/* Pending */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <div className="font-bold text-primary-dark text-sm mb-3">Pending Reviews</div>
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
+                  <div className="font-bold text-primary-dark dark:text-gray-100 text-sm mb-3">Pending Reviews</div>
                   <div className="flex flex-col gap-2">
                     {pendingTeams.slice(0, 3).map((t) => {
                       const track = HACK_TRACKS.find((tr) => tr.id === t.trackId);
                       return (
                         <button key={t.id} onClick={() => openEvalModal(t)}
-                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer group text-left">
+                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer group text-left">
                           <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                             {t.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-primary-dark">{t.name}</div>
-                            <div className="text-xs text-gray-400">{track?.label || "—"}</div>
+                            <div className="font-semibold text-sm text-primary-dark dark:text-gray-100">{t.name}</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">{track?.label || "—"}</div>
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
                         </button>
@@ -330,52 +333,52 @@ export default function JudgeDashboard() {
                 <div className="flex gap-2 flex-wrap">
                   {(["edit", "appearance"] as const).map((t) => (
                     <button key={t} onClick={() => setProfileTab(t)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${profileTab === t ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${profileTab === t ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`}
                     >{t === "edit" ? "Edit Profile" : "Appearance"}</button>
                   ))}
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
                   {profileTab === "edit" && (
                     <div className="space-y-6">
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
                         <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
                           {(session.name || "J").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-extrabold text-primary-dark text-lg">{session.name || "Judge"}</div>
-                          <div className="text-gray-400 text-sm">{session.email}</div>
+                          <div className="font-extrabold text-primary-dark dark:text-gray-100 text-lg">{session.name || "Judge"}</div>
+                          <div className="text-gray-400 dark:text-gray-500 text-sm">{session.email}</div>
                           <div className="text-xs font-semibold text-blue-600 mt-0.5">Judge · SIET AI Hack Lab 2026</div>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Full Name</label>
+                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Full Name</label>
                           <input type="text" defaultValue={session.name || ""} readOnly
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-700" />
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300" />
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Email</label>
+                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Email</label>
                           <input type="email" value={session.email || ""} readOnly
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
-                          <p className="text-[11px] text-gray-400 mt-1">Email cannot be changed</p>
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Email cannot be changed</p>
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Bio</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>
                         <textarea rows={3} defaultValue="" placeholder="Tell us about yourself..."
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Skills</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Skills</label>
                         <input type="text" defaultValue="" placeholder="e.g. AI/ML, Web Dev, Cloud"
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Social Links</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Social Links</label>
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-400"><Github className="h-4 w-4" /></span>
+                          <span className="text-gray-400 dark:text-gray-500"><Github className="h-4 w-4" /></span>
                           <input type="url" defaultValue="" placeholder="GitHub profile URL"
-                            className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                            className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                         </div>
                       </div>
                       <button onClick={() => toast("Profile updated successfully", "success")}
@@ -388,19 +391,9 @@ export default function JudgeDashboard() {
                   {profileTab === "appearance" && (
                     <div className="space-y-6">
                       <div>
-                        <div className="font-bold text-primary-dark text-sm mb-3">Theme</div>
-                        <div className="flex gap-3">
-                          <button onClick={() => theme !== "light" && toggleTheme()}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${theme === "light" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
-                          >
-                            <Sun className="h-4 w-4" /> Light
-                          </button>
-                          <button onClick={() => theme !== "dark" && toggleTheme()}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${theme === "dark" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
-                          >
-                            <Moon className="h-4 w-4" /> Dark
-                          </button>
-                        </div>
+                        <div className="font-bold text-primary-dark text-sm mb-3 dark:text-gray-100">Theme</div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Toggle between light and dark mode. You can also switch anytime using the icon beside the notification bell.</p>
+                        <ThemeToggle />
                       </div>
                     </div>
                   )}
@@ -417,22 +410,22 @@ export default function JudgeDashboard() {
             {evalTeam && (
               <div className="space-y-5">
                 {/* Team Info */}
-                <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
                   <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
                     {evalTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                   </div>
                   <div>
-                    <div className="font-extrabold text-primary-dark">{evalTeam.name}</div>
-                    <div className="text-sm text-gray-400">{HACK_TRACKS.find(t => t.id === evalTeam.trackId)?.label || "—"}</div>
+                    <div className="font-extrabold text-primary-dark dark:text-gray-100">{evalTeam.name}</div>
+                    <div className="text-sm text-gray-400 dark:text-gray-500">{HACK_TRACKS.find(t => t.id === evalTeam.trackId)?.label || "—"}</div>
                   </div>
                 </div>
 
                 {/* Members */}
                 <div>
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Members</div>
+                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Members</div>
                   <div className="flex flex-col gap-1.5">
                     {evalTeam.members.map((m) => (
-                      <div key={m.email} className="flex items-center gap-2 text-sm text-gray-600">
+                      <div key={m.email} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                         <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
                           {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                         </div>
@@ -446,29 +439,29 @@ export default function JudgeDashboard() {
 
                 {/* Project Description */}
                 <div>
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Project</div>
-                  <p className="text-sm text-gray-600">{evalTeam.projectDescription || "Not provided."}</p>
+                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Project</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{evalTeam.projectDescription || "Not provided."}</p>
                 </div>
 
                 {/* Links */}
                 <div>
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Links</div>
+                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Links</div>
                   <div className="flex flex-wrap gap-2">
                     {evalTeam.githubUrl && (
                       <a href={evalTeam.githubUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                         <Github className="h-3.5 w-3.5" /> GitHub
                       </a>
                     )}
                     {evalTeam.demoUrl && (
                       <a href={evalTeam.demoUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                         <Globe className="h-3.5 w-3.5" /> Demo
                       </a>
                     )}
                     {evalTeam.videoUrl && (
                       <a href={evalTeam.videoUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                         <Video className="h-3.5 w-3.5" /> Video
                       </a>
                     )}
@@ -479,12 +472,12 @@ export default function JudgeDashboard() {
                 </div>
 
                 {/* Score Sliders */}
-                <div className="pt-2 border-t border-gray-100">
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Scoring Rubric</div>
+                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Scoring Rubric</div>
                   {SCORE_CRITERIA.map(({ key, label, max }) => (
                     <div key={key} className="mb-3">
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-gray-700">{label}</label>
+                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{label}</label>
                         <span className="text-xs font-extrabold text-blue-600">{scores[key]}/{max}</span>
                       </div>
                       <input type="range" min={1} max={max} value={scores[key]}
@@ -498,10 +491,10 @@ export default function JudgeDashboard() {
 
                 {/* Written Feedback */}
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide block mb-1.5">Written Feedback</label>
+                  <label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide block mb-1.5">Written Feedback</label>
                   <textarea rows={3} value={feedback} onChange={(e) => setFeedback(e.target.value)}
                     placeholder="Provide detailed constructive feedback for the team..."
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
@@ -528,7 +521,7 @@ export default function JudgeDashboard() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[85vh] overflow-y-auto"
+                  className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[85vh] overflow-y-auto"
                 >
                   <div className="bg-gradient-to-r from-blue-700 to-indigo-600 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
                     <div>
@@ -540,22 +533,22 @@ export default function JudgeDashboard() {
                   <div className="p-5 space-y-5">
                     {/* Members */}
                     <div>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Members</div>
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Members</div>
                       <div className="flex flex-col gap-2">
                         {selectedTeam.members.map((m) => (
-                          <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+                          <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
                             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                               {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-primary-dark flex items-center gap-1">
-                                {m.name} {m.isLeader && <span className="text-xs text-amber-600 bg-amber-50 px-1.5 rounded-full border border-amber-200">Leader</span>}
+                              <div className="font-semibold text-sm text-primary-dark dark:text-gray-100 flex items-center gap-1">
+                                {m.name} {m.isLeader && <span className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 rounded-full border border-amber-200 dark:border-amber-800">Leader</span>}
                               </div>
-                              <div className="text-xs text-gray-400">{m.department} · {m.year}</div>
+                              <div className="text-xs text-gray-400 dark:text-gray-500">{m.department} · {m.year}</div>
                             </div>
                             <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1 text-xs text-gray-400"><Mail className="h-3 w-3" />{m.email}</div>
-                              {m.phone && <div className="flex items-center gap-1 text-xs text-gray-400"><Phone className="h-3 w-3" />{m.phone}</div>}
+                              <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"><Mail className="h-3 w-3" />{m.email}</div>
+                              {m.phone && <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"><Phone className="h-3 w-3" />{m.phone}</div>}
                             </div>
                           </div>
                         ))}
@@ -564,28 +557,28 @@ export default function JudgeDashboard() {
 
                     {/* Project */}
                     <div>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Problem Statement & Abstract</div>
-                      <div className="text-xs font-semibold text-blue-600 mb-1">{HACK_TRACKS.find(t => t.id === selectedTeam.trackId)?.label || "—"}</div>
-                      <p className="text-sm text-gray-700">{selectedTeam.projectDescription || "Not provided."}</p>
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Problem Statement & Abstract</div>
+                      <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">{HACK_TRACKS.find(t => t.id === selectedTeam.trackId)?.label || "—"}</div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{selectedTeam.projectDescription || "Not provided."}</p>
                     </div>
 
                     {/* Links */}
                     <div>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Links</div>
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Links</div>
                       <div className="flex flex-col gap-2">
-                        {selectedTeam.githubUrl && <a href={selectedTeam.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline"><Github className="h-4 w-4" /> Repository</a>}
-                        {selectedTeam.videoUrl && <a href={selectedTeam.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline"><Video className="h-4 w-4" /> Demo Video</a>}
-                        {selectedTeam.demoUrl && <a href={selectedTeam.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline"><Globe className="h-4 w-4" /> Live Demo</a>}
-                        {!selectedTeam.githubUrl && !selectedTeam.videoUrl && !selectedTeam.demoUrl && <span className="text-sm text-gray-400">No links submitted yet.</span>}
+                        {selectedTeam.githubUrl && <a href={selectedTeam.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"><Github className="h-4 w-4" /> Repository</a>}
+                        {selectedTeam.videoUrl && <a href={selectedTeam.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"><Video className="h-4 w-4" /> Demo Video</a>}
+                        {selectedTeam.demoUrl && <a href={selectedTeam.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"><Globe className="h-4 w-4" /> Live Demo</a>}
+                        {!selectedTeam.githubUrl && !selectedTeam.videoUrl && !selectedTeam.demoUrl && <span className="text-sm text-gray-400 dark:text-gray-500">No links submitted yet.</span>}
                       </div>
                     </div>
 
                     {/* Previous Feedback */}
                     {(selectedTeam.evaluations || []).length > 0 && (
                       <div>
-                        <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Previous Feedback</div>
+                        <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Previous Feedback</div>
                         {selectedTeam.evaluations!.map((ev, i) => (
-                          <div key={i} className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-sm text-blue-800">{ev.feedback}</div>
+                          <div key={i} className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-200">{ev.feedback}</div>
                         ))}
                       </div>
                     )}

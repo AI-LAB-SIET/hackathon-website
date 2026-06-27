@@ -248,23 +248,23 @@ export function Navbar() {
                   <>
                     {showQRScan && (
                       <button onClick={() => { setScannerOpen(true); setMobileMenuOpen(false); }}
-                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-sm border border-emerald-200"
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold text-sm border border-emerald-200 dark:border-emerald-800"
                       ><QrCode className="h-4 w-4" /> Scan QR</button>
                     )}
                     <Link href={rolePortalHref} onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-card-bg text-primary-dark font-bold text-sm border border-input-border/30"
+                      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-card-bg dark:bg-gray-800 text-primary-dark dark:text-gray-100 font-bold text-sm border border-input-border/30 dark:border-gray-700"
                     >
                       {session.role === "admin" ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
                       {rolePortalLabel}
                     </Link>
                     <button onClick={handleLogout}
-                      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold text-sm border border-red-150 cursor-pointer"
+                      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold text-sm border border-red-150 dark:border-red-800 cursor-pointer"
                     ><LogOut className="h-4 w-4" /> Logout</button>
                   </>
                 ) : (
                   <>
                     <Link href="/login" onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center justify-center w-full py-3 rounded-xl border border-input-border/40 text-primary-dark font-bold text-sm hover:bg-card-bg transition-colors"
+                      className="flex items-center justify-center w-full py-3 rounded-xl border border-input-border/40 dark:border-gray-700 text-primary-dark dark:text-gray-100 font-bold text-sm hover:bg-card-bg dark:hover:bg-gray-800 transition-colors"
                     >Login</Link>
                     <Link href="/register" onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center justify-center w-full py-3 rounded-xl bg-primary-green text-white font-bold text-sm shadow-md hover:bg-primary-dark transition-all"
