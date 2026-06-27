@@ -6,7 +6,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppState } from "./StateProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LogOut, User, Shield, Bell, QrCode, CheckCircle, Clock, AlertTriangle, Info } from "lucide-react";
+import { Menu, X, LogOut, User, Shield, Bell, QrCode, CheckCircle, Clock, AlertTriangle, Info, Sun, Moon } from "lucide-react";
+import { useTheme } from "./ThemeProvider";
 import { useToast } from "../ui/toast";
 import { QRScanner } from "../ui/QRScanner";
 import { AttendancePanel } from "../ui/AttendancePanel";
@@ -16,6 +17,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { session, logout, notifications, markNotificationRead, markAllNotificationsRead } = useAppState();
+  const { theme, toggleTheme, animateToggle } = useTheme();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
@@ -190,6 +192,15 @@ export function Navbar() {
                     )}
                   </AnimatePresence>
                 </div>
+
+                {/* Theme Toggle */}
+                <button
+                  onClick={(e) => { toggleTheme(); animateToggle(e.currentTarget); }}
+                  className="p-2.5 rounded-xl bg-card-bg border border-input-border/30 text-gray-600 hover:text-primary-green transition-colors cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                  aria-label="Toggle theme"
+                >
+                  {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                </button>
 
                 <Link
                   href={rolePortalHref}
