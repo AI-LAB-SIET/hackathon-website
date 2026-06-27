@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { ShieldCheck, Mail, Lock } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
-type RoleType = "participant" | "admin" | "judge" | "mentor" | "organizer";
+type RoleType = "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer";
 
 export default function Login() {
   const router = useRouter();
@@ -41,6 +41,9 @@ export default function Login() {
           break;
         case "organizer":
           router.push("/organizer");
+          break;
+        case "volunteer":
+          router.push("/volunteer");
           break;
         case "participant":
         default:
@@ -87,6 +90,9 @@ export default function Login() {
           case "organizer":
             router.push("/organizer");
             break;
+          case "volunteer":
+            router.push("/volunteer");
+            break;
           case "participant":
           default:
             router.push("/dashboard");
@@ -103,6 +109,8 @@ export default function Login() {
             ? "mentor@college.edu"
             : role === "organizer"
             ? "organizer@college.edu"
+            : role === "volunteer"
+            ? "riya@college.edu"
             : "abhishek@college.edu"
         }`);
       }
@@ -152,6 +160,7 @@ export default function Login() {
                 <option value="judge">Judge Evaluation Portal</option>
                 <option value="mentor">Mentor Feedback Desk</option>
                 <option value="organizer">Organizer Audit Control</option>
+                <option value="volunteer">Volunteer Help Desk</option>
                 <option value="admin">System Administration</option>
               </select>
             </div>
@@ -167,6 +176,8 @@ export default function Login() {
                   ? "mentor@college.edu"
                   : role === "organizer"
                   ? "organizer@college.edu"
+                  : role === "volunteer"
+                  ? "riya@college.edu"
                   : "abhishek@college.edu"
               }
               type="email"
@@ -226,6 +237,7 @@ export default function Login() {
                 { roleName: "Judge", r: "judge" as const, email: "judge@college.edu" },
                 { roleName: "Mentor", r: "mentor" as const, email: "mentor@college.edu" },
                 { roleName: "Organizer", r: "organizer" as const, email: "organizer@college.edu" },
+                { roleName: "Volunteer", r: "volunteer" as const, email: "riya@college.edu" },
                 { roleName: "Admin", r: "admin" as const, email: "admin@college.edu" },
               ].map((item, index) => (
                 <div key={index} className="flex justify-between items-center bg-white/60 p-1.5 rounded-lg border border-gray-150/40">

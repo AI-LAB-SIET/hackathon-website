@@ -6,19 +6,21 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
+import { useTheme } from "@/components/layout/ThemeProvider";
+import { Modal } from "@/components/ui/modal";
 import { QRScanner } from "@/components/ui/QRScanner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, ListChecks, Gavel, Trophy, Bell, User,
-  Search, Filter, CheckCircle, Clock, X, ChevronRight,
-  Github, Video, Globe, Star, ExternalLink, Users, Mail, Phone,
-  TrendingUp, Award, Target
+  Bell, Sun, Moon,
+  Search, CheckCircle, Clock, X, ChevronRight,
+  Github, Video, Globe, Star, Users, Mail, Phone,
+  Eye
 } from "lucide-react";
-import { Team, Notification } from "@/types";
+import { Team } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
 
-type TabType = "dashboard" | "queue" | "evaluation" | "leaderboard" | "notifications" | "profile";
-type ProfileTabType = "info" | "account" | "notifications" | "appearance" | "security";
+type TabType = "dashboard" | "queue" | "profile";
+type ProfileTabType = "edit" | "appearance";
 
 const SCORE_CRITERIA = [
   { key: "innovation" as const, label: "Innovation & Originality", max: 10 },
@@ -32,9 +34,10 @@ export default function JudgeDashboard() {
   const router = useRouter();
   const { session, teams, notifications, evaluateProject, markNotificationRead, markAllNotificationsRead } = useAppState();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
-  const [profileTab, setProfileTab] = useState<ProfileTabType>("info");
+  const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
 
   // Filters
   const [trackFilter, setTrackFilter] = useState("all");
@@ -45,15 +48,17 @@ export default function JudgeDashboard() {
   // Team detail popup
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 
-  // Evaluation scores
+  // Evaluation modal
+  const [evalModalOpen, setEvalModalOpen] = useState(false);
+  const [evalTeam, setEvalTeam] = useState<Team | null>(null);
   const [scores, setScores] = useState({ innovation: 8, feasibility: 8, presentation: 8, technicalDepth: 7, aiUsage: 8 });
   const [feedback, setFeedback] = useState("");
 
   // QR Scanner
   const [scannerOpen, setScannerOpen] = useState(false);
 
-  // Notification filter
-  const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
+  // Notification dropdown
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
@@ -70,7 +75,7 @@ export default function JudgeDashboard() {
   const avgScore = reviewedTeams.length > 0
     ? Math.round(reviewedTeams.reduce((acc, t) => {
         const ev = t.evaluations?.find((e) => e.judgeEmail === session.email);
-        return acc + (ev ? (ev.innovation + ev.feasibility + ev.presentation) / 3 : 0);
+        return acc + (ev ? (ev.innovation + ev.feasibility + ev.presentation + (ev.technicalDepth ?? 0) + (ev.aiUsage ?? 0)) / 5 : 0);
       }, 0) / reviewedTeams.length * 10) / 10
     : 0;
 
@@ -87,8 +92,8 @@ export default function JudgeDashboard() {
     return true;
   });
 
-  const handleOpenEval = (team: Team) => {
-    setSelectedTeam(team);
+  const openEvalModal = (team: Team) => {
+    setEvalTeam(team);
     const existing = team.evaluations?.find((e) => e.judgeEmail === session.email);
     if (existing) {
       setScores({
@@ -103,63 +108,76 @@ export default function JudgeDashboard() {
       setScores({ innovation: 8, feasibility: 8, presentation: 8, technicalDepth: 7, aiUsage: 8 });
       setFeedback("");
     }
-    setActiveTab("evaluation");
+    setEvalModalOpen(true);
+    setSelectedTeam(null);
   };
 
   const handleSubmitEval = () => {
-    if (!selectedTeam) return;
-    evaluateProject(selectedTeam.id, { ...scores, feedback, judgeEmail: session.email! });
-    toast(`Evaluation submitted for ${selectedTeam.name}`, "success");
-    setSelectedTeam(null);
-    setActiveTab("queue");
+    if (!evalTeam) return;
+    evaluateProject(evalTeam.id, { ...scores, feedback, judgeEmail: session.email! });
+    toast(`Evaluation submitted for ${evalTeam.name}`, "success");
+    setEvalModalOpen(false);
+    setEvalTeam(null);
   };
-
-  const leaderboard = [...assignedTeams]
-    .map((t) => {
-      const evs = t.evaluations || [];
-      const avg = evs.length > 0 ? evs.reduce((a, e) => a + (e.innovation + e.feasibility + e.presentation) / 3, 0) / evs.length : 0;
-      return { team: t, avg: Math.round(avg * 10) / 10, count: evs.length };
-    })
-    .sort((a, b) => b.avg - a.avg);
-
-  const notifTypeStyles: Record<string, { dot: string; label: string }> = {
-    approval: { dot: "bg-emerald-500", label: "Approval" },
-    deadline: { dot: "bg-amber-500", label: "Deadline" },
-    mentor: { dot: "bg-purple-500", label: "Mentor" },
-    judge: { dot: "bg-blue-500", label: "Judge" },
-    action: { dot: "bg-red-500", label: "Action" },
-    system: { dot: "bg-gray-400", label: "System" },
-  };
-
-  const tabs = [
-    { id: "dashboard" as TabType, label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { id: "queue" as TabType, label: "Review Queue", icon: <ListChecks className="h-4 w-4" /> },
-    { id: "evaluation" as TabType, label: "Evaluation", icon: <Gavel className="h-4 w-4" /> },
-    { id: "leaderboard" as TabType, label: "Leaderboard", icon: <Trophy className="h-4 w-4" /> },
-    { id: "notifications" as TabType, label: "Notifications", icon: <Bell className="h-4 w-4" />, badge: unreadCount > 0 ? unreadCount : undefined },
-    { id: "profile" as TabType, label: "Profile", icon: <User className="h-4 w-4" /> },
-  ];
 
   return (
     <PageWrapper>
       <div className="flex min-h-screen bg-[#f8fafb]">
-        <Sidebar />
+        <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
         <main className="flex-1 min-w-0 p-6 lg:p-8">
-          {/* Tab Bar */}
-          <div className="flex items-center gap-2 flex-wrap mb-8">
-            {tabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${activeTab === tab.id ? "bg-blue-600 text-white shadow-md" : "bg-white border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"}`}
+          {/* Header Bar — utility actions only; navigation handled by Sidebar */}
+          <div className="flex items-center justify-end gap-2 mb-8">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setScannerOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
               >
-                {tab.icon}{tab.label}
-                {tab.badge && <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{tab.badge}</span>}
+                <GavelIcon className="h-4 w-4" /> Scan QR
               </button>
-            ))}
-            <button onClick={() => setScannerOpen(true)}
-              className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
-            >
-              <Gavel className="h-4 w-4" /> Scan QR
-            </button>
+
+              {/* Notification Bell */}
+              <div className="relative">
+                <button onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors cursor-pointer"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none min-w-[16px] text-center">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+                <AnimatePresence>
+                  {notifOpen && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                      className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                        <span className="font-bold text-sm text-primary-dark">Notifications</span>
+                        {unreadCount > 0 && (
+                          <button onClick={() => { markAllNotificationsRead(); toast("All notifications marked as read", "info"); }}
+                            className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                          >Mark all read</button>
+                        )}
+                      </div>
+                      <div className="max-h-72 overflow-y-auto">
+                        {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400">No notifications</div>}
+                        {notifications.slice(0, 10).map((n) => (
+                          <div key={n.id} onClick={() => markNotificationRead(n.id)}
+                            className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? "bg-blue-50" : ""}`}
+                          >
+                            <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-blue-500" : "bg-gray-300"}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
+                              <div className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
 
           <AnimatePresence mode="wait">
@@ -206,7 +224,7 @@ export default function JudgeDashboard() {
                     {pendingTeams.slice(0, 3).map((t) => {
                       const track = HACK_TRACKS.find((tr) => tr.id === t.trackId);
                       return (
-                        <button key={t.id} onClick={() => handleOpenEval(t)}
+                        <button key={t.id} onClick={() => openEvalModal(t)}
                           className="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer group text-left">
                           <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                             {t.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
@@ -219,7 +237,7 @@ export default function JudgeDashboard() {
                         </button>
                       );
                     })}
-                    {pendingTeams.length === 0 && <div className="text-sm text-gray-400 text-center py-4">All teams reviewed! 🎉</div>}
+                    {pendingTeams.length === 0 && <div className="text-sm text-gray-400 text-center py-4">All teams reviewed!</div>}
                   </div>
                 </div>
               </motion.div>
@@ -262,7 +280,7 @@ export default function JudgeDashboard() {
                     const track = HACK_TRACKS.find((tr) => tr.id === team.trackId);
                     const reviewed = team.evaluations?.some((e) => e.judgeEmail === session.email);
                     const myEval = team.evaluations?.find((e) => e.judgeEmail === session.email);
-                    const avgScore = myEval ? Math.round((myEval.innovation + myEval.feasibility + myEval.presentation) / 3 * 10) / 10 : null;
+                    const teamAvgScore = myEval ? Math.round((myEval.innovation + myEval.feasibility + myEval.presentation + (myEval.technicalDepth ?? 0) + (myEval.aiUsage ?? 0)) / 5 * 10) / 10 : null;
                     return (
                       <div key={team.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start gap-3">
@@ -280,19 +298,19 @@ export default function JudgeDashboard() {
 
                         <p className="text-xs text-gray-500 line-clamp-2">{team.projectDescription}</p>
 
-                        {reviewed && avgScore !== null && (
+                        {reviewed && teamAvgScore !== null && (
                           <div className="flex items-center gap-2">
                             <Star className="h-4 w-4 text-amber-400" />
-                            <span className="text-sm font-bold text-gray-700">Your Score: {avgScore}/10</span>
+                            <span className="text-sm font-bold text-gray-700">Your Score: {teamAvgScore}/10</span>
                           </div>
                         )}
 
                         <div className="flex gap-2">
                           <button onClick={() => setSelectedTeam(team)}
-                            className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors cursor-pointer">
-                            View Details
+                            className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors cursor-pointer inline-flex items-center justify-center gap-1">
+                            <Eye className="h-3.5 w-3.5" /> View Details
                           </button>
-                          <button onClick={() => handleOpenEval(team)}
+                          <button onClick={() => openEvalModal(team)}
                             className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors cursor-pointer">
                             {reviewed ? "Update Score" : "Evaluate"}
                           </button>
@@ -305,172 +323,206 @@ export default function JudgeDashboard() {
               </motion.div>
             )}
 
-            {/* ─── EVALUATION ─── */}
-            {activeTab === "evaluation" && (
-              <motion.div key="eval" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Evaluation</h2>
-                {!selectedTeam ? (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-                    <Target className="h-12 w-12 text-gray-200 mx-auto mb-4" />
-                    <div className="text-gray-400 text-sm mb-4">Select a team from the Review Queue to begin evaluation.</div>
-                    <button onClick={() => setActiveTab("queue")} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 cursor-pointer">Go to Queue</button>
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
-                    <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
-                        {selectedTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                      </div>
-                      <div>
-                        <div className="font-extrabold text-primary-dark">{selectedTeam.name}</div>
-                        <div className="text-sm text-gray-400">{HACK_TRACKS.find(t => t.id === selectedTeam.trackId)?.label || "—"}</div>
-                      </div>
-                    </div>
-
-                    {SCORE_CRITERIA.map(({ key, label, max }) => (
-                      <div key={key}>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm font-semibold text-gray-700">{label}</label>
-                          <span className="text-sm font-extrabold text-blue-600">{scores[key]}/{max}</span>
-                        </div>
-                        <input type="range" min={1} max={max} value={scores[key]}
-                          onChange={(e) => setScores((p) => ({ ...p, [key]: parseInt(e.target.value) }))}
-                          className="w-full accent-blue-600 cursor-pointer"
-                        />
-                        <div className="flex justify-between text-xs text-gray-300 mt-1"><span>1</span><span>{max}</span></div>
-                      </div>
-                    ))}
-
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 block mb-2">Written Feedback</label>
-                      <textarea rows={4} value={feedback} onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="Provide detailed constructive feedback for the team..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      />
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button onClick={() => { setSelectedTeam(null); setActiveTab("queue"); }}
-                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
-                        Cancel
-                      </button>
-                      <button onClick={handleSubmitEval}
-                        className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 cursor-pointer">
-                        Submit Evaluation
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* ─── LEADERBOARD ─── */}
-            {activeTab === "leaderboard" && (
-              <motion.div key="lb" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><Trophy className="h-5 w-5 text-amber-500" /> Leaderboard</h2>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                      <tr>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">#</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Team</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Track</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Evaluations</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase">Avg Score</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {leaderboard.map(({ team, avg, count }, idx) => (
-                        <tr key={team.id} className={`border-b border-gray-50 last:border-0 ${idx < 3 ? "bg-amber-50/30" : ""}`}>
-                          <td className="px-5 py-3 font-bold text-gray-400">
-                            {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : idx + 1}
-                          </td>
-                          <td className="px-5 py-3 font-semibold text-primary-dark">{team.name}</td>
-                          <td className="px-5 py-3 text-gray-500 text-xs">{HACK_TRACKS.find(t => t.id === team.trackId)?.label || "—"}</td>
-                          <td className="px-5 py-3 text-gray-500">{count}</td>
-                          <td className="px-5 py-3">
-                            <div className="flex items-center gap-2">
-                              <Star className="h-4 w-4 text-amber-400" />
-                              <span className="font-extrabold text-primary-dark">{count > 0 ? avg : "—"}</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            )}
-
-            {/* ─── NOTIFICATIONS ─── */}
-            {activeTab === "notifications" && (
-              <motion.div key="notifs" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-extrabold text-primary-dark text-xl">Notifications</h2>
-                  {unreadCount > 0 && <button onClick={markAllNotificationsRead} className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">Mark all read</button>}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(["all", "approval", "deadline", "judge", "system"] as const).map((f) => (
-                    <button key={f} onClick={() => setNotifFilter(f)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize cursor-pointer transition-colors ${notifFilter === f ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
-                    >{notifTypeStyles[f]?.label || "All"}</button>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2">
-                  {(notifFilter === "all" ? notifications : notifications.filter((n) => n.type === notifFilter)).map((n) => (
-                    <div key={n.id} onClick={() => markNotificationRead(n.id)}
-                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer ${!n.read ? "bg-blue-50 border-blue-100" : "bg-white border-gray-100"}`}>
-                      <div className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${notifTypeStyles[n.type]?.dot || "bg-gray-400"}`} />
-                      <div className="flex-1">
-                        <div className={`text-sm font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">{n.body}</div>
-                      </div>
-                      {!n.read && <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1" />}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
             {/* ─── PROFILE ─── */}
             {activeTab === "profile" && (
               <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl">Profile & Settings</h2>
                 <div className="flex gap-2 flex-wrap">
-                  {(["info", "account", "notifications", "appearance", "security"] as const).map((t) => (
+                  {(["edit", "appearance"] as const).map((t) => (
                     <button key={t} onClick={() => setProfileTab(t)}
                       className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${profileTab === t ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
-                    >{t === "info" ? "Personal Info" : t}</button>
+                    >{t === "edit" ? "Edit Profile" : "Appearance"}</button>
                   ))}
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                  {profileTab === "info" && (
-                    <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold">
-                        {(session.name || "J").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                  {profileTab === "edit" && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
+                          {(session.name || "J").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-extrabold text-primary-dark text-lg">{session.name || "Judge"}</div>
+                          <div className="text-gray-400 text-sm">{session.email}</div>
+                          <div className="text-xs font-semibold text-blue-600 mt-0.5">Judge · SIET AI Hack Lab 2026</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Full Name</label>
+                          <input type="text" defaultValue={session.name || ""} readOnly
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-700" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Email</label>
+                          <input type="email" value={session.email || ""} readOnly
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
+                          <p className="text-[11px] text-gray-400 mt-1">Email cannot be changed</p>
+                        </div>
                       </div>
                       <div>
-                        <div className="font-extrabold text-primary-dark text-lg">{session.name || "Judge"}</div>
-                        <div className="text-gray-400 text-sm">{session.email}</div>
-                        <div className="text-xs font-semibold text-blue-600 mt-0.5">Judge · SIET AI Hack Lab 2026</div>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Bio</label>
+                        <textarea rows={3} defaultValue="" placeholder="Tell us about yourself..."
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Skills</label>
+                        <input type="text" defaultValue="" placeholder="e.g. AI/ML, Web Dev, Cloud"
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Social Links</label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400"><Github className="h-4 w-4" /></span>
+                          <input type="url" defaultValue="" placeholder="GitHub profile URL"
+                            className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                        </div>
+                      </div>
+                      <button onClick={() => toast("Profile updated successfully", "success")}
+                        className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors cursor-pointer">
+                        Save Changes
+                      </button>
+                    </div>
+                  )}
+
+                  {profileTab === "appearance" && (
+                    <div className="space-y-6">
+                      <div>
+                        <div className="font-bold text-primary-dark text-sm mb-3">Theme</div>
+                        <div className="flex gap-3">
+                          <button onClick={() => theme !== "light" && toggleTheme()}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${theme === "light" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
+                          >
+                            <Sun className="h-4 w-4" /> Light
+                          </button>
+                          <button onClick={() => theme !== "dark" && toggleTheme()}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${theme === "dark" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
+                          >
+                            <Moon className="h-4 w-4" /> Dark
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
-                  {profileTab === "account" && <div className="text-sm text-gray-500">Email: <span className="font-semibold text-gray-800">{session.email}</span></div>}
-                  {profileTab === "notifications" && <div className="text-sm text-gray-400">Notification preferences coming soon.</div>}
-                  {profileTab === "appearance" && <div className="text-sm text-gray-400">Theme settings coming soon.</div>}
-                  {profileTab === "security" && <div className="text-sm text-gray-400">Password management coming soon.</div>}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* QR Scanner Modal */}
-          <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onSelectTeam={(team) => { handleOpenEval(team); }} />
+          <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onSelectTeam={(team) => { openEvalModal(team); }} />
 
-          {/* Team Detail Popup */}
+          {/* ─── EVALUATION MODAL ─── */}
+          <Modal isOpen={evalModalOpen} onClose={() => setEvalModalOpen(false)} title="Evaluate Team">
+            {evalTeam && (
+              <div className="space-y-5">
+                {/* Team Info */}
+                <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
+                    {evalTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-primary-dark">{evalTeam.name}</div>
+                    <div className="text-sm text-gray-400">{HACK_TRACKS.find(t => t.id === evalTeam.trackId)?.label || "—"}</div>
+                  </div>
+                </div>
+
+                {/* Members */}
+                <div>
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Members</div>
+                  <div className="flex flex-col gap-1.5">
+                    {evalTeam.members.map((m) => (
+                      <div key={m.email} className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+                          {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                        </div>
+                        <span className="font-medium">{m.name}</span>
+                        {m.isLeader && <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 rounded-full border border-amber-200">Leader</span>}
+                        <span className="text-xs text-gray-400">· {m.department}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Project Description */}
+                <div>
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Project</div>
+                  <p className="text-sm text-gray-600">{evalTeam.projectDescription || "Not provided."}</p>
+                </div>
+
+                {/* Links */}
+                <div>
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Links</div>
+                  <div className="flex flex-wrap gap-2">
+                    {evalTeam.githubUrl && (
+                      <a href={evalTeam.githubUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+                        <Github className="h-3.5 w-3.5" /> GitHub
+                      </a>
+                    )}
+                    {evalTeam.demoUrl && (
+                      <a href={evalTeam.demoUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+                        <Globe className="h-3.5 w-3.5" /> Demo
+                      </a>
+                    )}
+                    {evalTeam.videoUrl && (
+                      <a href={evalTeam.videoUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+                        <Video className="h-3.5 w-3.5" /> Video
+                      </a>
+                    )}
+                    {!evalTeam.githubUrl && !evalTeam.demoUrl && !evalTeam.videoUrl && (
+                      <span className="text-xs text-gray-400">No links submitted</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Score Sliders */}
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Scoring Rubric</div>
+                  {SCORE_CRITERIA.map(({ key, label, max }) => (
+                    <div key={key} className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-gray-700">{label}</label>
+                        <span className="text-xs font-extrabold text-blue-600">{scores[key]}/{max}</span>
+                      </div>
+                      <input type="range" min={1} max={max} value={scores[key]}
+                        onChange={(e) => setScores((p) => ({ ...p, [key]: parseInt(e.target.value) }))}
+                        className="w-full accent-blue-600 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-gray-300 mt-0.5"><span>1</span><span>{max}</span></div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Written Feedback */}
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide block mb-1.5">Written Feedback</label>
+                  <textarea rows={3} value={feedback} onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="Provide detailed constructive feedback for the team..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setEvalModalOpen(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
+                    Cancel
+                  </button>
+                  <button onClick={handleSubmitEval}
+                    className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 cursor-pointer">
+                    Submit Score
+                  </button>
+                </div>
+              </div>
+            )}
+          </Modal>
+
+          {/* Team Detail Popup (for View Details button) */}
           <AnimatePresence>
-            {selectedTeam && activeTab === "queue" && (
+            {selectedTeam && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} onClick={() => setSelectedTeam(null)} className="absolute inset-0 bg-black" />
                 <motion.div
@@ -538,7 +590,7 @@ export default function JudgeDashboard() {
                       </div>
                     )}
 
-                    <button onClick={() => { handleOpenEval(selectedTeam); setSelectedTeam(null); }}
+                    <button onClick={() => { openEvalModal(selectedTeam); }}
                       className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 cursor-pointer">
                       Start Evaluation
                     </button>
@@ -550,5 +602,17 @@ export default function JudgeDashboard() {
         </main>
       </div>
     </PageWrapper>
+  );
+}
+
+function GavelIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="m14 13-7.5 7.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L11 10" />
+      <path d="m16 16 6-6" />
+      <path d="m8 8 6-6" />
+      <path d="m9 7 8 8" />
+      <path d="m21 11-8-8" />
+    </svg>
   );
 }

@@ -5,17 +5,18 @@ import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAppState } from "@/components/layout/StateProvider";
+import { useTheme } from "@/components/layout/ThemeProvider";
 import { useToast } from "@/components/ui/toast";
 import { QRTeamPass } from "@/components/ui/QRTeamPass";
+import QRCode from "qrcode";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, FolderOpen, Bell, User,
   CheckCircle, Clock, ChevronRight,
-  Github, Video, Globe, Plus, Trash2, Send,
-  CheckSquare, Square, Settings,
+  Github, Video, Globe, Plus, Trash2, Send, Download,
   AlertTriangle, Info, X,
-  LayoutDashboard, Layers, Search, ChevronDown,
-  BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Cloud, Code2, Brain, Terminal, LogOut,
+  LayoutDashboard, Layers, ChevronDown,
+  BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Cloud, Code2, Brain, Terminal, LogOut, QrCode,
 } from "lucide-react";
 import { Participant, Notification, SupportTicket } from "@/types";
 type SupportTicketCategory = SupportTicket["category"];
@@ -59,16 +60,17 @@ export default function ParticipantDashboard() {
   const router = useRouter();
   const {
     session, teams, notifications,
-    updateProjectDetails, updateTeamMembers, updateMilestoneProgress,
+    updateProjectDetails, updateTeamMembers,
     markNotificationRead, markAllNotificationsRead,
-    logout, raiseTicket,
+    logout, raiseTicket, getProfile, updateProfile,
   } = useAppState();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [activeJourneyStage, setActiveJourneyStage] = useState<string | null>(null);
-  const [projectTab, setProjectTab] = useState<"overview" | "repo" | "submission" | "milestones">("overview");
-  const [profileTab, setProfileTab] = useState<"info" | "account" | "notifications" | "appearance" | "security">("info");
+  const [projectTab, setProjectTab] = useState<"overview" | "repo" | "submission">("overview");
+  const [profileTab, setProfileTab] = useState<"edit" | "appearance">("edit");
   const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
   const [showAddMember, setShowAddMember] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -77,7 +79,14 @@ export default function ParticipantDashboard() {
   const [ticketPriority, setTicketPriority] = useState<SupportTicketPriority>("Medium");
   const [ticketDescription, setTicketDescription] = useState("");
   const [ticketFaqOpen, setTicketFaqOpen] = useState<string | null>(null);
-  const [newSkill, setNewSkill] = useState("");
+  const [profileNewSkill, setProfileNewSkill] = useState("");
+  const [memberNewSkill, setMemberNewSkill] = useState("");
+  const [participantQrDataUrl, setParticipantQrDataUrl] = useState<string>("");
+  const [profileEdit, setProfileEdit] = useState({
+    bio: "", skills: [] as string[], socialLinks: [] as { platform: string; url: string }[], profilePicture: "",
+  });
+  const [newSocialPlatform, setNewSocialPlatform] = useState("");
+  const [newSocialUrl, setNewSocialUrl] = useState("");
   const [newMember, setNewMember] = useState<Participant>({
     name: "", registerNumber: "", email: "", phone: "",
     department: DEPT_OPTIONS[0], year: YEAR_OPTIONS[2],
@@ -88,6 +97,32 @@ export default function ParticipantDashboard() {
   });
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Generate individual participant QR code
+  useEffect(() => {
+    if (session.email) {
+      QRCode.toDataURL(JSON.stringify({ type: "participant", email: session.email, name: session.name }), {
+        width: 180,
+        margin: 2,
+        color: { dark: "#064e3b", light: "#ffffff" },
+      }).then(setParticipantQrDataUrl);
+    }
+  }, [session.email]);
+
+  // Sync profile edit data from state
+  useEffect(() => {
+    if (session.email) {
+      const profile = getProfile(session.email);
+      if (profile) {
+        setProfileEdit({
+          bio: profile.bio || "",
+          skills: profile.skills || [],
+          socialLinks: profile.socialLinks || [],
+          profilePicture: profile.profilePicture || "",
+        });
+      }
+    }
+  }, [session.email]);
   useEffect(() => {
     if (mounted && (!session.isLoggedIn || session.role !== "participant")) {
       router.push("/login");
@@ -124,6 +159,7 @@ export default function ParticipantDashboard() {
   }
 
   const leader = team.members.find((m) => m.isLeader) || team.members[0];
+  const currentUser = team.members.find((m) => m.email === session.email) || leader;
   const track = HACK_TRACKS.find((t) => t.id === team.trackId);
   const avgScore = team.evaluations && team.evaluations.length > 0
     ? Math.round(team.evaluations.reduce((acc, e) => acc + (e.innovation + e.feasibility + e.presentation) / 3, 0) / team.evaluations.length)
@@ -147,7 +183,7 @@ export default function ParticipantDashboard() {
   // Registration progress
   const regChecklist = [
     { label: "Account Created", done: true },
-    { label: "Team Registered", done: team.status !== "PENDING" || true },
+    { label: "Team Registered", done: team.status !== "PENDING" },
     { label: "Members Added (2+)", done: team.members.length >= 2 },
     { label: "Payment Verified", done: !!team.paymentVerified },
     { label: "Faculty Approval", done: !!team.facultyApproved },
@@ -234,6 +270,26 @@ export default function ParticipantDashboard() {
     toast("Project details saved.", "success");
   };
 
+  const handleSaveProfile = () => {
+    if (session.email) {
+      updateProfile(session.email, {
+        bio: profileEdit.bio,
+        skills: profileEdit.skills,
+        socialLinks: profileEdit.socialLinks,
+        profilePicture: profileEdit.profilePicture,
+      });
+      toast("Profile saved.", "success");
+    }
+  };
+
+  const handleDownloadParticipantQR = () => {
+    if (!participantQrDataUrl) return;
+    const link = document.createElement("a");
+    link.href = participantQrDataUrl;
+    link.download = `${(session.name || session.email || "participant").replace(/\s+/g, "_")}_QR.png`;
+    link.click();
+  };
+
   // (projectEdit sync useEffect moved above early returns)
 
   return (
@@ -246,16 +302,7 @@ export default function ParticipantDashboard() {
           {/* Utility Header — replaces the duplicate top pills.
               Navigation is now handled SOLELY by the Sidebar; this header
               holds utility actions (search, notifications, profile menu). */}
-          <div className="flex items-center justify-between gap-4 mb-8">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-200 text-gray-400 w-full max-w-xs">
-              <Search className="h-4 w-4 shrink-0" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none w-full"
-              />
-            </div>
-
+          <div className="flex items-center justify-end gap-4 mb-8">
             <div className="flex items-center gap-3 shrink-0">
               {/* Notifications bell */}
               <button
@@ -294,16 +341,10 @@ export default function ParticipantDashboard() {
                       className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
                     >
                       <button
-                        onClick={() => { setProfileTab("info"); setActiveTab("profile"); setProfileMenuOpen(false); }}
+                        onClick={() => { setProfileTab("edit"); setActiveTab("profile"); setProfileMenuOpen(false); }}
                         className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
                       >
                         <User className="h-4 w-4 text-primary-green" /> My Profile
-                      </button>
-                      <button
-                        onClick={() => { setProfileTab("account"); setActiveTab("profile"); setProfileMenuOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
-                      >
-                        <Settings className="h-4 w-4 text-primary-green" /> Account Settings
                       </button>
                       <button
                         onClick={() => { setProfileTab("appearance"); setActiveTab("profile"); setProfileMenuOpen(false); }}
@@ -468,6 +509,37 @@ export default function ParticipantDashboard() {
                   <div className="space-y-4">
                     <QRTeamPass team={team} />
 
+                    {/* Individual Participant QR */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="font-bold text-primary-dark text-sm">Your Personal QR</div>
+                        <div className="text-xs text-gray-400">For attendance & identity</div>
+                      </div>
+                      <div className="flex items-center gap-5">
+                        <div className="flex flex-col items-center gap-2">
+                          {participantQrDataUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={participantQrDataUrl} alt="Your QR Code" className="w-32 h-32 rounded-xl border-2 border-gray-100" />
+                          ) : (
+                            <div className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center">
+                              <QrCode className="h-8 w-8 text-gray-300" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 flex flex-col gap-2">
+                          <div className="font-semibold text-primary-dark">{currentUser.name}</div>
+                          <div className="text-xs text-gray-400">{currentUser.email}</div>
+                          <div className="text-xs text-gray-400">{currentUser.department} · {currentUser.year}</div>
+                          <button
+                            onClick={handleDownloadParticipantQR}
+                            className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors cursor-pointer w-fit"
+                          >
+                            <Download className="h-4 w-4" /> Download QR
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Registration Progress */}
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                       <div className="flex items-center justify-between mb-3">
@@ -581,12 +653,12 @@ export default function ParticipantDashboard() {
                                 <input
                                   type="text"
                                   placeholder="Add skill..."
-                                  value={newSkill}
-                                  onChange={(e) => setNewSkill(e.target.value)}
+                                  value={memberNewSkill}
+                                  onChange={(e) => setMemberNewSkill(e.target.value)}
                                   onKeyDown={(e) => {
-                                    if (e.key === "Enter" && newSkill.trim()) {
-                                      setNewMember((p) => ({ ...p, skills: [...p.skills, newSkill.trim()] }));
-                                      setNewSkill("");
+                                    if (e.key === "Enter" && memberNewSkill.trim()) {
+                                      setNewMember((p) => ({ ...p, skills: [...p.skills, memberNewSkill.trim()] }));
+                                      setMemberNewSkill("");
                                     }
                                   }}
                                   className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
@@ -611,7 +683,7 @@ export default function ParticipantDashboard() {
                 <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><FolderOpen className="h-5 w-5 text-primary-green" /> Project Workspace</h2>
                 {/* Sub tabs */}
                 <div className="flex gap-2 flex-wrap">
-                  {(["overview", "repo", "submission", "milestones"] as const).map((t) => (
+                  {(["overview", "repo", "submission"] as const).map((t) => (
                     <button key={t} onClick={() => setProjectTab(t)}
                       className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer capitalize ${projectTab === t ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
                     >{t}</button>
@@ -705,34 +777,6 @@ export default function ParticipantDashboard() {
                         onClick={() => { updateProjectDetails(team.id, { ideaSubmitted: true }); toast("Idea abstract submitted!", "success"); }}
                         className="px-5 py-2 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer"
                       >Submit Abstract</button>
-                    </div>
-                  </div>
-                )}
-
-                {projectTab === "milestones" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                    <div className="flex flex-col gap-3">
-                      {(team.milestonesProgress || []).map((ms) => (
-                        <div key={ms.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                          <button onClick={() => updateMilestoneProgress(team.id, ms.id, !ms.completed)} className="cursor-pointer">
-                            {ms.completed ? <CheckSquare className="h-5 w-5 text-emerald-500" /> : <Square className="h-5 w-5 text-gray-300" />}
-                          </button>
-                          <span className={`text-sm font-medium ${ms.completed ? "text-gray-500 line-through" : "text-primary-dark"}`}>{ms.title}</span>
-                          {ms.completed && <span className="ml-auto text-xs text-emerald-600 font-semibold">Done</span>}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                        <span>Progress</span>
-                        <span>{(team.milestonesProgress || []).filter((m) => m.completed).length} / {(team.milestonesProgress || []).length}</span>
-                      </div>
-                      <div className="w-full bg-gray-100 rounded-full h-1.5">
-                        <div
-                          className="h-1.5 rounded-full bg-primary-green transition-all"
-                          style={{ width: `${((team.milestonesProgress || []).filter((m) => m.completed).length / Math.max((team.milestonesProgress || []).length, 1)) * 100}%` }}
-                        />
-                      </div>
                     </div>
                   </div>
                 )}
@@ -950,70 +994,113 @@ export default function ParticipantDashboard() {
               <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><User className="h-5 w-5 text-primary-green" /> Profile & Settings</h2>
                 <div className="flex gap-2 flex-wrap mb-4">
-                  {(["info", "account", "notifications", "appearance", "security"] as const).map((t) => (
+                  {(["edit", "appearance"] as const).map((t) => (
                     <button key={t} onClick={() => setProfileTab(t)}
                       className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors cursor-pointer ${profileTab === t ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
-                    >{t === "info" ? "Personal Info" : t}</button>
+                    >{t === "edit" ? "Edit Profile" : "Appearance"}</button>
                   ))}
                 </div>
 
-                {profileTab === "info" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                {profileTab === "edit" && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
+                    {/* Profile Header */}
                     <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl">
-                        {(session.name || session.email || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl shrink-0">
+                        {profileEdit.profilePicture ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={profileEdit.profilePicture} alt="Profile" className="h-full w-full rounded-2xl object-cover" />
+                        ) : (
+                          currentUser.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+                        )}
                       </div>
-                      <div>
-                        <div className="font-extrabold text-primary-dark text-lg">{session.name || "Participant"}</div>
-                        <div className="text-gray-400 text-sm">{session.email}</div>
-                        <div className="text-xs font-semibold text-primary-green mt-0.5">{team.name} · {leader?.isLeader && session.email === leader?.email ? "Team Leader" : "Team Member"}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-extrabold text-primary-dark text-lg">{currentUser.name}</div>
+                        <div className="text-gray-400 text-sm">{currentUser.email}</div>
+                        <div className="text-xs font-semibold text-primary-green mt-0.5">{team.name} · {currentUser.isLeader ? "Team Leader" : "Team Member"}</div>
                       </div>
                     </div>
-                    {leader && (
-                      <div className="grid grid-cols-2 gap-4">
-                        {[
-                          { label: "Full Name", value: leader.name },
-                          { label: "Register Number", value: leader.registerNumber },
-                          { label: "Department", value: leader.department },
-                          { label: "Year", value: leader.year },
-                          { label: "Phone", value: leader.phone },
-                          { label: "GitHub", value: leader.github || "—" },
-                        ].map(({ label, value }) => (
-                          <div key={label}>
-                            <div className="text-xs font-semibold text-gray-400">{label}</div>
-                            <div className="text-sm font-medium text-gray-800 mt-0.5">{value}</div>
+
+                    {/* Email (Immutable) */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-400 block mb-1">Email (immutable)</label>
+                      <div className="px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700">{session.email}</div>
+                    </div>
+
+                    {/* Profile Picture URL */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Profile Picture URL</label>
+                      <input type="text" value={profileEdit.profilePicture}
+                        onChange={(e) => setProfileEdit((p) => ({ ...p, profilePicture: e.target.value }))}
+                        placeholder="https://example.com/avatar.jpg"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                      />
+                    </div>
+
+                    {/* Bio */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Bio</label>
+                      <textarea rows={3} value={profileEdit.bio}
+                        onChange={(e) => setProfileEdit((p) => ({ ...p, bio: e.target.value }))}
+                        placeholder="Tell us about yourself..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                      />
+                    </div>
+
+                    {/* Skills */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Skills (press Enter to add)</label>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {profileEdit.skills.map((s) => (
+                          <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                            {s}
+                            <button onClick={() => setProfileEdit((p) => ({ ...p, skills: p.skills.filter((sk) => sk !== s) }))} className="cursor-pointer"><X className="h-3 w-3" /></button>
+                          </span>
+                        ))}
+                      </div>
+                      <input type="text" placeholder="Add skill..." value={profileNewSkill}
+                        onChange={(e) => setProfileNewSkill(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && profileNewSkill.trim()) {
+                            setProfileEdit((p) => ({ ...p, skills: [...p.skills, profileNewSkill.trim()] }));
+                            setProfileNewSkill("");
+                          }
+                        }}
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                      />
+                    </div>
+
+                    {/* Social Links */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">Social Links</label>
+                      <div className="flex flex-col gap-2 mb-2">
+                        {profileEdit.socialLinks.map((link, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-gray-500 w-20 shrink-0">{link.platform}</span>
+                            <span className="text-sm text-gray-700 flex-1 truncate">{link.url}</span>
+                            <button onClick={() => setProfileEdit((p) => ({ ...p, socialLinks: p.socialLinks.filter((_, idx) => idx !== i) }))} className="p-1 text-gray-300 hover:text-red-500 cursor-pointer"><X className="h-3.5 w-3.5" /></button>
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {profileTab === "account" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-                    <div className="text-sm font-semibold text-gray-500">Account Email</div>
-                    <div className="px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700">{session.email}</div>
-                    <div className="text-sm font-semibold text-gray-500 mt-4">Role</div>
-                    <div className="px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 font-semibold">Participant</div>
-                  </div>
-                )}
-
-                {profileTab === "notifications" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-                    {[
-                      "Team approvals & rejections",
-                      "Mentor feedback",
-                      "Judge evaluations",
-                      "Deadline reminders",
-                      "Platform announcements",
-                    ].map((label) => (
-                      <div key={label} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                        <span className="text-sm text-gray-700">{label}</span>
-                        <div className="h-5 w-9 rounded-full bg-primary-green flex items-center justify-end px-0.5 cursor-pointer">
-                          <div className="h-4 w-4 rounded-full bg-white shadow" />
-                        </div>
+                      <div className="flex gap-2">
+                        <input type="text" placeholder="Platform" value={newSocialPlatform}
+                          onChange={(e) => setNewSocialPlatform(e.target.value)}
+                          className="w-28 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                        />
+                        <input type="text" placeholder="URL" value={newSocialUrl}
+                          onChange={(e) => setNewSocialUrl(e.target.value)}
+                          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                        />
+                        <button onClick={() => {
+                          if (newSocialPlatform.trim() && newSocialUrl.trim()) {
+                            setProfileEdit((p) => ({ ...p, socialLinks: [...p.socialLinks, { platform: newSocialPlatform.trim(), url: newSocialUrl.trim() }] }));
+                            setNewSocialPlatform("");
+                            setNewSocialUrl("");
+                          }
+                        }} className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 cursor-pointer"><Plus className="h-4 w-4" /></button>
                       </div>
-                    ))}
+                    </div>
+
+                    <button onClick={handleSaveProfile} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Profile</button>
                   </div>
                 )}
 
@@ -1021,23 +1108,12 @@ export default function ParticipantDashboard() {
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
                     <div className="text-sm font-semibold text-gray-700">Theme</div>
                     <div className="flex gap-3">
-                      {["Light", "Dark", "System"].map((t) => (
-                        <button key={t} className={`px-4 py-2 rounded-xl text-sm font-semibold border cursor-pointer transition-colors ${t === "Light" ? "bg-primary-green text-white border-primary-green" : "border-gray-200 text-gray-600"}`}>{t}</button>
+                      {(["light", "dark"] as const).map((t) => (
+                        <button key={t} onClick={() => setTheme(t)}
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold border cursor-pointer transition-colors ${theme === t ? "bg-primary-green text-white border-primary-green" : "border-gray-200 text-gray-600 hover:border-primary-green/40"}`}
+                        >{t === "light" ? "Light" : "Dark"}</button>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {profileTab === "security" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-                    <div className="text-sm font-semibold text-gray-700">Change Password</div>
-                    {["Current Password", "New Password", "Confirm New Password"].map((label) => (
-                      <div key={label}>
-                        <label className="text-xs font-semibold text-gray-400 block mb-1">{label}</label>
-                        <input type="password" placeholder="••••••••" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
-                      </div>
-                    ))}
-                    <button className="px-5 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Update Password</button>
                   </div>
                 )}
               </motion.div>

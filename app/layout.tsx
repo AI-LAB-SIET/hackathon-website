@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { StateProvider } from "@/components/layout/StateProvider";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { ToastProvider } from "@/components/ui/toast";
 
 const nunito = Nunito({
@@ -29,14 +30,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("siet_theme");if(t==="dark"){document.documentElement.classList.add("dark")}else{document.documentElement.classList.remove("dark")}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body
-        className={`${nunito.variable} ${instrumentSerif.variable} antialiased font-sans bg-white text-[#4B4B4B] selection:bg-primary-green selection:text-white`}
+        className={`${nunito.variable} ${instrumentSerif.variable} antialiased font-sans bg-white text-[#4B4B4B] selection:bg-primary-green selection:text-white dark:bg-primary-dark dark:text-gray-200`}
       >
         <StateProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </ThemeProvider>
         </StateProvider>
       </body>
     </html>

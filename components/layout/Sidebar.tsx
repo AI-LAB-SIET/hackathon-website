@@ -25,9 +25,11 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Bell,
   LifeBuoy,
   User,
+  ListChecks,
+  Shield,
+  QrCode,
 } from "lucide-react";
 import { Avatar } from "../ui/avatar";
 
@@ -56,7 +58,6 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           { id: "home", name: "Home", icon: <LayoutDashboard className="h-5 w-5" /> },
           { id: "team", name: "My Team", icon: <Users className="h-5 w-5" /> },
           { id: "project", name: "Project", icon: <FolderCode className="h-5 w-5" /> },
-          { id: "notifications", name: "Notifications", icon: <Bell className="h-5 w-5" /> },
           { id: "resources", name: "Resources", icon: <BookOpen className="h-5 w-5" /> },
           { id: "support", name: "Support", icon: <LifeBuoy className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
@@ -64,11 +65,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       case "judge":
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-          { id: "assigned", name: "Assigned Projects", icon: <FolderCode className="h-5 w-5" /> },
-          { id: "evaluation", name: "Evaluation", icon: <Gavel className="h-5 w-5" /> },
-          { id: "leaderboard", name: "Leaderboard", icon: <Activity className="h-5 w-5" /> },
-          { id: "messages", name: "Messages", icon: <MessageSquare className="h-5 w-5" /> },
-          { id: "settings", name: "Settings", icon: <Settings className="h-5 w-5" /> },
+          { id: "queue", name: "Review Queue", icon: <ListChecks className="h-5 w-5" /> },
+          { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
         ];
       case "mentor":
         return [
@@ -78,25 +76,31 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           { id: "feedback", name: "Feedback Logs", icon: <MessageSquare className="h-5 w-5" /> },
           { id: "settings", name: "Settings", icon: <Settings className="h-5 w-5" /> },
         ];
+      case "volunteer":
+        return [
+          { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+          { id: "tickets", name: "Tickets", icon: <LifeBuoy className="h-5 w-5" /> },
+          { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
+        ];
       case "organizer":
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-          { id: "approvals", name: "Approvals Queue", icon: <UserCheck className="h-5 w-5" /> },
           { id: "teams", name: "Teams Directory", icon: <Users className="h-5 w-5" /> },
-          { id: "projects", name: "Projects Directory", icon: <FolderCode className="h-5 w-5" /> },
-          { id: "announcements", name: "Announcements", icon: <Megaphone className="h-5 w-5" /> },
-          { id: "resources", name: "Resources", icon: <BookOpen className="h-5 w-5" /> },
-          { id: "stats", name: "Analytics & Stats", icon: <Activity className="h-5 w-5" /> },
-          { id: "settings", name: "Settings", icon: <Settings className="h-5 w-5" /> },
+          { id: "approval", name: "Approval Queue", icon: <UserCheck className="h-5 w-5" /> },
+          { id: "volunteers", name: "Volunteers", icon: <UserCheck className="h-5 w-5" /> },
+          { id: "tickets", name: "Tickets", icon: <LifeBuoy className="h-5 w-5" /> },
+          { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
         ];
       case "admin":
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-          { id: "users", name: "Users & Roles", icon: <Users className="h-5 w-5" /> },
-          { id: "keys", name: "API Keys Panel", icon: <Key className="h-5 w-5" /> },
-          { id: "storage", name: "Storage Monitor", icon: <Database className="h-5 w-5" /> },
-          { id: "audit", name: "System Audit Logs", icon: <Activity className="h-5 w-5" /> },
-          { id: "settings", name: "Settings", icon: <Settings className="h-5 w-5" /> },
+          { id: "members", name: "Members & Roles", icon: <Users className="h-5 w-5" /> },
+          { id: "participants", name: "Participants", icon: <UserCheck className="h-5 w-5" /> },
+          { id: "announcements", name: "Announcements", icon: <Megaphone className="h-5 w-5" /> },
+          { id: "problems", name: "Problems", icon: <BookOpen className="h-5 w-5" /> },
+          { id: "scanner", name: "QR Scanner", icon: <QrCode className="h-5 w-5" /> },
+          { id: "teams", name: "Approved Teams", icon: <Shield className="h-5 w-5" /> },
+          { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
         ];
       default:
         return [];
@@ -195,9 +199,6 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-card-bg/30 border border-input-border/10">
             <Avatar name={session.email || "User"} size="sm" />
             <div className="overflow-hidden">
-              <p className="text-[10px] font-bold text-primary-dark truncate capitalize">
-                {session.role} Portal
-              </p>
               <p className="text-[9px] text-gray-500 truncate font-medium">{session.email}</p>
             </div>
           </div>

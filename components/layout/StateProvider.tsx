@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { Team, UserSession, Announcement, Participant, Notification, SupportTicket } from "@/types";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import { Team, UserSession, Announcement, Participant, Notification, SupportTicket, Volunteer, UserProfile, ProblemStatement, Ticket } from "@/types";
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS, INITIAL_NOTIFICATIONS } from "@/lib/mockData";
 
 interface StateContextType {
@@ -9,8 +9,12 @@ interface StateContextType {
   session: UserSession;
   announcements: Announcement[];
   notifications: Notification[];
+  volunteers: Volunteer[];
+  userProfiles: UserProfile[];
+  problemStatements: ProblemStatement[];
+  tickets: Ticket[];
   // Auth
-  login: (email: string, role: "participant" | "admin" | "judge" | "mentor" | "organizer") => boolean;
+  login: (email: string, role: "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer") => boolean;
   logout: () => void;
   // Teams
   registerTeam: (teamData: { name: string; projectDescription: string; members: Participant[] }) => void;
@@ -31,6 +35,21 @@ interface StateContextType {
   // Support Tickets
   raiseTicket: (ticket: Omit<SupportTicket, "id" | "createdAt" | "status">) => void;
   resolveTicket: (ticketId: string) => void;
+  // Volunteers
+  addVolunteer: (v: Omit<Volunteer, "id" | "createdAt">) => void;
+  updateVolunteer: (id: string, data: Partial<Volunteer>) => void;
+  removeVolunteer: (id: string) => void;
+  // Profiles
+  updateProfile: (email: string, data: Partial<UserProfile>) => void;
+  getProfile: (email: string) => UserProfile | undefined;
+  // Problem Statements
+  addProblemStatement: (ps: Omit<ProblemStatement, "id" | "createdAt">) => void;
+  updateProblemStatement: (id: string, data: Partial<ProblemStatement>) => void;
+  archiveProblemStatement: (id: string) => void;
+  // Tickets (top-level)
+  createTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "status">) => void;
+  assignTicket: (ticketId: string, volunteerEmail: string) => void;
+  updateTicketStatus: (ticketId: string, status: Ticket["status"]) => void;
 }
 
 const StateContext = createContext<StateContextType | undefined>(undefined);
@@ -40,41 +59,90 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<UserSession>({ isLoggedIn: false, role: null, email: null, teamId: null });
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
+  const [problemStatements, setProblemStatements] = useState<ProblemStatement[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [initialized, setInitialized] = useState(false);
+
+  const volunteersRef = useRef(volunteers);
+  const teamsRef = useRef(teams);
+  useEffect(() => { volunteersRef.current = volunteers; }, [volunteers]);
+  useEffect(() => { teamsRef.current = teams; }, [teams]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Teams
-      const storedTeams = localStorage.getItem("siet_teams_v2");
-      if (storedTeams) {
-        setTeams(JSON.parse(storedTeams));
-      } else {
-        const enhancedTeams = INITIAL_TEAMS;
-        setTeams(enhancedTeams);
-        localStorage.setItem("siet_teams_v2", JSON.stringify(enhancedTeams));
-      }
+      try {
+        const storedTeams = localStorage.getItem("siet_teams_v2");
+        if (storedTeams) {
+          setTeams(JSON.parse(storedTeams));
+        } else {
+          const enhancedTeams = INITIAL_TEAMS;
+          setTeams(enhancedTeams);
+          localStorage.setItem("siet_teams_v2", JSON.stringify(enhancedTeams));
+        }
+      } catch { setTeams(INITIAL_TEAMS); }
 
       // Session
-      const storedSession = localStorage.getItem("siet_session");
-      if (storedSession) setSession(JSON.parse(storedSession));
+      try {
+        const storedSession = localStorage.getItem("siet_session");
+        if (storedSession) setSession(JSON.parse(storedSession));
+      } catch { /* keep default session */ }
 
       // Announcements
-      const storedAnn = localStorage.getItem("siet_announcements");
-      if (storedAnn) {
-        setAnnouncements(JSON.parse(storedAnn));
-      } else {
-        setAnnouncements(INITIAL_ANNOUNCEMENTS);
-        localStorage.setItem("siet_announcements", JSON.stringify(INITIAL_ANNOUNCEMENTS));
-      }
+      try {
+        const storedAnn = localStorage.getItem("siet_announcements");
+        if (storedAnn) {
+          setAnnouncements(JSON.parse(storedAnn));
+        } else {
+          setAnnouncements(INITIAL_ANNOUNCEMENTS);
+          localStorage.setItem("siet_announcements", JSON.stringify(INITIAL_ANNOUNCEMENTS));
+        }
+      } catch { setAnnouncements(INITIAL_ANNOUNCEMENTS); }
 
       // Notifications
-      const storedNotifs = localStorage.getItem("siet_notifications_v2");
-      if (storedNotifs) {
-        setNotifications(JSON.parse(storedNotifs));
-      } else {
-        setNotifications(INITIAL_NOTIFICATIONS);
-        localStorage.setItem("siet_notifications_v2", JSON.stringify(INITIAL_NOTIFICATIONS));
-      }
+      try {
+        const storedNotifs = localStorage.getItem("siet_notifications_v2");
+        if (storedNotifs) {
+          setNotifications(JSON.parse(storedNotifs));
+        } else {
+          setNotifications(INITIAL_NOTIFICATIONS);
+          localStorage.setItem("siet_notifications_v2", JSON.stringify(INITIAL_NOTIFICATIONS));
+        }
+      } catch { setNotifications(INITIAL_NOTIFICATIONS); }
+
+      // Volunteers
+      try {
+        const storedVolunteers = localStorage.getItem("siet_volunteers");
+        if (storedVolunteers) {
+          setVolunteers(JSON.parse(storedVolunteers));
+        }
+      } catch { /* keep empty */ }
+
+      // User Profiles
+      try {
+        const storedProfiles = localStorage.getItem("siet_profiles");
+        if (storedProfiles) {
+          setUserProfiles(JSON.parse(storedProfiles));
+        }
+      } catch { /* keep empty */ }
+
+      // Problem Statements
+      try {
+        const storedProblems = localStorage.getItem("siet_problems");
+        if (storedProblems) {
+          setProblemStatements(JSON.parse(storedProblems));
+        }
+      } catch { /* keep empty */ }
+
+      // Tickets
+      try {
+        const storedTickets = localStorage.getItem("siet_tickets");
+        if (storedTickets) {
+          setTickets(JSON.parse(storedTickets));
+        }
+      } catch { /* keep empty */ }
 
       setInitialized(true);
     }
@@ -84,8 +152,12 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (initialized) localStorage.setItem("siet_session", JSON.stringify(session)); }, [session, initialized]);
   useEffect(() => { if (initialized) localStorage.setItem("siet_announcements", JSON.stringify(announcements)); }, [announcements, initialized]);
   useEffect(() => { if (initialized) localStorage.setItem("siet_notifications_v2", JSON.stringify(notifications)); }, [notifications, initialized]);
+  useEffect(() => { if (initialized) localStorage.setItem("siet_volunteers", JSON.stringify(volunteers)); }, [volunteers, initialized]);
+  useEffect(() => { if (initialized) localStorage.setItem("siet_profiles", JSON.stringify(userProfiles)); }, [userProfiles, initialized]);
+  useEffect(() => { if (initialized) localStorage.setItem("siet_problems", JSON.stringify(problemStatements)); }, [problemStatements, initialized]);
+  useEffect(() => { if (initialized) localStorage.setItem("siet_tickets", JSON.stringify(tickets)); }, [tickets, initialized]);
 
-  const login = (email: string, role: "participant" | "admin" | "judge" | "mentor" | "organizer"): boolean => {
+  const login = (email: string, role: "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer"): boolean => {
     const names: Record<string, string> = {
       "admin@college.edu": "Admin User",
       "judge@college.edu": "Dr. Priya Rajan",
@@ -108,8 +180,15 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       setSession({ isLoggedIn: true, role: "organizer", email, name: names[email] });
       return true;
     }
+    if (role === "volunteer") {
+      const vol = volunteersRef.current.find((v) => v.email.toLowerCase() === email.toLowerCase());
+      if (vol) {
+        setSession({ isLoggedIn: true, role: "volunteer", email, name: vol.name });
+        return true;
+      }
+    }
     if (role === "participant") {
-      const team = teams.find((t) => t.members.some((m) => m.email.toLowerCase() === email.toLowerCase()));
+      const team = teamsRef.current.find((t) => t.members.some((m) => m.email.toLowerCase() === email.toLowerCase()));
       if (team) {
         const member = team.members.find((m) => m.email.toLowerCase() === email.toLowerCase());
         setSession({ isLoggedIn: true, role: "participant", email, name: member?.name, teamId: team.id });
@@ -122,36 +201,39 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const logout = () => setSession({ isLoggedIn: false, role: null, email: null, teamId: null });
 
   const registerTeam = (teamData: { name: string; projectDescription: string; members: Participant[] }) => {
-    const teamNum = 100 + teams.length + 5;
     const prefix = teamData.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
-    const newTeam: Team = {
-      id: `team-${Date.now()}`,
-      name: teamData.name,
-      size: teamData.members.length,
-      members: teamData.members,
-      status: "PENDING",
-      createdAt: new Date().toISOString(),
-      projectDescription: teamData.projectDescription,
-      qrToken: `${prefix}-AI26-${teamNum}-SEC${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      paymentVerified: false,
-      facultyApproved: false,
-      ideaSubmitted: false,
-      shortlisted: false,
-      attendance: { teamId: `team-${Date.now()}`, checkedIn: false },
-      milestonesProgress: [
-        { id: "ms-1", title: "Ideation & Design Diagram", completed: false },
-        { id: "ms-2", title: "Database & API Schema Setup", completed: false },
-        { id: "ms-3", title: "Core ML/AI Model Integration", completed: false },
-        { id: "ms-4", title: "Frontend Dashboard Integration", completed: false },
-        { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
-      ],
-      evaluations: [],
-      mentorFeedbacks: [],
-      supportTickets: [],
-    };
-    setTeams((prev) => [...prev, newTeam]);
+    let newTeam: Team;
+    setTeams((prev) => {
+      const teamNum = 100 + prev.length + 5;
+      newTeam = {
+        id: `team-${Date.now()}`,
+        name: teamData.name,
+        size: teamData.members.length,
+        members: teamData.members,
+        status: "PENDING",
+        createdAt: new Date().toISOString(),
+        projectDescription: teamData.projectDescription,
+        qrToken: `${prefix}-AI26-${teamNum}-SEC${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+        paymentVerified: false,
+        facultyApproved: false,
+        ideaSubmitted: false,
+        shortlisted: false,
+        attendance: { teamId: `team-${Date.now()}`, checkedIn: false },
+        milestonesProgress: [
+          { id: "ms-1", title: "Ideation & Design Diagram", completed: false },
+          { id: "ms-2", title: "Database & API Schema Setup", completed: false },
+          { id: "ms-3", title: "Core ML/AI Model Integration", completed: false },
+          { id: "ms-4", title: "Frontend Dashboard Integration", completed: false },
+          { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
+        ],
+        evaluations: [],
+        mentorFeedbacks: [],
+        supportTickets: [],
+      };
+      return [...prev, newTeam];
+    });
     const leader = teamData.members.find((m) => m.isLeader) || teamData.members[0];
-    setSession({ isLoggedIn: true, role: "participant", email: leader.email, name: leader.name, teamId: newTeam.id });
+    setSession({ isLoggedIn: true, role: "participant", email: leader.email, name: leader.name, teamId: newTeam!.id });
     addNotification({ type: "system", title: "Team Registered", body: `Your team "${teamData.name}" has been submitted for review. You'll be notified once approved.`, priority: "normal" });
   };
 
@@ -245,7 +327,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   };
 
   const raiseTicket = (ticket: Omit<SupportTicket, "id" | "createdAt" | "status">) => {
-    const newTicket: SupportTicket = { ...ticket, id: `ticket-${Date.now()}`, status: "Open", createdAt: new Date().toISOString() };
+    const newTicket: SupportTicket = { ...ticket, id: `sticket-${Date.now()}`, status: "Open", createdAt: new Date().toISOString() };
     setTeams((prev) => prev.map((t) => t.id === ticket.teamId ? { ...t, supportTickets: [newTicket, ...(t.supportTickets || [])] } : t));
     addNotification({ type: "action", title: `Support Ticket: ${ticket.category}`, body: ticket.description, priority: ticket.priority === "Critical" ? "high" : "normal", relatedTeamId: ticket.teamId });
   };
@@ -254,15 +336,76 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     setTeams((prev) => prev.map((t) => ({ ...t, supportTickets: (t.supportTickets || []).map((tk) => tk.id === ticketId ? { ...tk, status: "Resolved" as const } : tk) })));
   };
 
+  const addVolunteer = (v: Omit<Volunteer, "id" | "createdAt">) => {
+    const newVol: Volunteer = { ...v, id: `vol-${Date.now()}`, createdAt: new Date().toISOString() };
+    setVolunteers((prev) => [...prev, newVol]);
+  };
+
+  const updateVolunteer = (id: string, data: Partial<Volunteer>) => {
+    setVolunteers((prev) => prev.map((v) => v.id === id ? { ...v, ...data } : v));
+  };
+
+  const removeVolunteer = (id: string) => {
+    setVolunteers((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const updateProfile = (email: string, data: Partial<UserProfile>) => {
+    setUserProfiles((prev) => {
+      const idx = prev.findIndex((p) => p.email.toLowerCase() === email.toLowerCase());
+      if (idx > -1) {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], ...data };
+        return updated;
+      }
+      return prev;
+    });
+  };
+
+  const getProfile = (email: string): UserProfile | undefined => {
+    return userProfiles.find((p) => p.email.toLowerCase() === email.toLowerCase());
+  };
+
+  const addProblemStatement = (ps: Omit<ProblemStatement, "id" | "createdAt">) => {
+    const newPs: ProblemStatement = { ...ps, id: `ps-${Date.now()}`, createdAt: new Date().toISOString() };
+    setProblemStatements((prev) => [...prev, newPs]);
+  };
+
+  const updateProblemStatement = (id: string, data: Partial<ProblemStatement>) => {
+    setProblemStatements((prev) => prev.map((ps) => ps.id === id ? { ...ps, ...data } : ps));
+  };
+
+  const archiveProblemStatement = (id: string) => {
+    setProblemStatements((prev) => prev.map((ps) => ps.id === id ? { ...ps, status: "archived" as const } : ps));
+  };
+
+  const createTicket = (ticket: Omit<Ticket, "id" | "createdAt" | "status">) => {
+    const newTicket: Ticket = { ...ticket, id: `ticket-${Date.now()}`, status: "Open" as const, createdAt: new Date().toISOString() };
+    setTickets((prev) => [...prev, newTicket]);
+    addNotification({ type: "action", title: `New Ticket: ${ticket.category}`, body: ticket.description, priority: ticket.priority === "Critical" ? "high" : "normal" });
+  };
+
+  const assignTicket = (ticketId: string, volunteerEmail: string) => {
+    setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, assignedTo: volunteerEmail, status: "Assigned" as const, updatedAt: new Date().toISOString() } : t));
+  };
+
+  const updateTicketStatus = (ticketId: string, status: Ticket["status"]) => {
+    setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+  };
+
   return (
     <StateContext.Provider value={{
       teams, session, announcements, notifications,
+      volunteers, userProfiles, problemStatements, tickets,
       login, logout,
       registerTeam, updateTeamMembers, approveTeam, rejectTeam,
       updateProjectDetails, evaluateProject, addMentorFeedback, updateMilestoneProgress, checkInTeam,
       addAnnouncement,
       addNotification, markNotificationRead, markAllNotificationsRead,
       raiseTicket, resolveTicket,
+      addVolunteer, updateVolunteer, removeVolunteer,
+      updateProfile, getProfile,
+      addProblemStatement, updateProblemStatement, archiveProblemStatement,
+      createTicket, assignTicket, updateTicketStatus,
     }}>
       {children}
     </StateContext.Provider>

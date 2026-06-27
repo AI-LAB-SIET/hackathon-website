@@ -37,6 +37,7 @@ export function Navbar() {
     : session.role === "judge" ? "/judge"
     : session.role === "mentor" ? "/mentor"
     : session.role === "organizer" ? "/organizer"
+    : session.role === "volunteer" ? "/volunteer"
     : "/dashboard";
 
   const rolePortalLabel =
@@ -44,6 +45,7 @@ export function Navbar() {
     : session.role === "judge" ? "Judge Portal"
     : session.role === "mentor" ? "Mentor Portal"
     : session.role === "organizer" ? "Organizer Portal"
+    : session.role === "volunteer" ? "Volunteer Portal"
     : "My Dashboard";
 
   const handleLogout = () => {

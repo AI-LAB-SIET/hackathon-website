@@ -12,27 +12,25 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard,
   Users,
   Calendar,
   MessageSquare,
   Settings,
   ExternalLink,
   Plus,
-  Compass,
-  CheckCircle,
   Clock,
   Trash2,
-  FolderOpen
+  Bell,
 } from "lucide-react";
 import { Team } from "@/types";
 
 export default function MentorDashboard() {
   const router = useRouter();
-  const { session, teams, addMentorFeedback } = useAppState();
+  const { session, teams, notifications, markNotificationRead, markAllNotificationsRead, addMentorFeedback } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [notifOpen, setNotifOpen] = useState(false);
 
   // Selection state for feedback
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
@@ -61,6 +59,7 @@ export default function MentorDashboard() {
 
   // Active teams (APPROVED status)
   const assignedTeams = teams.filter((t) => t.status === "APPROVED");
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleStartFeedback = (team: Team) => {
     setSelectedTeamId(team.id);
@@ -146,6 +145,50 @@ export default function MentorDashboard() {
             <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-0.5">
               Logged in as: <strong>{session.email}</strong> | Role: {session.role?.toUpperCase()}
             </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button onClick={() => setNotifOpen(!notifOpen)}
+                className="relative p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-primary-green hover:text-primary-green transition-colors cursor-pointer"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none min-w-[16px] text-center">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              <AnimatePresence>
+                {notifOpen && (
+                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                    className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                      <span className="font-bold text-sm text-primary-dark">Notifications</span>
+                      {unreadCount > 0 && (
+                        <button onClick={() => { markAllNotificationsRead(); toast("All notifications marked as read", "info"); }}
+                          className="text-xs font-semibold text-primary-green hover:underline cursor-pointer"
+                        >Mark all read</button>
+                      )}
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400">No notifications</div>}
+                      {notifications.slice(0, 10).map((n) => (
+                        <div key={n.id} onClick={() => markNotificationRead(n.id)}
+                          className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? "bg-emerald-50/50" : ""}`}
+                        >
+                          <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-primary-green" : "bg-gray-300"}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
+                            <div className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 

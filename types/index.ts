@@ -22,11 +22,12 @@ export interface SupportTicket {
   teamId: string;
   category: "Internet" | "Power" | "Mentor Needed" | "Hardware" | "Food" | "Venue" | "Other";
   priority: "Low" | "Medium" | "High" | "Critical";
-  status: "Open" | "Assigned" | "Resolved" | "Closed";
+  status: "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
   raisedBy: string;
   assignedTo?: string;
   description: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Team {
@@ -41,6 +42,7 @@ export interface Team {
   videoUrl?: string;
   demoUrl?: string;
   aiDisclosure?: string;
+  problemStatementId?: string;
   submitted?: boolean;
   submittedAt?: string;
   milestonesProgress?: { id: string; title: string; completed: boolean }[];
@@ -101,10 +103,11 @@ export interface FAQItem {
 
 export interface UserSession {
   isLoggedIn: boolean;
-  role: "participant" | "admin" | "judge" | "mentor" | "organizer" | null;
+  role: "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer" | null;
   email: string | null;
   name?: string | null;
   teamId?: string | null;
+  profilePicture?: string;
 }
 
 export interface HackTrack {
@@ -112,3 +115,36 @@ export interface HackTrack {
   label: string;
   color: string;
 }
+
+export interface Volunteer {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  assignedArea: string;
+  assignedResponsibilities: string;
+  createdAt: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  profilePicture?: string;
+  bio?: string;
+  skills?: string[];
+  socialLinks?: { platform: string; url: string }[];
+  role: "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer";
+  teamId?: string;
+}
+
+export interface ProblemStatement {
+  id: string;
+  title: string;
+  description: string;
+  trackId: string;
+  status: "draft" | "published" | "archived";
+  createdAt: string;
+}
+
+export type Ticket = SupportTicket;

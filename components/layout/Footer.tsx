@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Github, Twitter, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import { Github, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function Footer() {
@@ -11,7 +11,7 @@ export function Footer() {
 
   const socialLinks = [
     { icon: <Github className="h-4 w-4" />, href: "https://github.com", name: "GitHub" },
-    { icon: <Twitter className="h-4 w-4" />, href: "https://twitter.com", name: "Twitter" },
+    { icon: <Instagram className="h-4 w-4" />, href: "https://instagram.com", name: "Instagram" },
     { icon: <Linkedin className="h-4 w-4" />, href: "https://linkedin.com", name: "LinkedIn" },
   ];
 
@@ -106,19 +106,19 @@ export function Footer() {
           <div className="flex flex-col gap-3">
             <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider">Get in Touch</h4>
             <div className="flex flex-col gap-2.5 text-xs text-gray-500">
-              <div className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-primary-green shrink-0 mt-0.5" />
-                <span className="leading-relaxed">SIET AI Research Lab, Main Block, Coimbatore, TN, India</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 text-primary-green shrink-0" />
-                <span>+91 98765 43210</span>
-              </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-primary-green shrink-0" />
                 <a href="mailto:ailab@siet.ac.in" className="hover:text-primary-green transition-colors">
                   ailab@siet.ac.in
                 </a>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 text-primary-green shrink-0" />
+                <span>+91 98765 43210</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <MapPin className="h-4 w-4 text-primary-green shrink-0 mt-0.5" />
+                <span className="leading-relaxed">SIET AI Research Lab, Main Block, Coimbatore, TN, India</span>
               </div>
             </div>
           </div>

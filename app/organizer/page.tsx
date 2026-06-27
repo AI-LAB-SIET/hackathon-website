@@ -6,26 +6,34 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
+import { useTheme } from "@/components/layout/ThemeProvider";
+import { Modal } from "@/components/ui/modal";
 import { QRScanner } from "@/components/ui/QRScanner";
 import { AttendancePanel } from "@/components/ui/AttendancePanel";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, Users, ClipboardCheck, FolderOpen, Bell, BarChart3, User,
-  CheckCircle, Clock, XCircle, AlertTriangle, Search, QrCode,
-  Mail, Phone, ChevronRight, TrendingUp, Activity, Ticket, X
+  Users, ClipboardCheck, Bell, Sun, Moon,
+  CheckCircle, Clock, XCircle, Search, QrCode,
+  Mail, Phone, ChevronRight, Activity, Ticket,
+  Download, UserPlus, Trash2, UserCheck,
+  Github, Video, Globe
 } from "lucide-react";
-import { Team, Notification } from "@/types";
+import { Team, Volunteer, SupportTicket } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
 
-type TabType = "dashboard" | "teams" | "approval" | "projects" | "notifications" | "reports" | "profile";
+type TabType = "dashboard" | "teams" | "approval" | "volunteers" | "tickets" | "profile";
 type ApprovalFilter = "all" | "pending" | "approved" | "rejected";
+type ProfileTabType = "edit" | "appearance";
+type TicketFilter = "all" | "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
 
 export default function OrganizerDashboard() {
   const router = useRouter();
-  const { session, teams, notifications, approveTeam, rejectTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead } = useAppState();
+  const { session, teams, notifications, volunteers, tickets, approveTeam, rejectTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead, addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus } = useAppState();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+  const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
 
   // Filters
   const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>("all");
@@ -33,6 +41,7 @@ export default function OrganizerDashboard() {
   const [sizeFilter, setSizeFilter] = useState("all");
   const [deptFilter, setDeptFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [ticketFilter, setTicketFilter] = useState<TicketFilter>("all");
 
   // QR + Attendance
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -41,8 +50,22 @@ export default function OrganizerDashboard() {
   // Announcement form
   const [annForm, setAnnForm] = useState({ title: "", content: "", type: "info" as "info" | "warning" | "success" });
 
-  // Notification filter
-  const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
+  // Team detail modal
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
+  // Notification dropdown
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  // Volunteer modal
+  const [volModalOpen, setVolModalOpen] = useState(false);
+  const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(null);
+  const [volForm, setVolForm] = useState({ name: "", phone: "", email: "", assignedArea: "", assignedResponsibilities: "" });
+
+  // Ticket assignment modal
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [assignVolEmail, setAssignVolEmail] = useState("");
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
@@ -76,14 +99,23 @@ export default function OrganizerDashboard() {
     return true;
   });
 
+  // All tickets aggregated
+  const allTickets = tickets.length > 0
+    ? tickets
+    : teams.flatMap((t) => (t.supportTickets || []).map((tk) => ({ ...tk, teamName: t.name })));
+  const filteredTickets = allTickets.filter((t) => ticketFilter === "all" || t.status === ticketFilter);
+
   const handleApprove = (teamId: string, teamName: string) => {
     approveTeam(teamId);
     toast(`${teamName} approved.`, "success");
+    setSelectedTeam(null);
   };
 
   const handleReject = (teamId: string, teamName: string) => {
     rejectTeam(teamId);
     toast(`${teamName} rejected.`, "error");
+    setSelectedTeam(null);
+    setRejectReason("");
   };
 
   const handleSendAnnouncement = () => {
@@ -93,43 +125,128 @@ export default function OrganizerDashboard() {
     toast("Announcement sent to all participants.", "success");
   };
 
-  const notifTypeStyles: Record<string, { dot: string; label: string }> = {
-    approval: { dot: "bg-emerald-500", label: "Approval" },
-    deadline: { dot: "bg-amber-500", label: "Deadline" },
-    mentor: { dot: "bg-purple-500", label: "Mentor" },
-    judge: { dot: "bg-blue-500", label: "Judge" },
-    action: { dot: "bg-red-500", label: "Action" },
-    system: { dot: "bg-gray-400", label: "System" },
+  const handleExportCSV = () => {
+    const headers = ["Team Name", "Status", "Members", "Track", "Attendance", "Checked In"];
+    const rows = teams.map((t) => {
+      const track = HACK_TRACKS.find((tr) => tr.id === t.trackId);
+      return [
+        t.name,
+        t.status,
+        t.size.toString(),
+        track?.label || "—",
+        t.attendance?.checkedIn ? "Yes" : "No",
+        t.attendance?.checkInTime || "—",
+      ];
+    });
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "teams_export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("CSV exported successfully.", "success");
   };
 
-  const tabs = [
-    { id: "dashboard" as TabType, label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { id: "teams" as TabType, label: "Teams", icon: <Users className="h-4 w-4" /> },
-    { id: "approval" as TabType, label: "Approval Queue", icon: <ClipboardCheck className="h-4 w-4" />, badge: pendingTeams.length > 0 ? pendingTeams.length : undefined },
-    { id: "projects" as TabType, label: "Projects", icon: <FolderOpen className="h-4 w-4" /> },
-    { id: "notifications" as TabType, label: "Notifications", icon: <Bell className="h-4 w-4" />, badge: unreadCount > 0 ? unreadCount : undefined },
-    { id: "reports" as TabType, label: "Reports", icon: <BarChart3 className="h-4 w-4" /> },
-    { id: "profile" as TabType, label: "Profile", icon: <User className="h-4 w-4" /> },
-  ];
+  const openVolunteerModal = (vol?: Volunteer) => {
+    if (vol) {
+      setEditingVolunteer(vol);
+      setVolForm({ name: vol.name, phone: vol.phone, email: vol.email, assignedArea: vol.assignedArea, assignedResponsibilities: vol.assignedResponsibilities });
+    } else {
+      setEditingVolunteer(null);
+      setVolForm({ name: "", phone: "", email: "", assignedArea: "", assignedResponsibilities: "" });
+    }
+    setVolModalOpen(true);
+  };
+
+  const handleSaveVolunteer = () => {
+    if (!volForm.name || !volForm.email) { toast("Name and email are required.", "error"); return; }
+    if (editingVolunteer) {
+      updateVolunteer(editingVolunteer.id, volForm);
+      toast("Volunteer updated.", "success");
+    } else {
+      addVolunteer(volForm);
+      toast("Volunteer added.", "success");
+    }
+    setVolModalOpen(false);
+    setEditingVolunteer(null);
+    setVolForm({ name: "", phone: "", email: "", assignedArea: "", assignedResponsibilities: "" });
+  };
+
+  const handleRemoveVolunteer = (id: string) => {
+    removeVolunteer(id);
+    toast("Volunteer removed.", "success");
+  };
+
+  const handleAssignTicket = () => {
+    if (!selectedTicket || !assignVolEmail) return;
+    assignTicket(selectedTicket.id, assignVolEmail);
+    toast("Ticket assigned.", "success");
+    setTicketModalOpen(false);
+    setSelectedTicket(null);
+    setAssignVolEmail("");
+  };
 
   return (
     <PageWrapper>
       <div className="flex min-h-screen bg-[#f8fafb]">
-        <Sidebar />
+        <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
         <main className="flex-1 min-w-0 p-6 lg:p-8">
-          {/* Tab bar */}
-          <div className="flex items-center gap-2 flex-wrap mb-8">
-            {tabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${activeTab === tab.id ? "bg-amber-500 text-white shadow-md" : "bg-white border border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600"}`}
-              >
-                {tab.icon}{tab.label}
-                {tab.badge && <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{tab.badge}</span>}
-              </button>
-            ))}
-            <button onClick={() => setScannerOpen(true)}
-              className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
-            ><QrCode className="h-4 w-4" /> Scan QR</button>
+          {/* Header Bar — utility actions only; navigation handled by Sidebar */}
+          <div className="flex items-center justify-end gap-2 mb-8">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setScannerOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
+              ><QrCode className="h-4 w-4" /> Scan QR</button>
+              <button onClick={handleExportCSV}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+              ><Download className="h-4 w-4" /> Export CSV</button>
+
+              {/* Notification Bell */}
+              <div className="relative">
+                <button onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600 transition-colors cursor-pointer"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none min-w-[16px] text-center">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+                <AnimatePresence>
+                  {notifOpen && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                      className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                        <span className="font-bold text-sm text-primary-dark">Notifications</span>
+                        {unreadCount > 0 && (
+                          <button onClick={() => { markAllNotificationsRead(); toast("All notifications marked as read", "info"); }}
+                            className="text-xs font-semibold text-amber-600 hover:underline cursor-pointer"
+                          >Mark all read</button>
+                        )}
+                      </div>
+                      <div className="max-h-72 overflow-y-auto">
+                        {notifications.length === 0 && <div className="px-4 py-6 text-center text-sm text-gray-400">No notifications</div>}
+                        {notifications.slice(0, 10).map((n) => (
+                          <div key={n.id} onClick={() => markNotificationRead(n.id)}
+                            className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? "bg-amber-50" : ""}`}
+                          >
+                            <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-amber-500" : "bg-gray-300"}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-xs font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
+                              <div className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
 
           <AnimatePresence mode="wait">
@@ -148,11 +265,11 @@ export default function OrganizerDashboard() {
                     { label: "Teams Registered", value: totalTeams, icon: <Users className="h-5 w-5 text-amber-500" />, bg: "bg-amber-50" },
                     { label: "Approved Teams", value: approvedTeams.length, icon: <CheckCircle className="h-5 w-5 text-emerald-500" />, bg: "bg-emerald-50" },
                     { label: "Pending Approval", value: pendingTeams.length, icon: <Clock className="h-5 w-5 text-blue-500" />, bg: "bg-blue-50" },
-                    { label: "Projects Submitted", value: submittedProjects.length, icon: <FolderOpen className="h-5 w-5 text-purple-500" />, bg: "bg-purple-50" },
+                    { label: "Projects Submitted", value: submittedProjects.length, icon: <ClipboardCheck className="h-5 w-5 text-purple-500" />, bg: "bg-purple-50" },
                     { label: "Checked In", value: checkedIn.length, icon: <Activity className="h-5 w-5 text-teal-500" />, bg: "bg-teal-50" },
-                    { label: "Judges Active", value: 1, icon: <TrendingUp className="h-5 w-5 text-indigo-500" />, bg: "bg-indigo-50" },
-                    { label: "Mentors Active", value: 1, icon: <User className="h-5 w-5 text-rose-500" />, bg: "bg-rose-50" },
+                    { label: "Volunteers", value: volunteers.length, icon: <UserCheck className="h-5 w-5 text-indigo-500" />, bg: "bg-indigo-50" },
                     { label: "Open Tickets", value: openTickets.length, icon: <Ticket className="h-5 w-5 text-orange-500" />, bg: "bg-orange-50" },
+                    { label: "Rejected", value: rejectedTeams.length, icon: <XCircle className="h-5 w-5 text-red-500" />, bg: "bg-red-50" },
                   ].map((k) => (
                     <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-2">
                       <div className={`p-2 rounded-xl w-fit ${k.bg}`}>{k.icon}</div>
@@ -185,7 +302,12 @@ export default function OrganizerDashboard() {
             {/* ─── TEAMS ─── */}
             {activeTab === "teams" && (
               <motion.div key="teams" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">All Teams</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-extrabold text-primary-dark text-xl">All Teams</h2>
+                  <button onClick={handleExportCSV}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+                  ><Download className="h-4 w-4" /> Export CSV</button>
+                </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search teams..."
@@ -285,7 +407,9 @@ export default function OrganizerDashboard() {
                     ];
                     const regPct = Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100);
                     return (
-                      <div key={team.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <div key={team.id} onClick={() => setSelectedTeam(team)}
+                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all"
+                      >
                         <div className="flex items-start gap-4 flex-wrap">
                           <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold shrink-0">
                             {team.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
@@ -298,6 +422,7 @@ export default function OrganizerDashboard() {
                           <span className={`text-xs font-bold px-3 py-1.5 rounded-full shrink-0 ${team.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : team.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
                             {team.status}
                           </span>
+                          <ChevronRight className="h-4 w-4 text-gray-400 shrink-0 mt-1" />
                         </div>
 
                         {/* Registration checklist */}
@@ -314,23 +439,6 @@ export default function OrganizerDashboard() {
                             ))}
                           </div>
                         </div>
-
-                        {team.status === "PENDING" && (
-                          <div className="flex gap-2 mt-4">
-                            <button onClick={() => handleApprove(team.id, team.name)}
-                              className="flex-1 py-2 rounded-xl bg-emerald-500 text-white font-bold text-xs hover:bg-emerald-600 cursor-pointer flex items-center justify-center gap-1">
-                              <CheckCircle className="h-4 w-4" /> Approve
-                            </button>
-                            <button onClick={() => handleReject(team.id, team.name)}
-                              className="flex-1 py-2 rounded-xl bg-red-100 text-red-600 font-bold text-xs hover:bg-red-200 cursor-pointer flex items-center justify-center gap-1 border border-red-200">
-                              <XCircle className="h-4 w-4" /> Reject
-                            </button>
-                            <button onClick={() => setAttendanceTeam(team)}
-                              className="px-3 py-2 rounded-xl border border-gray-200 text-gray-500 text-xs hover:border-amber-300 hover:text-amber-600 cursor-pointer">
-                              <QrCode className="h-4 w-4" />
-                            </button>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -339,94 +447,113 @@ export default function OrganizerDashboard() {
               </motion.div>
             )}
 
-            {/* ─── PROJECTS ─── */}
-            {activeTab === "projects" && (
-              <motion.div key="proj" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Project Submissions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {teams.filter((t) => t.status === "APPROVED").map((team) => {
-                    const track = HACK_TRACKS.find((tr) => tr.id === team.trackId);
-                    const milestonesDone = (team.milestonesProgress || []).filter((m) => m.completed).length;
-                    const milestonesTotal = (team.milestonesProgress || []).length;
+            {/* ─── VOLUNTEERS ─── */}
+            {activeTab === "volunteers" && (
+              <motion.div key="volunteers" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-extrabold text-primary-dark text-xl">Volunteers ({volunteers.length})</h2>
+                  <button onClick={() => openVolunteerModal()}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer"
+                  ><UserPlus className="h-4 w-4" /> Add Volunteer</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {volunteers.map((vol) => (
+                    <div key={vol.id} onClick={() => openVolunteerModal(vol)}
+                      className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                          {vol.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-primary-dark text-sm truncate">{vol.name}</div>
+                          <div className="text-xs text-amber-600 font-semibold">{vol.assignedArea || "Unassigned"}</div>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 text-xs text-gray-500">
+                        <div className="flex items-center gap-2"><Mail className="h-3 w-3 shrink-0" /> <span className="truncate">{vol.email}</span></div>
+                        <div className="flex items-center gap-2"><Phone className="h-3 w-3 shrink-0" /> {vol.phone || "—"}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {volunteers.length === 0 && (
+                    <div className="col-span-full text-center text-gray-400 py-12 text-sm">No volunteers added yet. Click &quot;Add Volunteer&quot; to get started.</div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── TICKETS ─── */}
+            {activeTab === "tickets" && (
+              <motion.div key="tickets" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl">Support Tickets</h2>
+
+                {/* Status Filters */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-2">
+                  {(["all", "Open", "Assigned", "In Progress", "Resolved", "Closed"] as const).map((f) => (
+                    <button key={f} onClick={() => setTicketFilter(f)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors ${ticketFilter === f ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-amber-100"}`}
+                    >
+                      {f === "all" ? `All (${allTickets.length})` : `${f} (${allTickets.filter((t) => t.status === f).length})`}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {filteredTickets.map((ticket) => {
+                    const team = teams.find((t) => t.id === ticket.teamId);
+                    const priorityColors: Record<string, string> = {
+                      Low: "bg-gray-100 text-gray-600",
+                      Medium: "bg-amber-100 text-amber-700",
+                      High: "bg-orange-100 text-orange-700",
+                      Critical: "bg-red-100 text-red-700",
+                    };
+                    const statusColors: Record<string, string> = {
+                      Open: "bg-blue-100 text-blue-700",
+                      Assigned: "bg-purple-100 text-purple-700",
+                      "In Progress": "bg-amber-100 text-amber-700",
+                      Resolved: "bg-emerald-100 text-emerald-700",
+                      Closed: "bg-gray-100 text-gray-500",
+                    };
                     return (
-                      <div key={team.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-                        <div className="flex items-start gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                            {team.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                      <div key={ticket.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <div className="flex items-start gap-4 flex-wrap">
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-primary-dark text-sm">{team?.name || "Unknown Team"}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityColors[ticket.priority]}`}>{ticket.priority}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColors[ticket.status]}`}>{ticket.status}</span>
+                            </div>
+                            <div className="text-xs text-gray-500 line-clamp-2">{ticket.description}</div>
+                            <div className="flex items-center gap-3 text-[11px] text-gray-400">
+                              <span>Category: {ticket.category}</span>
+                              <span>Raised by: {ticket.raisedBy}</span>
+                              {ticket.assignedTo && <span>Assigned: {ticket.assignedTo}</span>}
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-bold text-primary-dark">{team.name}</div>
-                            <div className="text-xs text-gray-400">{track?.label || "—"}</div>
+                          <div className="flex gap-2 shrink-0">
+                            {ticket.status !== "Resolved" && ticket.status !== "Closed" && (
+                              <>
+                                <button onClick={() => { setSelectedTicket(ticket); setTicketModalOpen(true); }}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 cursor-pointer">
+                                  Assign
+                                </button>
+                                <select value={ticket.status} onChange={(e) => updateTicketStatus(ticket.id, e.target.value as SupportTicket["status"])}
+                                  className="px-2 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none">
+                                  <option value="Open">Open</option>
+                                  <option value="Assigned">Assigned</option>
+                                  <option value="In Progress">In Progress</option>
+                                  <option value="Resolved">Resolved</option>
+                                  <option value="Closed">Closed</option>
+                                </select>
+                              </>
+                            )}
                           </div>
-                          {team.submitted && <span className="ml-auto text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200">Submitted</span>}
-                        </div>
-                        <p className="text-xs text-gray-500 line-clamp-2">{team.projectDescription}</p>
-                        <div>
-                          <div className="flex justify-between text-xs text-gray-400 mb-1"><span>Milestones</span><span>{milestonesDone}/{milestonesTotal}</span></div>
-                          <div className="w-full bg-gray-100 rounded-full h-1.5">
-                            <div className="h-1.5 rounded-full bg-amber-400" style={{ width: `${milestonesTotal > 0 ? (milestonesDone / milestonesTotal) * 100 : 0}%` }} />
-                          </div>
-                        </div>
-                        <div className="flex gap-2 text-xs">
-                          {team.githubUrl && <a href={team.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">GitHub</a>}
-                          {team.demoUrl && <a href={team.demoUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">Live Demo</a>}
                         </div>
                       </div>
                     );
                   })}
-                </div>
-              </motion.div>
-            )}
-
-            {/* ─── NOTIFICATIONS ─── */}
-            {activeTab === "notifications" && (
-              <motion.div key="notifs" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-extrabold text-primary-dark text-xl">Notifications</h2>
-                  {unreadCount > 0 && <button onClick={markAllNotificationsRead} className="text-sm font-semibold text-amber-600 hover:underline cursor-pointer">Mark all read</button>}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(["all", "approval", "deadline", "action", "system"] as const).map((f) => (
-                    <button key={f} onClick={() => setNotifFilter(f)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize cursor-pointer transition-colors ${notifFilter === f ? "bg-amber-500 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
-                    >{notifTypeStyles[f]?.label || "All"}</button>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2">
-                  {(notifFilter === "all" ? notifications : notifications.filter((n) => n.type === notifFilter)).map((n) => (
-                    <div key={n.id} onClick={() => markNotificationRead(n.id)}
-                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer ${!n.read ? "bg-amber-50 border-amber-100" : "bg-white border-gray-100"}`}>
-                      <div className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${notifTypeStyles[n.type]?.dot || "bg-gray-400"}`} />
-                      <div className="flex-1">
-                        <div className={`text-sm font-semibold ${!n.read ? "text-primary-dark" : "text-gray-500"}`}>{n.title}</div>
-                        <div className="text-xs text-gray-400">{n.body}</div>
-                      </div>
-                      {!n.read && <div className="h-2 w-2 rounded-full bg-amber-500 shrink-0 mt-1" />}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* ─── REPORTS ─── */}
-            {activeTab === "reports" && (
-              <motion.div key="reports" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl">Reports & Analytics</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {[
-                    { label: "Approval Rate", value: `${totalTeams > 0 ? Math.round((approvedTeams.length / totalTeams) * 100) : 0}%`, color: "text-emerald-600" },
-                    { label: "Submission Rate", value: `${approvedTeams.length > 0 ? Math.round((submittedProjects.length / approvedTeams.length) * 100) : 0}%`, color: "text-blue-600" },
-                    { label: "Check-In Rate", value: `${approvedTeams.length > 0 ? Math.round((checkedIn.length / approvedTeams.length) * 100) : 0}%`, color: "text-purple-600" },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
-                      <div className={`text-4xl font-extrabold ${s.color}`}>{s.value}</div>
-                      <div className="text-xs text-gray-400 mt-2 font-semibold">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
-                  <div className="text-gray-400 text-sm mb-4">Export team data and evaluation reports</div>
-                  <button className="px-5 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 cursor-pointer">Export CSV (Mock)</button>
+                  {filteredTickets.length === 0 && <div className="text-center text-gray-400 py-12 text-sm">No tickets match this filter.</div>}
                 </div>
               </motion.div>
             )}
@@ -435,17 +562,70 @@ export default function OrganizerDashboard() {
             {activeTab === "profile" && (
               <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl">Profile & Settings</h2>
+                <div className="flex gap-2 flex-wrap">
+                  {(["edit", "appearance"] as const).map((t) => (
+                    <button key={t} onClick={() => setProfileTab(t)}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${profileTab === t ? "bg-amber-500 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
+                    >{t === "edit" ? "Edit Profile" : "Appearance"}</button>
+                  ))}
+                </div>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl font-extrabold">
-                      {(session.name || "O").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                  {profileTab === "edit" && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
+                          {(session.name || "O").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-extrabold text-primary-dark text-lg">{session.name || "Organizer"}</div>
+                          <div className="text-gray-400 text-sm">{session.email}</div>
+                          <div className="text-xs font-semibold text-amber-600 mt-0.5">Organizer · SIET AI Hack Lab 2026</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Full Name</label>
+                          <input type="text" defaultValue={session.name || ""} readOnly
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-700" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Email</label>
+                          <input type="email" value={session.email || ""} readOnly
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
+                          <p className="text-[11px] text-gray-400 mt-1">Email cannot be changed</p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Bio</label>
+                        <textarea rows={3} defaultValue="" placeholder="Tell us about yourself..."
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                      </div>
+                      <button onClick={() => toast("Profile updated successfully", "success")}
+                        className="px-6 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-colors cursor-pointer">
+                        Save Changes
+                      </button>
                     </div>
-                    <div>
-                      <div className="font-extrabold text-primary-dark text-lg">{session.name || "Organizer"}</div>
-                      <div className="text-gray-400 text-sm">{session.email}</div>
-                      <div className="text-xs font-semibold text-amber-600 mt-0.5">Organizer · SIET AI Hack Lab 2026</div>
+                  )}
+
+                  {profileTab === "appearance" && (
+                    <div className="space-y-6">
+                      <div>
+                        <div className="font-bold text-primary-dark text-sm mb-3">Theme</div>
+                        <div className="flex gap-3">
+                          <button onClick={() => theme !== "light" && toggleTheme()}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${theme === "light" ? "border-amber-500 bg-amber-50 text-amber-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
+                          >
+                            <Sun className="h-4 w-4" /> Light
+                          </button>
+                          <button onClick={() => theme !== "dark" && toggleTheme()}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer ${theme === "dark" ? "border-amber-500 bg-amber-50 text-amber-700" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
+                          >
+                            <Moon className="h-4 w-4" /> Dark
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -463,6 +643,192 @@ export default function OrganizerDashboard() {
               scannerName={session.name || session.email || "Organizer"}
             />
           )}
+
+          {/* ─── TEAM DETAIL MODAL ─── */}
+          <Modal isOpen={!!selectedTeam} onClose={() => { setSelectedTeam(null); setRejectReason(""); }} title="Team Details">
+            {selectedTeam && (
+              <div className="space-y-5">
+                {/* Team Header */}
+                <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
+                    {selectedTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-extrabold text-primary-dark text-lg">{selectedTeam.name}</div>
+                    <div className="text-xs text-gray-400">
+                      {HACK_TRACKS.find((tr) => tr.id === selectedTeam.trackId)?.label || "—"} · {selectedTeam.size} members
+                    </div>
+                  </div>
+                  <span className={`text-xs font-bold px-3 py-1.5 rounded-full shrink-0 ${selectedTeam.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : selectedTeam.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                    {selectedTeam.status}
+                  </span>
+                </div>
+
+                {/* Team Info */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <div className="text-[11px] text-gray-400 font-semibold uppercase">Created</div>
+                    <div className="text-primary-dark font-semibold">{new Date(selectedTeam.createdAt).toLocaleDateString()}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <div className="text-[11px] text-gray-400 font-semibold uppercase">QR Token</div>
+                    <div className="text-primary-dark font-semibold font-mono text-xs">{selectedTeam.qrToken || "—"}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <div className="text-[11px] text-gray-400 font-semibold uppercase">Payment</div>
+                    <div className={`font-semibold ${selectedTeam.paymentVerified ? "text-emerald-600" : "text-gray-500"}`}>{selectedTeam.paymentVerified ? "Verified" : "Pending"}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <div className="text-[11px] text-gray-400 font-semibold uppercase">Faculty Approval</div>
+                    <div className={`font-semibold ${selectedTeam.facultyApproved ? "text-emerald-600" : "text-gray-500"}`}>{selectedTeam.facultyApproved ? "Approved" : "Pending"}</div>
+                  </div>
+                </div>
+
+                {/* Members */}
+                <div>
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Members</div>
+                  <div className="flex flex-col gap-2">
+                    {selectedTeam.members.map((m) => (
+                      <div key={m.email} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-primary-dark">{m.name} {m.isLeader && <span className="text-[10px] text-amber-600 font-bold">(Leader)</span>}</div>
+                          <div className="text-[11px] text-gray-400 truncate">{m.email} · {m.department} · {m.year}</div>
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-400">
+                          <Mail className="h-3 w-3" />
+                          <Phone className="h-3 w-3" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Registration Progress */}
+                <div>
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Registration Progress</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "Team Created", done: true },
+                      { label: "Members Added", done: selectedTeam.size >= 2 },
+                      { label: "Payment Verified", done: !!selectedTeam.paymentVerified },
+                      { label: "Faculty Approved", done: !!selectedTeam.facultyApproved },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center gap-2 text-sm">
+                        {item.done ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-gray-300" />}
+                        <span className={item.done ? "text-primary-dark" : "text-gray-400"}>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Project Info */}
+                {selectedTeam.projectDescription && (
+                  <div>
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Project</div>
+                    <p className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3">{selectedTeam.projectDescription}</p>
+                    <div className="flex gap-3 mt-2 text-xs">
+                      {selectedTeam.githubUrl && <a href={selectedTeam.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline"><Github className="h-3 w-3" /> GitHub</a>}
+                      {selectedTeam.demoUrl && <a href={selectedTeam.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-500 hover:underline"><Globe className="h-3 w-3" /> Demo</a>}
+                      {selectedTeam.videoUrl && <a href={selectedTeam.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-purple-500 hover:underline"><Video className="h-3 w-3" /> Video</a>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Approval Controls */}
+                {selectedTeam.status === "PENDING" && (
+                  <div className="pt-4 border-t border-gray-100 space-y-3">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">Approval Action</div>
+                    <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
+                      placeholder="Rejection reason (optional)..."
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                    <div className="flex gap-3">
+                      <button onClick={() => handleApprove(selectedTeam.id, selectedTeam.name)}
+                        className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 cursor-pointer flex items-center justify-center gap-1">
+                        <CheckCircle className="h-4 w-4" /> Approve Team
+                      </button>
+                      <button onClick={() => handleReject(selectedTeam.id, selectedTeam.name)}
+                        className="flex-1 py-2.5 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 cursor-pointer flex items-center justify-center gap-1 border border-red-200">
+                        <XCircle className="h-4 w-4" /> Reject Team
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Modal>
+
+          {/* ─── VOLUNTEER MODAL ─── */}
+          <Modal isOpen={volModalOpen} onClose={() => { setVolModalOpen(false); setEditingVolunteer(null); }} title={editingVolunteer ? "Edit Volunteer" : "Add Volunteer"}>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Name *</label>
+                <input type="text" value={volForm.name} onChange={(e) => setVolForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Full name" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Email *</label>
+                <input type="email" value={volForm.email} onChange={(e) => setVolForm((p) => ({ ...p, email: e.target.value }))}
+                  placeholder="email@example.com" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Phone</label>
+                <input type="tel" value={volForm.phone} onChange={(e) => setVolForm((p) => ({ ...p, phone: e.target.value }))}
+                  placeholder="Phone number" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Assigned Area</label>
+                <input type="text" value={volForm.assignedArea} onChange={(e) => setVolForm((p) => ({ ...p, assignedArea: e.target.value }))}
+                  placeholder="e.g. Registration Desk, Venue" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Assigned Responsibilities</label>
+                <textarea rows={3} value={volForm.assignedResponsibilities} onChange={(e) => setVolForm((p) => ({ ...p, assignedResponsibilities: e.target.value }))}
+                  placeholder="Describe responsibilities..." className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={handleSaveVolunteer}
+                  className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 cursor-pointer">
+                  {editingVolunteer ? "Update" : "Add Volunteer"}
+                </button>
+                {editingVolunteer && (
+                  <button onClick={() => { handleRemoveVolunteer(editingVolunteer.id); setVolModalOpen(false); setEditingVolunteer(null); }}
+                    className="px-4 py-2.5 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 cursor-pointer border border-red-200">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </Modal>
+
+          {/* ─── TICKET ASSIGN MODAL ─── */}
+          <Modal isOpen={ticketModalOpen} onClose={() => { setTicketModalOpen(false); setSelectedTicket(null); setAssignVolEmail(""); }} title="Assign Volunteer to Ticket">
+            {selectedTicket && (
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-xl p-3 text-sm">
+                  <div className="font-semibold text-primary-dark">{teams.find((t) => t.id === selectedTicket.teamId)?.name || "Unknown Team"}</div>
+                  <div className="text-xs text-gray-500 mt-1">{selectedTicket.category} · {selectedTicket.description}</div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Assign to Volunteer</label>
+                  <select value={assignVolEmail} onChange={(e) => setAssignVolEmail(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer">
+                    <option value="">Select a volunteer...</option>
+                    {volunteers.map((v) => (
+                      <option key={v.id} value={v.email}>{v.name} ({v.assignedArea || "Unassigned"})</option>
+                    ))}
+                  </select>
+                </div>
+                <button onClick={handleAssignTicket} disabled={!assignVolEmail}
+                  className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                  Assign Ticket
+                </button>
+              </div>
+            )}
+          </Modal>
         </main>
       </div>
     </PageWrapper>
