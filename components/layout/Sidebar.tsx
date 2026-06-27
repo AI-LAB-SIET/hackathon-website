@@ -31,7 +31,6 @@ import {
   Shield,
   QrCode,
 } from "lucide-react";
-import { Avatar } from "../ui/avatar";
 
 interface SidebarProps {
   activeTab?: string;
@@ -183,17 +182,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         )}
       </nav>
 
-      {/* User Info / Logout */}
+      {/* Logout */}
       <div className="p-3 border-t border-gray-100 flex flex-col gap-2 dark:border-gray-700">
-        {!collapsed && session.isLoggedIn && (
-          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-card-bg/30 border border-input-border/10 dark:bg-gray-800/30 dark:border-gray-700">
-            <Avatar name={session.email || "User"} size="sm" />
-            <div className="overflow-hidden">
-              <p className="text-[9px] text-gray-500 truncate font-medium dark:text-gray-400">{session.email}</p>
-            </div>
-          </div>
-        )}
-
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer transition-colors group relative w-full dark:hover:bg-red-900/20"
