@@ -62,7 +62,7 @@ export default function Register() {
       members: [{ name: account.name, email: account.email, registerNumber: "", phone: "", department: "", year: "", skills: [], github: "", isLeader: true }],
     });
     toast("Team registered successfully!", "success");
-    router.push("/dashboard");
+    router.push("/dashboard#team");
   };
 
   return (

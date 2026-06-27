@@ -96,8 +96,21 @@ export default function ParticipantDashboard() {
   const [projectEdit, setProjectEdit] = useState({
     projectDescription: "", githubUrl: "", videoUrl: "", demoUrl: "", aiDisclosure: "", trackId: "",
   });
+  const [regTeamName, setRegTeamName] = useState("");
+  const [regTrackId, setRegTrackId] = useState("");
+  const [regProjectBrief, setRegProjectBrief] = useState("");
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Read URL hash to set active tab
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "") as TabType;
+      if (["home", "team", "project", "notifications", "resources", "support", "profile"].includes(hash)) {
+        setActiveTab(hash);
+      }
+    }
+  }, []);
 
   // Generate individual participant QR code
   useEffect(() => {
@@ -293,6 +306,28 @@ export default function ParticipantDashboard() {
     link.href = participantQrDataUrl;
     link.download = `${(session.name || session.email || "participant").replace(/\s+/g, "_")}_QR.png`;
     link.click();
+  };
+
+  // Registration state sync
+  useEffect(() => {
+    if (team) {
+      setRegTeamName(team.name || "");
+      setRegTrackId(team.trackId || "");
+      setRegProjectBrief(team.projectDescription || "");
+    }
+  }, [team]);
+
+  const needsRegistration = team.status === "PENDING" || !team.trackId;
+
+  const handleSaveRegistration = () => {
+    if (!regTeamName.trim()) { toast("Please enter a team name.", "error"); return; }
+    if (!regTrackId) { toast("Please select a track.", "error"); return; }
+    updateProjectDetails(team.id, {
+      name: regTeamName.trim(),
+      trackId: regTrackId,
+      projectDescription: regProjectBrief.trim(),
+    });
+    toast("Registration details saved.", "success");
   };
 
   // (projectEdit sync useEffect moved above early returns)
@@ -512,6 +547,51 @@ export default function ParticipantDashboard() {
               <motion.div key="team" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><Users className="h-5 w-5 text-primary-green" /> My Team</h2>
 
+                {/* Registration Section — shown when team needs registration work */}
+                {needsRegistration && (
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm p-6 space-y-5 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                        <CheckCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-primary-dark text-lg dark:text-gray-100">Complete Your Registration</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Finish setting up your team to get approved by organizers.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Team Name</label>
+                        <input type="text" value={regTeamName} onChange={(e) => setRegTeamName(e.target.value)}
+                          placeholder="e.g. Neural Knights"
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
+                        <select value={regTrackId} onChange={(e) => setRegTrackId(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                          <option value="">Select a track...</option>
+                          {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Project Brief</label>
+                      <textarea rows={3} value={regProjectBrief}
+                        onChange={(e) => setRegProjectBrief(e.target.value)}
+                        placeholder="Briefly describe your AI project idea..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    </div>
+
+                    <button onClick={handleSaveRegistration}
+                      className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">
+                      Save Registration Details
+                    </button>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* QR Team Pass */}
                   <div className="space-y-4">
@@ -702,19 +782,9 @@ export default function ParticipantDashboard() {
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
                     <div>
                       <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
-                      <select value={projectEdit.trackId} onChange={(e) => setProjectEdit((p) => ({ ...p, trackId: e.target.value }))}
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        <option value="">Select a track...</option>
-                        {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Project Description</label>
-                      <textarea rows={4} value={projectEdit.projectDescription}
-                        onChange={(e) => setProjectEdit((p) => ({ ...p, projectDescription: e.target.value }))}
-                        placeholder="Describe your AI project..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      />
+                      <div className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                        {track?.label || "Not set"}
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">AI Tool Disclosure</label>
