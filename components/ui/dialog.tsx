@@ -9,6 +9,7 @@ interface DialogProps {
   children: React.ReactNode;
   maxWidth?: string;
   showCloseButton?: boolean;
+  ariaLabel?: string;
 }
 
 export function Dialog({
@@ -17,6 +18,7 @@ export function Dialog({
   children,
   maxWidth = "max-w-md",
   showCloseButton = false,
+  ariaLabel,
 }: DialogProps) {
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
@@ -50,6 +52,7 @@ export function Dialog({
           <motion.div
             role="dialog"
             aria-modal="true"
+            aria-label={ariaLabel}
             initial={{ opacity: 0, scale: 0.95, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 16 }}

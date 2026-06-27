@@ -140,7 +140,7 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} ariaLabel="Scan Team QR">
       <div className="flex flex-col max-h-[85vh]">
         {/* Header */}
         <div className="bg-gradient-to-r from-primary-dark to-emerald-700 px-5 py-4 flex items-center justify-between">
@@ -153,7 +153,7 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
               <div className="text-emerald-200 text-xs">Select a team to proceed</div>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer">
+          <button onClick={onClose} aria-label="Close QR scanner" className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -190,12 +190,14 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setError(null); startScanner(); }}
+                    aria-label="Try scanning again"
                     className="px-4 py-2 bg-primary-green text-white rounded-lg text-sm font-medium hover:bg-primary-green/90 transition-colors cursor-pointer"
                   >
                     Try Again
                   </button>
                   <button
                     onClick={() => setShowFallback(true)}
+                    aria-label="Search for team instead"
                     className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors cursor-pointer"
                   >
                     Search Instead
@@ -231,6 +233,7 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
+                aria-label="Search teams"
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green"
               />
             </div>
@@ -272,6 +275,7 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
             })}
             <button
               onClick={() => { setShowFallback(false); setError(null); }}
+              aria-label="Switch back to camera scanner"
               className="mt-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-green/10 text-primary-green rounded-xl text-sm font-medium hover:bg-primary-green/20 transition-colors cursor-pointer"
             >
               <Camera className="h-4 w-4" />

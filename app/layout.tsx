@@ -4,6 +4,7 @@ import "./globals.css";
 import { StateProvider } from "@/components/layout/StateProvider";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { ToastProvider } from "@/components/ui/toast";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -41,13 +42,15 @@ export default function RootLayout({
       <body
         className={`${nunito.variable} ${instrumentSerif.variable} antialiased font-sans bg-white text-[#4B4B4B] selection:bg-primary-green selection:text-white dark:bg-primary-dark dark:text-gray-200`}
       >
-        <StateProvider>
-          <ThemeProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
-          </ThemeProvider>
-        </StateProvider>
+        <ErrorBoundary>
+          <StateProvider>
+            <ThemeProvider>
+              <ToastProvider>
+                {children}
+              </ToastProvider>
+            </ThemeProvider>
+          </StateProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

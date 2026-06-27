@@ -144,6 +144,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="p-1 rounded-lg text-gray-500 hover:bg-emerald-100 hover:text-primary-dark cursor-pointer transition-colors dark:text-gray-400 dark:hover:bg-emerald-900/30 dark:hover:text-white"
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -159,6 +160,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               <button
                 key={tab.id}
                 onClick={() => onTabChange?.(tab.id)}
+                aria-label={tab.name}
                 className={`flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold transition-all duration-150 group relative text-left w-full cursor-pointer
                   ${
                     isActive
@@ -192,6 +194,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       <div className="p-3 border-t border-gray-100 flex flex-col gap-2 dark:border-gray-700">
         <button
           onClick={handleLogout}
+          aria-label="Log out"
           className="flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer transition-colors group relative w-full dark:hover:bg-red-900/20"
         >
           <LogOut className="h-5 w-5 shrink-0" />

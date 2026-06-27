@@ -126,6 +126,7 @@ export function Navbar() {
                 {showQRScan && (
                   <button
                     onClick={() => setScannerOpen(true)}
+                    aria-label="Open QR scanner"
                     className="inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-full bg-primary-green/10 text-primary-green hover:bg-primary-green/20 transition-colors cursor-pointer"
                   >
                     <QrCode className="h-4 w-4" />
@@ -137,6 +138,7 @@ export function Navbar() {
                 <div ref={bellRef} className="relative">
                   <button
                     onClick={() => setBellOpen(!bellOpen)}
+                    aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
                     className="relative p-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors cursor-pointer dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
                   >
                     <Bell className="h-4 w-4" />
@@ -160,7 +162,7 @@ export function Navbar() {
                         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                           <span className="font-bold text-primary-dark text-sm dark:text-gray-100">Notifications</span>
                           {unreadCount > 0 && (
-                            <button onClick={markAllNotificationsRead} className="text-xs text-primary-green font-semibold hover:underline cursor-pointer">
+                            <button onClick={markAllNotificationsRead} aria-label="Mark all notifications as read" className="text-xs text-primary-green font-semibold hover:underline cursor-pointer">
                               Mark all read
                             </button>
                           )}
@@ -211,6 +213,7 @@ export function Navbar() {
                 </Link>
                 <button
                   onClick={handleLogout}
+                  aria-label="Log out"
                   className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
                 >
                   <LogOut className="h-4 w-4" />
@@ -230,6 +233,7 @@ export function Navbar() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             className="md:hidden p-1.5 text-gray-700 hover:bg-card-bg hover:text-primary-dark rounded-xl transition-colors cursor-pointer dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -259,6 +263,7 @@ export function Navbar() {
                   <>
                     {showQRScan && (
                       <button onClick={() => { setScannerOpen(true); setMobileMenuOpen(false); }}
+                        aria-label="Open QR scanner"
                         className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold text-sm border border-emerald-200 dark:border-emerald-800"
                       ><QrCode className="h-4 w-4" /> Scan QR</button>
                     )}
@@ -269,6 +274,7 @@ export function Navbar() {
                       {rolePortalLabel}
                     </Link>
                     <button onClick={handleLogout}
+                      aria-label="Log out"
                       className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold text-sm border border-red-150 dark:border-red-800 cursor-pointer"
                     ><LogOut className="h-4 w-4" /> Logout</button>
                   </>

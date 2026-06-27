@@ -53,7 +53,7 @@ export function AttendancePanel({ team, open, onClose, scannerName = "Organizer"
   const leader = team.members.find((m) => m.isLeader) || team.members[0];
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} ariaLabel={`Team Management - ${team.name}`}>
       <div className="flex flex-col max-h-[85vh]">
         <div className="bg-gradient-to-r from-amber-600 to-orange-500 px-5 py-4 flex items-center justify-between">
           <div>
@@ -61,7 +61,7 @@ export function AttendancePanel({ team, open, onClose, scannerName = "Organizer"
             <div className="text-white font-bold">{team.name}</div>
             <div className="text-amber-200 text-xs">{leader?.name} · {team.size} members</div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} aria-label="Close attendance panel" className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="p-5 overflow-y-auto flex-1">
@@ -89,6 +89,7 @@ export function AttendancePanel({ team, open, onClose, scannerName = "Organizer"
                     </div>
                     <button
                       onClick={handleCheckIn}
+                      aria-label="Mark team as present"
                       className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors cursor-pointer flex items-center justify-center gap-2"
                     >
                       <CheckCircle className="h-4 w-4" /> Mark Present
@@ -118,6 +119,7 @@ export function AttendancePanel({ team, open, onClose, scannerName = "Organizer"
                 )}
                 <button
                   onClick={() => setView("ticket")}
+                  aria-label="Create new support ticket"
                   className="w-full py-2 rounded-xl border border-amber-200 text-amber-700 font-semibold text-sm hover:bg-amber-50 transition-colors cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Plus className="h-4 w-4" /> New Ticket
@@ -129,7 +131,7 @@ export function AttendancePanel({ team, open, onClose, scannerName = "Organizer"
           {view === "ticket" && (
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2 mb-1">
-                <button onClick={() => setView("main")} className="text-gray-400 hover:text-gray-600 text-sm cursor-pointer">← Back</button>
+                <button onClick={() => setView("main")} aria-label="Back to main panel" className="text-gray-400 hover:text-gray-600 text-sm cursor-pointer">← Back</button>
                 <span className="font-bold text-primary-dark text-sm flex items-center gap-1.5"><Ticket className="h-4 w-4" /> New Support Ticket</span>
               </div>
 
@@ -177,6 +179,7 @@ export function AttendancePanel({ team, open, onClose, scannerName = "Organizer"
               <button
                 onClick={handleRaiseTicket}
                 disabled={!ticketData.description.trim()}
+                aria-label="Submit support ticket"
                 className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 Submit Ticket

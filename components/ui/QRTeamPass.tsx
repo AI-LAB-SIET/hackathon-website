@@ -137,6 +137,7 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
       <div className="px-5 pb-5 flex gap-3">
         <button
           onClick={handleDownloadQR}
+          aria-label="Download QR code"
           className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors cursor-pointer"
         >
           <Download className="h-4 w-4" />
@@ -144,6 +145,7 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
         </button>
         <button
           onClick={handleDownloadPass}
+          aria-label="Download team pass"
           className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary-dark text-white text-sm font-semibold hover:bg-emerald-900 transition-colors cursor-pointer"
         >
           <Printer className="h-4 w-4" />

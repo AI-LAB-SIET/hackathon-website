@@ -65,6 +65,8 @@ export function FAQSection() {
                 >
                   <button
                     onClick={() => toggleExpand(faq.id)}
+                    aria-expanded={isExpanded}
+                    aria-controls={`faq-answer-${faq.id}`}
                     className="w-full flex items-center justify-between px-6 py-5 text-left font-bold text-primary-dark text-sm sm:text-base hover:bg-card-bg/25 transition-colors cursor-pointer dark:text-gray-100 dark:hover:bg-gray-800"
                   >
                     <span>{faq.question}</span>
@@ -81,7 +83,7 @@ export function FAQSection() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                       >
-                        <div className="px-6 pb-6 pt-1 text-xs sm:text-sm text-gray-500 leading-relaxed border-t border-gray-50 dark:text-gray-400 dark:border-gray-800">
+                        <div id={`faq-answer-${faq.id}`} className="px-6 pb-6 pt-1 text-xs sm:text-sm text-gray-500 leading-relaxed border-t border-gray-50 dark:text-gray-400 dark:border-gray-800">
                           {faq.answer}
                         </div>
                       </motion.div>

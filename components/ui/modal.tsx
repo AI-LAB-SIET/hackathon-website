@@ -13,7 +13,7 @@ interface ModalProps {
 
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   return (
-    <Dialog open={isOpen} onClose={onClose}>
+    <Dialog open={isOpen} onClose={onClose} ariaLabel={title}>
       <div
         role="dialog"
         aria-modal="true"
@@ -26,6 +26,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="rounded-lg p-1 text-gray-500 hover:bg-emerald-100 hover:text-primary-dark transition-colors cursor-pointer dark:hover:bg-emerald-900/30 dark:text-gray-400"
           >
             <X className="h-5 w-5" />

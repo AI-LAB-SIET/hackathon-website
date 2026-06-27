@@ -50,7 +50,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && (
-          <span className="text-xs text-red-600 font-medium">
+          <span className="text-xs text-red-600 font-medium" role="alert" aria-live="assertive">
             {error}
           </span>
         )}
