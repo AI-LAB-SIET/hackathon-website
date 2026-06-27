@@ -119,7 +119,7 @@ export default function ParticipantDashboard() {
         color: { dark: "#064e3b", light: "#ffffff" },
       }).then(setParticipantQrDataUrl);
     }
-  }, [session.email]);
+  }, [session.email, session.name]);
 
   // Sync profile edit data from state
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function ParticipantDashboard() {
         });
       }
     }
-  }, [session.email]);
+  }, [session.email, getProfile]);
   useEffect(() => {
     if (mounted && (!session.isLoggedIn || session.role !== "participant")) {
       router.push("/login");
@@ -225,7 +225,6 @@ export default function ParticipantDashboard() {
   const notifTypeStyles: Record<string, { bg: string; dot: string; label: string }> = {
     approval: { bg: "bg-emerald-50 border-emerald-100", dot: "bg-emerald-500", label: "Approval" },
     deadline: { bg: "bg-amber-50 border-amber-100", dot: "bg-amber-500", label: "Deadline" },
-    mentor: { bg: "bg-purple-50 border-purple-100", dot: "bg-purple-500", label: "Mentor" },
     judge: { bg: "bg-blue-50 border-blue-100", dot: "bg-blue-500", label: "Judge" },
     action: { bg: "bg-red-50 border-red-100", dot: "bg-red-500", label: "Action" },
     system: { bg: "bg-gray-50 border-gray-100", dot: "bg-gray-400", label: "System" },
@@ -871,7 +870,7 @@ export default function ParticipantDashboard() {
 
                 {/* Filter pills */}
                 <div className="flex flex-wrap gap-2">
-                  {(["all", "approval", "deadline", "mentor", "judge", "action", "system"] as const).map((f) => (
+                  {(["all", "approval", "deadline", "judge", "action", "system"] as const).map((f) => (
                     <button key={f} onClick={() => setNotifFilter(f)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer capitalize ${notifFilter === f ? "bg-primary-green text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green/40"}`}
                     >

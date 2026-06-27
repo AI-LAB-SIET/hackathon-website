@@ -53,7 +53,7 @@ export default function Login() {
   const handleRoleQuickFill = (selectedRole: RoleType, selectedEmail: string) => {
     setRole(selectedRole);
     setEmail(selectedEmail);
-    setPassword("password123");
+    setPassword("demo123");
     setError("");
   };
 
@@ -93,18 +93,8 @@ export default function Login() {
             break;
         }
       } else {
-        toast("Invalid credentials or unregistered account.", "error");
-        setError(`Account not found. For ${role.toUpperCase()}, use: ${
-          role === "admin"
-            ? "admin@college.edu"
-            : role === "judge"
-            ? "judge@college.edu"
-            : role === "organizer"
-            ? "organizer@college.edu"
-            : role === "volunteer"
-            ? "riya@college.edu"
-            : "abhishek@college.edu"
-        }`);
+        toast("Invalid credentials or account not found.", "error");
+        setError("Account not found. Please check your email and role selection.");
       }
     }, 1200);
   };
@@ -215,10 +205,10 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Quick Info Box for Portfolio Evaluators */}
+          {/* Quick Info Box for Evaluators */}
           <div className="mt-8 p-4 rounded-2xl bg-card-bg/40 border border-input-border/20 dark:bg-gray-800/40 dark:border-gray-700">
             <p className="text-[10px] font-bold uppercase tracking-wider text-primary-green mb-2.5 flex items-center justify-center gap-1.5 border-b border-input-border/10 pb-1.5">
-              <ShieldCheck className="h-4 w-4 shrink-0" /> Evaluator Quick Login List
+              <ShieldCheck className="h-4 w-4 shrink-0" /> Demo Quick Login
             </p>
             <div className="text-[10px] text-gray-600 flex flex-col gap-2 dark:text-gray-400">
               {[
@@ -229,14 +219,13 @@ export default function Login() {
                 { roleName: "Admin", r: "admin" as const, email: "admin@college.edu" },
               ].map((item, index) => (
                 <div key={index} className="flex justify-between items-center bg-white/60 p-1.5 rounded-lg border border-gray-150/40 dark:bg-gray-800/60 dark:border-gray-700">
-                  <span className="font-bold text-gray-800 dark:text-gray-200">{item.roleName}:</span>
-                  <span className="text-gray-500 font-mono text-[9px] dark:text-gray-400">{item.email}</span>
+                  <span className="font-bold text-gray-800 dark:text-gray-200">{item.roleName}</span>
                   <button
                     type="button"
                     onClick={() => handleRoleQuickFill(item.r, item.email)}
                     className="text-[9px] px-2 py-0.5 rounded bg-emerald-50 text-primary-green border border-primary-green/20 hover:bg-primary-green hover:text-white transition-all font-bold cursor-pointer"
                   >
-                    Quick Autofill
+                    Auto-fill
                   </button>
                 </div>
               ))}

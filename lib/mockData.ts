@@ -127,9 +127,9 @@ export const INITIAL_NOTIFICATIONS: Notification[] = [
   },
   {
     id: "notif-3",
-    type: "mentor",
-    title: "Mentor Feedback",
-    body: "Dr. A. Rajesh left feedback on your project: Ensure safety checks on RAG database context limits.",
+    type: "system",
+    title: "Platform Update",
+    body: "New resources have been added to the Resources hub. Check out the latest AI APIs and datasets.",
     read: false,
     priority: "normal",
     createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
@@ -255,9 +255,6 @@ export const INITIAL_TEAMS: Team[] = [
         judgeEmail: "judge@college.edu",
       },
     ],
-    mentorFeedbacks: [
-      { author: "Dr. A. Rajesh", feedback: "Ensure safety checks on RAG database context limits.", date: "2 hours ago" },
-    ],
     supportTickets: [],
   },
   {
@@ -304,7 +301,6 @@ export const INITIAL_TEAMS: Team[] = [
       { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
     ],
     evaluations: [],
-    mentorFeedbacks: [],
     supportTickets: [],
   },
   {
@@ -369,7 +365,6 @@ export const INITIAL_TEAMS: Team[] = [
       { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
     ],
     evaluations: [],
-    mentorFeedbacks: [],
     supportTickets: [],
   },
   {
@@ -416,7 +411,6 @@ export const INITIAL_TEAMS: Team[] = [
       { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
     ],
     evaluations: [],
-    mentorFeedbacks: [],
     supportTickets: [],
   },
 ];

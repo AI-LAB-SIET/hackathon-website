@@ -43,7 +43,7 @@ interface Member {
   id: string;
   name: string;
   email: string;
-  role: "organizer" | "volunteer" | "judge" | "mentor" | "admin";
+  role: "organizer" | "volunteer" | "judge" | "admin";
 }
 
 export default function AdminDashboard() {
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
   const [members, setMembers] = useState<Member[]>([
     { id: "m-1", name: "System Admin", email: "admin@college.edu", role: "admin" },
     { id: "m-2", name: "Prof. Suresh Kumar", email: "organizer@college.edu", role: "organizer" },
-    { id: "m-3", name: "Dr. A. Rajesh", email: "mentor@college.edu", role: "mentor" },
+    { id: "m-3", name: "Dr. A. Rajesh", email: "rajesh@college.edu", role: "organizer" },
     { id: "m-4", name: "Dr. Priya Rajan", email: "judge@college.edu", role: "judge" },
     { id: "m-5", name: "Riya Verma", email: "riya@college.edu", role: "volunteer" },
     { id: "m-6", name: "Arjun Nair", email: "arjun@college.edu", role: "volunteer" },
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
     { id: 1, time: "Just now", user: "admin@college.edu", action: "Reviewed team registration", type: "info" as const },
     { id: 2, time: "5 mins ago", user: "organizer@college.edu", action: "Approved registration for team 'AI Visionaries'", type: "success" as const },
     { id: 3, time: "20 mins ago", user: "judge@college.edu", action: "Graded 'Code Crusaders' (Avg 8.5/10)", type: "success" as const },
-    { id: 4, time: "1 hour ago", user: "mentor@college.edu", action: "Scheduled office hour session", type: "info" as const },
+    { id: 4, time: "1 hour ago", user: "organizer@college.edu", action: "Reviewed participant submissions", type: "info" as const },
     { id: 5, time: "2 hours ago", user: "admin@college.edu", action: "Published new problem statement", type: "warning" as const },
   ];
 
@@ -267,7 +267,6 @@ export default function AdminDashboard() {
     switch (role) {
       case "admin": return "danger";
       case "organizer": return "warning";
-      case "mentor": return "info";
       case "judge": return "primary";
       case "volunteer": return "success";
       default: return "primary";
@@ -789,7 +788,6 @@ export default function AdminDashboard() {
             >
               <option value="admin">Admin</option>
               <option value="organizer">Organizer</option>
-              <option value="mentor">Mentor</option>
               <option value="judge">Judge</option>
               <option value="volunteer">Volunteer</option>
             </select>

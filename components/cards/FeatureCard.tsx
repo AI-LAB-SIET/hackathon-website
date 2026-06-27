@@ -18,7 +18,7 @@ export const FeatureCard = React.memo(function FeatureCard({ title, description,
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.5, delay }}
       whileHover={{ y: -6, scale: 1.02 }}
-      className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col items-start gap-4 glassmorphism-card hover:bg-emerald-50/40 hover:shadow-[0_12px_45px_rgba(0,77,0,0.06)] hover:border-primary-green/45 transition-all duration-300 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-emerald-900/20"
+      className="relative group overflow-hidden rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col items-start gap-4 glassmorphism-card hover:bg-emerald-50/40 hover:shadow-[0_12px_45px_rgba(0,77,0,0.06)] hover:border-primary-green/45 transition-all duration-300 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-emerald-900/20"
     >
       {/* Decorative Glow Orb */}
       <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-accent-green/5 blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
@@ -39,7 +39,7 @@ export const FeatureCard = React.memo(function FeatureCard({ title, description,
       </div>
 
       {/* Hover visual cue */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-green via-accent-green to-accent-yellow scale-x-0 origin-left hover:scale-x-100 transition-transform duration-300" />
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-green via-accent-green to-accent-yellow scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300" />
     </motion.div>
   );
 });

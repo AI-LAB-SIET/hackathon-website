@@ -8,9 +8,9 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   const socialLinks = [
-    { icon: <Github className="h-4 w-4" />, href: "https://github.com", name: "GitHub" },
-    { icon: <Instagram className="h-4 w-4" />, href: "https://instagram.com", name: "Instagram" },
-    { icon: <Linkedin className="h-4 w-4" />, href: "https://linkedin.com", name: "LinkedIn" },
+    { icon: <Github className="h-4 w-4" />, href: "https://github.com/AI-LAB-SIET", name: "GitHub" },
+    { icon: <Instagram className="h-4 w-4" />, href: "https://www.instagram.com/siet_ai_lab", name: "Instagram" },
+    { icon: <Linkedin className="h-4 w-4" />, href: "https://www.linkedin.com/company/siet-ai-lab", name: "LinkedIn" },
   ];
 
   return (

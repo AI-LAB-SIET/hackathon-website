@@ -151,9 +151,9 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
 
   // Cleanup any in-flight animation + canvas on unmount.
   useEffect(() => {
+    const revealState = revealRef.current;
     return () => {
-      const s = revealRef.current;
-      if (s.raf) cancelAnimationFrame(s.raf);
+      if (revealState.raf) cancelAnimationFrame(revealState.raf);
       document.getElementById("theme-reveal-canvas")?.remove();
     };
   }, []);

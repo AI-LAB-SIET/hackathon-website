@@ -20,7 +20,7 @@ export interface AttendanceRecord {
 export interface SupportTicket {
   id: string;
   teamId: string;
-  category: "Internet" | "Power" | "Mentor Needed" | "Hardware" | "Food" | "Venue" | "Other";
+  category: "Internet" | "Power" | "Hardware" | "Food" | "Venue" | "Other";
   priority: "Low" | "Medium" | "High" | "Critical";
   status: "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
   raisedBy: string;
@@ -35,8 +35,9 @@ export interface Team {
   name: string;
   size: number;
   members: Participant[];
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: "PENDING" | "APPROVED" | "REJECTED" | "DRAFT";
   createdAt: string;
+  updatedAt?: string;
   projectDescription?: string;
   githubUrl?: string;
   videoUrl?: string;
@@ -55,7 +56,6 @@ export interface Team {
     feedback: string;
     judgeEmail: string;
   }[];
-  mentorFeedbacks?: { author: string; feedback: string; date: string }[];
   // v2 additions
   qrToken?: string;
   trackId?: string;
@@ -85,7 +85,7 @@ export interface Announcement {
 
 export interface Notification {
   id: string;
-  type: "approval" | "deadline" | "mentor" | "judge" | "action" | "system";
+  type: "approval" | "deadline" | "judge" | "action" | "system";
   title: string;
   body: string;
   read: boolean;

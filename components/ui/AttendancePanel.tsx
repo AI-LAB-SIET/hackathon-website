@@ -14,7 +14,7 @@ interface AttendancePanelProps {
 }
 
 const TICKET_CATEGORIES: SupportTicket["category"][] = [
-  "Internet", "Power", "Mentor Needed", "Hardware", "Food", "Venue", "Other"
+  "Internet", "Power", "Hardware", "Food", "Venue", "Other"
 ];
 const TICKET_PRIORITIES: SupportTicket["priority"][] = ["Low", "Medium", "High", "Critical"];
 

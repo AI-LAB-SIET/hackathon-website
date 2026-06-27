@@ -74,7 +74,7 @@ function ResourceGrid({ items }: { items: ResourceCard[] }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.06, duration: 0.35 }}
-          className="group flex flex-col gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300 cursor-pointer"
+          className="group flex flex-col gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300 cursor-pointer dark:bg-gray-900 dark:border-gray-700 dark:hover:border-primary-green/40"
         >
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-bold text-primary-dark text-base leading-tight group-hover:text-primary-green transition-colors">
@@ -92,10 +92,10 @@ function ResourceGrid({ items }: { items: ResourceCard[] }) {
           <p className="text-sm text-gray-500 leading-relaxed flex-1">{item.description}</p>
           <div className="flex flex-wrap gap-1.5 mt-auto">
             {item.tags.map((tag) => (
-              <span
-                key={tag}
-                className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"
-              >
+            <span
+              key={tag}
+              className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+            >
                 {tag}
               </span>
             ))}

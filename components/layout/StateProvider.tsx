@@ -23,7 +23,6 @@ interface StateContextType {
   rejectTeam: (teamId: string) => void;
   updateProjectDetails: (teamId: string, details: Partial<Team>) => void;
   evaluateProject: (teamId: string, evaluation: { innovation: number; feasibility: number; presentation: number; technicalDepth?: number; aiUsage?: number; feedback: string; judgeEmail: string }) => void;
-  addMentorFeedback: (teamId: string, feedback: { author: string; feedback: string }) => void;
   updateMilestoneProgress: (teamId: string, milestoneId: string, completed: boolean) => void;
   checkInTeam: (teamId: string, byName: string) => void;
   // Announcements
@@ -217,7 +216,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       name: teamData.name,
       size: teamData.members.length,
       members: teamData.members,
-      status: "PENDING",
+      status: "APPROVED",
       createdAt: new Date().toISOString(),
       projectDescription: teamData.projectDescription,
       qrToken: `${prefix}-AI26-${teamNum}-SEC${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
@@ -234,13 +233,12 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
         { id: "ms-5", title: "Public Deployment & Pitch slides", completed: false },
       ],
       evaluations: [],
-      mentorFeedbacks: [],
       supportTickets: [],
     };
     setTeams((prev) => [...prev, newTeam]);
     const leader = teamData.members.find((m) => m.isLeader) || teamData.members[0];
     setSession({ isLoggedIn: true, role: "participant", email: leader.email, name: leader.name, teamId });
-    addNotification({ type: "system", title: "Team Registered", body: `Your team "${teamData.name}" has been submitted for review. You'll be notified once approved.`, priority: "normal" });
+    addNotification({ type: "system", title: "Team Registered", body: `Your team "${teamData.name}" has been registered successfully. Welcome to AI Hack Lab 2026!`, priority: "high" });
   }, [teams.length, addNotification]);
 
   const updateTeamMembers = useCallback((teamId: string, members: Participant[]) => {
@@ -284,17 +282,6 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       addNotification({ type: "judge", title: "New Evaluation Submitted", body: `A judge has submitted scores for your team. Check the Project tab for feedback.`, priority: "normal", relatedTeamId: teamId });
     }
   }, [teams, addNotification]);
-
-  const addMentorFeedback = useCallback((teamId: string, feedback: { author: string; feedback: string }) => {
-    setTeams((prev) => prev.map((t) => {
-      if (t.id === teamId) {
-        const logs = t.mentorFeedbacks || [];
-        return { ...t, mentorFeedbacks: [{ author: feedback.author, feedback: feedback.feedback, date: "Just now" }, ...logs] };
-      }
-      return t;
-    }));
-    addNotification({ type: "mentor", title: `Mentor Feedback from ${feedback.author}`, body: feedback.feedback.slice(0, 120), priority: "normal", relatedTeamId: teamId });
-  }, [addNotification]);
 
   const updateMilestoneProgress = useCallback((teamId: string, milestoneId: string, completed: boolean) => {
     setTeams((prev) => prev.map((t) => {
@@ -398,7 +385,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     volunteers, userProfiles, problemStatements, tickets,
     login, logout,
     registerTeam, updateTeamMembers, approveTeam, rejectTeam,
-    updateProjectDetails, evaluateProject, addMentorFeedback, updateMilestoneProgress, checkInTeam,
+    updateProjectDetails, evaluateProject, updateMilestoneProgress, checkInTeam,
     addAnnouncement,
     addNotification, markNotificationRead, markAllNotificationsRead,
     raiseTicket, resolveTicket,
@@ -408,7 +395,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     createTicket, assignTicket, updateTicketStatus,
   }), [teams, session, announcements, notifications, volunteers, userProfiles, problemStatements, tickets,
     login, logout, registerTeam, updateTeamMembers, approveTeam, rejectTeam,
-    updateProjectDetails, evaluateProject, addMentorFeedback, updateMilestoneProgress, checkInTeam,
+    updateProjectDetails, evaluateProject, updateMilestoneProgress, checkInTeam,
     addAnnouncement, addNotification, markNotificationRead, markAllNotificationsRead,
     raiseTicket, resolveTicket, addVolunteer, updateVolunteer, removeVolunteer,
     updateProfile, getProfile, addProblemStatement, updateProblemStatement, archiveProblemStatement,

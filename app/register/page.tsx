@@ -8,6 +8,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Users, CheckCircle, ArrowRight, ArrowLeft,
@@ -27,6 +28,7 @@ export default function Register() {
 
   const [step, setStep] = useState(1);
   const [showPw, setShowPw] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Step 1: Account
   const [account, setAccount] = useState({ name: "", email: "", password: "", confirm: "" });
@@ -35,24 +37,28 @@ export default function Register() {
   const [teamName, setTeamName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
 
-  // Validation
   const validateStep1 = () => {
-    if (!account.name.trim()) { toast("Please enter your full name.", "error"); return false; }
-    if (!account.email.includes("@")) { toast("Please enter a valid email.", "error"); return false; }
-    if (account.password.length < 6) { toast("Password must be at least 6 characters.", "error"); return false; }
-    if (account.password !== account.confirm) { toast("Passwords do not match.", "error"); return false; }
-    return true;
+    const errs: Record<string, string> = {};
+    if (!account.name.trim()) errs.name = "Full name is required";
+    if (!account.email.includes("@")) errs.email = "Valid email is required";
+    if (account.password.length < 6) errs.password = "Must be at least 6 characters";
+    if (account.password !== account.confirm) errs.confirm = "Passwords do not match";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const validateStep2 = () => {
-    if (!teamName.trim()) { toast("Please enter a team name.", "error"); return false; }
-    if (!projectDescription.trim()) { toast("Please describe your project briefly.", "error"); return false; }
-    return true;
+    const errs: Record<string, string> = {};
+    if (!teamName.trim()) errs.teamName = "Team name is required";
+    if (!projectDescription.trim()) errs.projectDescription = "Project description is required";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const handleNext = () => {
     if (step === 1 && !validateStep1()) return;
     if (step === 2 && !validateStep2()) return;
+    setErrors({});
     setStep(step + 1);
   };
 
@@ -62,8 +68,8 @@ export default function Register() {
       projectDescription,
       members: [{ name: account.name, email: account.email, registerNumber: "", phone: "", department: "", year: "", skills: [], github: "", isLeader: true }],
     });
-    toast("Team registered successfully!", "success");
-    router.push("/dashboard#team");
+    toast("Team registered successfully! You can now log in.", "success");
+    router.push("/login");
   };
 
   return (
@@ -97,43 +103,50 @@ export default function Register() {
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden dark:bg-gray-900 dark:border-gray-700">
             <AnimatePresence mode="wait">
-              {/* ─── STEP 1: Account ─── */}
+              {/* STEP 1: Account */}
               {step === 1 && (
                 <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-5">
                   <div>
                     <h2 className="font-extrabold text-primary-dark text-xl mb-1 dark:text-gray-100">Create Account</h2>
                     <p className="text-sm text-gray-400 dark:text-gray-500">Your personal login credentials for the platform.</p>
                   </div>
-                  <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5 dark:text-gray-400">Full Name</label>
-                      <input type="text" value={account.name} onChange={(e) => setAccount((p) => ({ ...p, name: e.target.value }))}
-                        placeholder="e.g. Abhishek Sharma"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" />
-                  </div>
-                  <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5 dark:text-gray-400">College Email</label>
-                      <input type="email" value={account.email} onChange={(e) => setAccount((p) => ({ ...p, email: e.target.value }))}
-                        placeholder="you@college.edu"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" />
-                  </div>
+                  <Input
+                    label="Full Name"
+                    placeholder="e.g. Abhishek Sharma"
+                    value={account.name}
+                    onChange={(e) => setAccount((p) => ({ ...p, name: e.target.value }))}
+                    error={errors.name}
+                  />
+                  <Input
+                    label="College Email"
+                    placeholder="you@college.edu"
+                    type="email"
+                    value={account.email}
+                    onChange={(e) => setAccount((p) => ({ ...p, email: e.target.value }))}
+                    error={errors.email}
+                  />
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5 dark:text-gray-400">Password</label>
-                      <div className="relative">
-                        <input type={showPw ? "text" : "password"} value={account.password} onChange={(e) => setAccount((p) => ({ ...p, password: e.target.value }))}
-                          placeholder="Min 6 characters"
-                          className="w-full px-4 py-3 pr-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" />
-                        <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer">
-                          {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
+                      <Input
+                        label="Password"
+                        placeholder="Min 6 characters"
+                        type={showPw ? "text" : "password"}
+                        value={account.password}
+                        onChange={(e) => setAccount((p) => ({ ...p, password: e.target.value }))}
+                        error={errors.password}
+                      />
+                      <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-[38px] text-gray-400 cursor-pointer z-10">
+                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5 dark:text-gray-400">Confirm Password</label>
-                      <input type="password" value={account.confirm} onChange={(e) => setAccount((p) => ({ ...p, confirm: e.target.value }))}
-                        placeholder="Repeat password"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" />
-                    </div>
+                    <Input
+                      label="Confirm Password"
+                      placeholder="Repeat password"
+                      type="password"
+                      value={account.confirm}
+                      onChange={(e) => setAccount((p) => ({ ...p, confirm: e.target.value }))}
+                      error={errors.confirm}
+                    />
                   </div>
                   <div className="flex items-start gap-2 text-xs text-gray-400 bg-gray-50 p-3 rounded-xl dark:bg-gray-800 dark:text-gray-500">
                     <Lock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
@@ -142,35 +155,44 @@ export default function Register() {
                 </motion.div>
               )}
 
-              {/* ─── STEP 2: Team ─── */}
+              {/* STEP 2: Team */}
               {step === 2 && (
                 <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-5">
                   <div>
                     <h2 className="font-extrabold text-primary-dark text-xl mb-1 dark:text-gray-100">Set Up Your Team</h2>
                     <p className="text-sm text-gray-400 dark:text-gray-500">Create a new team by giving it a name and brief description.</p>
                   </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 block mb-1.5 dark:text-gray-400">Team Name</label>
-                    <input type="text" value={teamName} onChange={(e) => setTeamName(e.target.value)}
-                      placeholder="e.g. Neural Knights"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 block mb-1.5 dark:text-gray-400">Project Brief</label>
-                    <textarea rows={3} value={projectDescription} onChange={(e) => setProjectDescription(e.target.value)}
+                  <Input
+                    label="Team Name"
+                    placeholder="e.g. Neural Knights"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    error={errors.teamName}
+                  />
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-primary-dark select-none dark:text-gray-200">Project Brief</label>
+                    <textarea
+                      rows={3}
+                      value={projectDescription}
+                      onChange={(e) => setProjectDescription(e.target.value)}
                       placeholder="Briefly describe your AI project idea..."
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" />
+                      className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all duration-200 text-sm resize-none dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500
+                        ${errors.projectDescription
+                          ? "border-red-500 focus:ring-1 focus:ring-red-500"
+                          : "border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green shadow-[0_2px_4px_rgba(0,100,0,0.02)] dark:border-gray-700 dark:hover:border-primary-green"
+                        }`}
+                    />
+                    {errors.projectDescription && <span className="text-xs text-red-600 font-medium">{errors.projectDescription}</span>}
                   </div>
                 </motion.div>
               )}
 
-              {/* ─── STEP 3: Review & Submit ─── */}
+              {/* STEP 3: Review & Submit */}
               {step === 3 && (
                 <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-5">
                   <div>
                     <h2 className="font-extrabold text-primary-dark text-xl mb-1 dark:text-gray-100">Review & Submit</h2>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Confirm your details before submitting for organizer approval.</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Confirm your details before registering.</p>
                   </div>
 
                   <div className="rounded-2xl border border-gray-100 p-5 space-y-4 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
@@ -188,7 +210,7 @@ export default function Register() {
 
                   <div className="flex items-start gap-2 text-xs text-gray-400 bg-emerald-50 border border-emerald-100 p-3 rounded-xl dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-gray-400">
                     <CheckCircle className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                    <span>By submitting, you confirm all details are accurate. Your team will appear as <strong>Pending</strong> until an organizer approves it. You can add team members after registration from your workspace.</span>
+                    <span>By submitting, you confirm all details are accurate. Your team will be registered immediately. You can add team members after logging in from your workspace.</span>
                   </div>
                 </motion.div>
               )}

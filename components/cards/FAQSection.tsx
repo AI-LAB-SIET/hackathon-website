@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { FAQItem } from "@/types";
 import { INITIAL_FAQS } from "@/lib/mockData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 
 export function FAQSection() {
-  const [faqs] = useState<FAQItem[]>(INITIAL_FAQS);
+  const faqs = INITIAL_FAQS;
   const [activeCategory, setActiveCategory] = useState<string>("General");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 

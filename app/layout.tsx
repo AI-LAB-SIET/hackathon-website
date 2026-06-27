@@ -5,6 +5,7 @@ import { StateProvider } from "@/components/layout/StateProvider";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { ToastProvider } from "@/components/ui/toast";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import AIAssistant from "@/components/ui/AIAssistant";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -47,6 +48,7 @@ export default function RootLayout({
             <ThemeProvider>
               <ToastProvider>
                 {children}
+                <AIAssistant />
               </ToastProvider>
             </ThemeProvider>
           </StateProvider>
