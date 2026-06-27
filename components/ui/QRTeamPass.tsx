@@ -90,11 +90,11 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
   return (
     <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary-dark to-emerald-700 px-5 py-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary-dark to-emerald-700 px-5 py-4 flex items-center justify-between">
         <div>
-          <div className="text-xs font-bold text-emerald-200 tracking-widest uppercase mb-1">Smart Team Pass</div>
+          <div className="text-xs font-bold text-emerald-200 tracking-widest uppercase mb-1">Team QR Pass</div>
           <div className="text-white font-extrabold text-lg leading-tight">{team.name}</div>
-          <div className="text-emerald-300 text-xs font-mono mt-0.5">{teamDisplayId}</div>
+          <div className="text-emerald-300 text-xs mt-0.5">Scan for team check-in and management</div>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20">
           <div className={`h-2 w-2 rounded-full ${team.status === "APPROVED" ? "bg-emerald-400 animate-pulse" : team.status === "PENDING" ? "bg-amber-400" : "bg-red-400"}`} />

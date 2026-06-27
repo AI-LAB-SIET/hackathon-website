@@ -600,8 +600,8 @@ export default function ParticipantDashboard() {
                     {/* Individual Participant QR */}
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Your Personal QR</div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500">For attendance & identity</div>
+                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">My Personal QR</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">Scan for attendance and identity verification</div>
                       </div>
                       <div className="flex items-center gap-5">
                         <div className="flex flex-col items-center gap-2">
