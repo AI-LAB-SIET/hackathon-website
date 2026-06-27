@@ -7,7 +7,6 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { useTheme } from "@/components/layout/ThemeProvider";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,8 +25,6 @@ import {
   QrCode,
   ChevronRight,
   ChevronDown,
-  Sun,
-  Moon,
   BookOpen,
   Archive,
   Send,
@@ -58,7 +55,6 @@ export default function AdminDashboard() {
     updateProfile, getProfile,
   } = useAppState();
   const { toast } = useToast();
-  const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
@@ -200,6 +196,7 @@ export default function AdminDashboard() {
     setAnnForm({ title: ann.title, content: ann.content, type: ann.type, scheduleDate: "" });
     setAnnCreateOpen(true);
   };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDeleteAnnouncement = (_id: string) => {
     toast("Announcement deleted (local).", "info");
   };

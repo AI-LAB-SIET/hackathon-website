@@ -6,7 +6,6 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
-import { useTheme } from "@/components/layout/ThemeProvider";
 import { useToast } from "@/components/ui/toast";
 import { QRTeamPass } from "@/components/ui/QRTeamPass";
 import QRCode from "qrcode";
@@ -66,7 +65,6 @@ export default function ParticipantDashboard() {
     logout, raiseTicket, getProfile, updateProfile,
   } = useAppState();
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [activeJourneyStage, setActiveJourneyStage] = useState<string | null>(null);
@@ -159,6 +157,46 @@ export default function ParticipantDashboard() {
     }
   }, [team]);
 
+  // Registration state sync
+  useEffect(() => {
+    if (team) {
+      setRegTeamName(team.name || "");
+      setRegTrackId(team.trackId || "");
+      setRegProjectBrief(team.projectDescription || "");
+    }
+  }, [team]);
+
+  // Journey status calculation — must be before early returns
+  const getStageStatus = useMemo(() => {
+    return (stageId: string) => {
+      if (!team) return "locked";
+      switch (stageId) {
+        case "registration": return "completed";
+        case "team_created": return team.members.length >= 2 ? "completed" : "current";
+        case "payment": return team.paymentVerified ? "completed" : team.members.length >= 2 ? "current" : "locked";
+        case "idea": return team.ideaSubmitted ? "completed" : team.paymentVerified ? "current" : "locked";
+        case "shortlist": return team.shortlisted ? "completed" : team.ideaSubmitted ? "upcoming" : "locked";
+        case "hackathon": return team.shortlisted ? "upcoming" : "locked";
+        case "evaluation": return "locked";
+        case "results": return "locked";
+        default: return "locked";
+      }
+    };
+  }, [team]);
+
+  // Registration progress — must be before early returns
+  const regChecklist = useMemo(() => {
+    if (!team) return [];
+    return [
+      { label: "Account Created", done: true },
+      { label: "Team Registered", done: team.status !== "PENDING" },
+      { label: "Members Added (2+)", done: team.members.length >= 2 },
+      { label: "Payment Verified", done: !!team.paymentVerified },
+      { label: "Faculty Approval", done: !!team.facultyApproved },
+      { label: "Idea Submitted", done: !!team.ideaSubmitted },
+    ];
+  }, [team]);
+
   if (!mounted || !session.isLoggedIn || session.role !== "participant") {
     return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading your workspace...</div>;
   }
@@ -178,35 +216,6 @@ export default function ParticipantDashboard() {
   const avgScore = team.evaluations && team.evaluations.length > 0
     ? Math.round(team.evaluations.reduce((acc, e) => acc + (e.innovation + e.feasibility + e.presentation) / 3, 0) / team.evaluations.length)
     : null;
-
-  // Journey status calculation
-  const getStageStatus = useMemo(() => {
-    return (stageId: string) => {
-      switch (stageId) {
-        case "registration": return "completed";
-        case "team_created": return team.members.length >= 2 ? "completed" : "current";
-        case "payment": return team.paymentVerified ? "completed" : team.members.length >= 2 ? "current" : "locked";
-        case "idea": return team.ideaSubmitted ? "completed" : team.paymentVerified ? "current" : "locked";
-        case "shortlist": return team.shortlisted ? "completed" : team.ideaSubmitted ? "upcoming" : "locked";
-        case "hackathon": return team.shortlisted ? "upcoming" : "locked";
-        case "evaluation": return "locked";
-        case "results": return "locked";
-        default: return "locked";
-      }
-    };
-  }, [team]);
-
-  // Registration progress
-  const regChecklist = useMemo(() => {
-    return [
-      { label: "Account Created", done: true },
-      { label: "Team Registered", done: team.status !== "PENDING" },
-      { label: "Members Added (2+)", done: team.members.length >= 2 },
-      { label: "Payment Verified", done: !!team.paymentVerified },
-      { label: "Faculty Approval", done: !!team.facultyApproved },
-      { label: "Idea Submitted", done: !!team.ideaSubmitted },
-    ];
-  }, [team]);
   const regPercent = Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100);
 
   // Notifications
@@ -308,15 +317,6 @@ export default function ParticipantDashboard() {
     link.click();
   };
 
-  // Registration state sync
-  useEffect(() => {
-    if (team) {
-      setRegTeamName(team.name || "");
-      setRegTrackId(team.trackId || "");
-      setRegProjectBrief(team.projectDescription || "");
-    }
-  }, [team]);
-
   const needsRegistration = team.status === "PENDING" || !team.trackId;
 
   const handleSaveRegistration = () => {
@@ -329,8 +329,6 @@ export default function ParticipantDashboard() {
     });
     toast("Registration details saved.", "success");
   };
-
-  // (projectEdit sync useEffect moved above early returns)
 
   return (
     <PageWrapper>
@@ -436,7 +434,7 @@ export default function ParticipantDashboard() {
                     {/* Connecting line */}
                     <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100 dark:bg-gray-700" />
                     <div className="flex flex-col gap-1">
-                      {JOURNEY_STAGES.map((stage, idx) => {
+                      {JOURNEY_STAGES.map((stage) => {
                         const status = getStageStatus(stage.id);
                         const isActive = activeJourneyStage === stage.id;
                         return (

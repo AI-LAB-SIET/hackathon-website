@@ -6,15 +6,12 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
-import { useTheme } from "@/components/layout/ThemeProvider";
 import { useToast } from "@/components/ui/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LifeBuoy,
   User,
   Bell,
-  Sun,
-  Moon,
   CheckCircle,
   Clock,
   Filter,
@@ -51,14 +48,12 @@ export default function VolunteerDashboard() {
   const router = useRouter();
   const { session, teams, notifications, tickets, volunteers, updateTicketStatus, markAllNotificationsRead, updateProfile, getProfile } = useAppState();
   const { toast } = useToast();
-  const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>("all");
   const [notifOpen, setNotifOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [teamForAction, setTeamForAction] = useState<Team | null>(null);
 
   // Profile form state
   const [profileName, setProfileName] = useState("");
@@ -87,17 +82,6 @@ export default function VolunteerDashboard() {
     }
   }, [session.email, session.name, getProfile]);
 
-  if (!mounted || !session.isLoggedIn || session.role !== "volunteer") {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500 dark:bg-gray-950 dark:text-gray-400">
-        Loading volunteer portal...
-      </div>
-    );
-  }
-
-  // Find volunteer info from state
-  const volunteerInfo = volunteers.find((v) => v.email.toLowerCase() === (session.email || "").toLowerCase());
-
   // Aggregate tickets from teams' supportTickets
   const allTickets: (SupportTicket & { teamName?: string })[] = useMemo(() => {
     return tickets.length > 0
@@ -123,6 +107,17 @@ export default function VolunteerDashboard() {
   }, [myTickets]);
 
   const filteredTickets = useMemo(() => allTickets.filter((t) => ticketFilter === "all" || t.status === ticketFilter), [allTickets, ticketFilter]);
+
+  if (!mounted || !session.isLoggedIn || session.role !== "volunteer") {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500 dark:bg-gray-950 dark:text-gray-400">
+        Loading volunteer portal...
+      </div>
+    );
+  }
+
+  // Find volunteer info from state
+  const volunteerInfo = volunteers.find((v) => v.email.toLowerCase() === (session.email || "").toLowerCase());
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -835,7 +830,6 @@ export default function VolunteerDashboard() {
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
         onSelectTeam={(team: Team) => {
-          setTeamForAction(team);
           toast(`Selected team: ${team.name}`, "success");
         }}
       />

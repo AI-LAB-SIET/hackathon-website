@@ -7,13 +7,12 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { useTheme } from "@/components/layout/ThemeProvider";
 import { Modal } from "@/components/ui/modal";
 import { QRScanner } from "@/components/ui/QRScanner";
 import { AttendancePanel } from "@/components/ui/AttendancePanel";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, ClipboardCheck, Bell, Sun, Moon,
+  Users, ClipboardCheck, Bell,
   CheckCircle, Clock, XCircle, Search, QrCode,
   Mail, Phone, ChevronRight, Activity, Ticket,
   Download, UserPlus, Trash2, UserCheck,
@@ -31,7 +30,6 @@ export default function OrganizerDashboard() {
   const router = useRouter();
   const { session, teams, notifications, volunteers, tickets, approveTeam, rejectTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead, addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus } = useAppState();
   const { toast } = useToast();
-  const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
@@ -73,10 +71,6 @@ export default function OrganizerDashboard() {
     if (mounted && (!session.isLoggedIn || session.role !== "organizer")) router.push("/login");
   }, [session, router, mounted]);
 
-  if (!mounted || !session.isLoggedIn || session.role !== "organizer") {
-    return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading organizer portal...</div>;
-  }
-
   const totalTeams = teams.length;
   const approvedTeams = teams.filter((t) => t.status === "APPROVED");
   const pendingTeams = teams.filter((t) => t.status === "PENDING");
@@ -112,6 +106,10 @@ export default function OrganizerDashboard() {
   const filteredTickets = useMemo(() => {
     return allTickets.filter((t) => ticketFilter === "all" || t.status === ticketFilter);
   }, [allTickets, ticketFilter]);
+
+  if (!mounted || !session.isLoggedIn || session.role !== "organizer") {
+    return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading organizer portal...</div>;
+  }
 
   const handleApprove = (teamId: string, teamName: string) => {
     approveTeam(teamId);

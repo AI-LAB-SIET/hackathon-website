@@ -8,7 +8,6 @@ interface DialogProps {
   onClose: () => void;
   children: React.ReactNode;
   maxWidth?: string;
-  showCloseButton?: boolean;
   ariaLabel?: string;
 }
 
@@ -17,7 +16,6 @@ export function Dialog({
   onClose,
   children,
   maxWidth = "max-w-md",
-  showCloseButton = false,
   ariaLabel,
 }: DialogProps) {
   const handleEscape = useCallback(

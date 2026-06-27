@@ -7,12 +7,11 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { useTheme } from "@/components/layout/ThemeProvider";
 import { Modal } from "@/components/ui/modal";
 import { QRScanner } from "@/components/ui/QRScanner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bell, Sun, Moon,
+  Bell,
   Search, CheckCircle, Clock, X, ChevronRight,
   Github, Video, Globe, Star, Users, Mail, Phone,
   Eye
@@ -35,7 +34,6 @@ export default function JudgeDashboard() {
   const router = useRouter();
   const { session, teams, notifications, evaluateProject, markNotificationRead, markAllNotificationsRead } = useAppState();
   const { toast } = useToast();
-  const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
@@ -66,10 +64,6 @@ export default function JudgeDashboard() {
     if (mounted && (!session.isLoggedIn || session.role !== "judge")) router.push("/login");
   }, [session, router, mounted]);
 
-  if (!mounted || !session.isLoggedIn || session.role !== "judge") {
-    return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading judge portal...</div>;
-  }
-
   const assignedTeams = useMemo(() => teams.filter((t) => t.status === "APPROVED"), [teams]);
   const reviewedTeams = useMemo(() => assignedTeams.filter((t) => t.evaluations?.some((e) => e.judgeEmail === session.email)), [assignedTeams, session.email]);
   const pendingTeams = useMemo(() => assignedTeams.filter((t) => !t.evaluations?.some((e) => e.judgeEmail === session.email)), [assignedTeams, session.email]);
@@ -96,6 +90,10 @@ export default function JudgeDashboard() {
       return true;
     });
   }, [assignedTeams, trackFilter, statusFilter, deptFilter, search, session.email]);
+
+  if (!mounted || !session.isLoggedIn || session.role !== "judge") {
+    return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading judge portal...</div>;
+  }
 
   const openEvalModal = (team: Team) => {
     setEvalTeam(team);
