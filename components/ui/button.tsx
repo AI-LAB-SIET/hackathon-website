@@ -20,33 +20,31 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "relative inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer";
+    "relative inline-flex items-center justify-center font-extrabold uppercase tracking-wide rounded-xl transition-all duration-150 active:translate-y-[2px] focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-green/30 disabled:opacity-45 disabled:pointer-events-none disabled:active:translate-y-0 cursor-pointer";
 
   const variants = {
     primary:
-      "bg-primary-green hover:bg-primary-dark text-white shadow-[0_4px_14px_0_rgba(0,100,0,0.3)] hover:shadow-[0_6px_20px_0_rgba(0,77,0,0.4)] focus:ring-primary-green",
+      "bg-primary-green hover:bg-[#61CC0A] text-white shadow-[0_4px_0_0_#61B800] active:shadow-none",
     secondary:
-      "bg-card-bg hover:bg-emerald-100 text-primary-dark border border-input-border/30 shadow-sm focus:ring-primary-green",
+      "bg-transparent text-blue border-2 border-input-border shadow-[0_4px_0_0_#E5E5E5] hover:bg-[#F7F7F7] active:shadow-none",
     "accent-yellow":
-      "bg-accent-yellow hover:bg-[#ebd322] text-primary-dark shadow-[0_4px_14px_0_rgba(247,224,53,0.3)] focus:ring-accent-yellow",
+      "bg-golden hover:bg-[#FFD119] text-primary-dark shadow-[0_4px_0_0_#E0AB00] active:shadow-none",
     outline:
-      "bg-transparent border border-primary-green text-primary-green hover:bg-card-bg focus:ring-primary-green",
+      "bg-transparent text-primary-green border-2 border-primary-green shadow-[0_4px_0_0_#58CC02] hover:bg-primary-green/5 active:shadow-none",
     danger:
-      "bg-red-600 hover:bg-red-700 text-white shadow-[0_4px_14px_0_rgba(220,38,38,0.3)] focus:ring-red-500",
+      "bg-red hover:bg-[#FF6A6A] text-white shadow-[0_4px_0_0_#CC3C3C] active:shadow-none",
     ghost:
-      "bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-400",
+      "bg-transparent text-primary-green hover:bg-primary-green/10 shadow-none active:translate-y-0",
   };
 
   const sizes = {
-    sm: "px-4 py-2 text-xs",
-    md: "px-6 py-3 text-sm",
-    lg: "px-8 py-4 text-base",
+    sm: "h-9 px-4 text-[13px] rounded-[10px]",
+    md: "h-12 px-6 text-[15px]",
+    lg: "h-14 px-8 text-base",
   };
 
   return (
     <motion.button
-      whileHover={{ y: -2, scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       disabled={disabled || isLoading}
       {...props}

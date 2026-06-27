@@ -5,20 +5,26 @@ import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAppState } from "@/components/layout/StateProvider";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { QRTeamPass } from "@/components/ui/QRTeamPass";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Home, Users, FolderOpen, Bell, User,
-  CheckCircle, Clock, Lock, Circle, ChevronRight,
+  Users, FolderOpen, Bell, User,
+  CheckCircle, Clock, ChevronRight,
   Github, Video, Globe, Plus, Trash2, Send,
-  CheckSquare, Square, Settings, Shield,
-  AlertTriangle, Info, X, Eye, EyeOff,
-  LayoutDashboard, Layers
+  CheckSquare, Square, Settings,
+  AlertTriangle, Info, X,
+  LayoutDashboard, Layers, Search, ChevronDown,
+  BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Cloud, Code2, Brain, Terminal, LogOut,
 } from "lucide-react";
-import { Participant, Notification } from "@/types";
-import { HACK_TRACKS } from "@/lib/mockData";
+import { Participant, Notification, SupportTicket } from "@/types";
+type SupportTicketCategory = SupportTicket["category"];
+type SupportTicketPriority = SupportTicket["priority"];
+import { HACK_TRACKS, INITIAL_FAQS } from "@/lib/mockData";
+import {
+  apis, datasets, tools, learning, templates, cloud,
+  type ResourceCard,
+} from "@/lib/resources";
 
 // ─────────────────────────────────────────────
 // Journey stages
@@ -34,7 +40,7 @@ const JOURNEY_STAGES = [
   { id: "results", label: "Results", desc: "Winners announced and certificates issued.", icon: "🏆" },
 ];
 
-type TabType = "home" | "team" | "project" | "notifications" | "profile";
+type TabType = "home" | "team" | "project" | "notifications" | "resources" | "support" | "profile";
 
 const DEPT_OPTIONS = [
   "Computer Science & Engineering",
@@ -55,6 +61,7 @@ export default function ParticipantDashboard() {
     session, teams, notifications,
     updateProjectDetails, updateTeamMembers, updateMilestoneProgress,
     markNotificationRead, markAllNotificationsRead,
+    logout, raiseTicket,
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -64,6 +71,12 @@ export default function ParticipantDashboard() {
   const [profileTab, setProfileTab] = useState<"info" | "account" | "notifications" | "appearance" | "security">("info");
   const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
   const [showAddMember, setShowAddMember] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [resourceTab, setResourceTab] = useState<"templates" | "datasets" | "apis" | "tools" | "cloud">("templates");
+  const [ticketCategory, setTicketCategory] = useState<SupportTicketCategory>("Other");
+  const [ticketPriority, setTicketPriority] = useState<SupportTicketPriority>("Medium");
+  const [ticketDescription, setTicketDescription] = useState("");
+  const [ticketFaqOpen, setTicketFaqOpen] = useState<string | null>(null);
   const [newSkill, setNewSkill] = useState("");
   const [newMember, setNewMember] = useState<Participant>({
     name: "", registerNumber: "", email: "", phone: "",
@@ -155,13 +168,38 @@ export default function ParticipantDashboard() {
     system: { bg: "bg-gray-50 border-gray-100", dot: "bg-gray-400", label: "System" },
   };
 
-  const tabs = [
-    { id: "home" as TabType, label: "Home", icon: <Home className="h-4 w-4" /> },
-    { id: "team" as TabType, label: "My Team", icon: <Users className="h-4 w-4" /> },
-    { id: "project" as TabType, label: "Project", icon: <FolderOpen className="h-4 w-4" /> },
-    { id: "notifications" as TabType, label: "Notifications", icon: <Bell className="h-4 w-4" />, badge: unreadCount > 0 ? unreadCount : undefined },
-    { id: "profile" as TabType, label: "Profile", icon: <User className="h-4 w-4" /> },
-  ];
+  const handleLogout = () => {
+    logout();
+    toast("Logged out successfully.", "info");
+    router.push("/");
+  };
+
+  // Resources sub-category data (derived from shared lib/resources.ts)
+  const resourceData: Record<typeof resourceTab, { label: string; items: ResourceCard[]; desc: string }> = {
+    templates: { label: "Templates & Starter Kits", items: [...templates, ...learning], desc: "Starter codebases and GitHub repos to fork and build on — plus learning resources." },
+    datasets: { label: "Datasets", items: datasets, desc: "Curated open datasets across all hackathon tracks." },
+    apis: { label: "API Docs", items: apis, desc: "Pre-approved AI APIs with free tiers." },
+    tools: { label: "Dev Tools", items: tools, desc: "Frameworks and libraries recommended by the organizing team." },
+    cloud: { label: "GPU & Cloud Credits", items: cloud, desc: "Free cloud compute, hosting, and credits for participants." },
+  };
+
+  const handleRaiseTicket = () => {
+    if (!ticketDescription.trim()) {
+      toast("Please describe your issue.", "error");
+      return;
+    }
+    raiseTicket({
+      teamId: team.id,
+      category: ticketCategory,
+      priority: ticketPriority,
+      raisedBy: session.name || session.email || "Participant",
+      description: ticketDescription.trim(),
+    });
+    setTicketDescription("");
+    setTicketCategory("Other");
+    setTicketPriority("Medium");
+    toast("Support ticket raised. The team has been notified.", "success");
+  };
 
   const handleAddMember = () => {
     if (!newMember.name || !newMember.email || !newMember.registerNumber) {
@@ -201,24 +239,90 @@ export default function ParticipantDashboard() {
   return (
     <PageWrapper>
       <div className="flex min-h-screen bg-[#f8fafb]">
-        {/* Sidebar */}
-        <Sidebar />
+        {/* Sidebar — the single source of navigation */}
+        <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
 
         <main className="flex-1 min-w-0 p-6 lg:p-8">
-          {/* Tab Header */}
-          <div className="flex items-center gap-2 flex-wrap mb-8">
-            {tabs.map((tab) => (
+          {/* Utility Header — replaces the duplicate top pills.
+              Navigation is now handled SOLELY by the Sidebar; this header
+              holds utility actions (search, notifications, profile menu). */}
+          <div className="flex items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-200 text-gray-400 w-full max-w-xs">
+              <Search className="h-4 w-4 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none w-full"
+              />
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Notifications bell */}
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${activeTab === tab.id ? "bg-primary-green text-white shadow-md" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40 hover:text-primary-green"}`}
+                onClick={() => setActiveTab("notifications")}
+                className="relative p-2.5 rounded-xl bg-card-bg border border-input-border/30 text-gray-600 hover:text-primary-green hover:border-primary-green/30 transition-colors cursor-pointer"
+                title="Notifications"
               >
-                {tab.icon}{tab.label}
-                {tab.badge && (
-                  <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{tab.badge}</span>
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4.5 w-4.5 min-w-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
                 )}
               </button>
-            ))}
+
+              {/* Profile menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-card-bg border border-input-border/30 text-primary-dark hover:bg-emerald-100/50 transition-colors cursor-pointer"
+                >
+                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs">
+                    {(session.name || session.email || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-bold hidden sm:inline">{session.name?.split(" ")[0] || "Profile"}</span>
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                <AnimatePresence>
+                  {profileMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+                    >
+                      <button
+                        onClick={() => { setProfileTab("info"); setActiveTab("profile"); setProfileMenuOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                      >
+                        <User className="h-4 w-4 text-primary-green" /> My Profile
+                      </button>
+                      <button
+                        onClick={() => { setProfileTab("account"); setActiveTab("profile"); setProfileMenuOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                      >
+                        <Settings className="h-4 w-4 text-primary-green" /> Account Settings
+                      </button>
+                      <button
+                        onClick={() => { setProfileTab("appearance"); setActiveTab("profile"); setProfileMenuOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-primary-green" /> Theme
+                      </button>
+                      <div className="border-t border-gray-100" />
+                      <button
+                        onClick={() => { setProfileMenuOpen(false); handleLogout(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                      >
+                        <LogOut className="h-4 w-4" /> Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
 
           <AnimatePresence mode="wait">
@@ -677,6 +781,166 @@ export default function ParticipantDashboard() {
                       </motion.div>
                     );
                   })}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── RESOURCES TAB ─── */}
+            {activeTab === "resources" && (
+              <motion.div key="resources" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary-green" /> Resources</h2>
+                {/* Sub-category pills */}
+                <div className="flex gap-2 flex-wrap">
+                  {(Object.keys(resourceData) as (keyof typeof resourceData)[]).map((k) => (
+                    <button key={k} onClick={() => setResourceTab(k)}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${resourceTab === k ? "bg-primary-green text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary-green/40 hover:text-primary-green"}`}
+                    >
+                      {k === "templates" && <Code2 className="h-4 w-4" />}
+                      {k === "datasets" && <Database className="h-4 w-4" />}
+                      {k === "apis" && <Brain className="h-4 w-4" />}
+                      {k === "tools" && <Terminal className="h-4 w-4" />}
+                      {k === "cloud" && <Cloud className="h-4 w-4" />}
+                      {resourceData[k].label.split(" ")[0]}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 mb-2">
+                  <p className="text-sm text-gray-500">{resourceData[resourceTab].desc}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {resourceData[resourceTab].items.map((item, i) => (
+                    <motion.a
+                      key={item.title}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.3 }}
+                      className="group flex flex-col gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300 cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-bold text-primary-dark text-sm leading-tight group-hover:text-primary-green transition-colors">{item.title}</h3>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {item.badge && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${item.badgeColor}`}>{item.badge}</span>}
+                          <ExternalLink className="h-4 w-4 text-gray-300 group-hover:text-primary-green transition-colors" />
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 leading-relaxed flex-1">{item.description}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-auto">
+                        {item.tags.map((tag) => (
+                          <span key={tag} className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{tag}</span>
+                        ))}
+                      </div>
+                    </motion.a>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── SUPPORT TAB ─── */}
+            {activeTab === "support" && (
+              <motion.div key="support" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><LifeBuoy className="h-5 w-5 text-primary-green" /> Support</h2>
+
+                {/* Raise Ticket + Track Tickets */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Raise Ticket form */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="font-bold text-primary-dark text-sm">Raise a Ticket</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1">Category</label>
+                        <select value={ticketCategory} onChange={(e) => setTicketCategory(e.target.value as SupportTicketCategory)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                          {(["Internet", "Power", "Mentor Needed", "Hardware", "Food", "Venue", "Other"] as SupportTicketCategory[]).map((c) => <option key={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1">Priority</label>
+                        <select value={ticketPriority} onChange={(e) => setTicketPriority(e.target.value as SupportTicketPriority)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white">
+                          {(["Low", "Medium", "High", "Critical"] as SupportTicketPriority[]).map((p) => <option key={p}>{p}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Describe your issue</label>
+                      <textarea rows={3} value={ticketDescription} onChange={(e) => setTicketDescription(e.target.value)}
+                        placeholder="Tell us what's wrong..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                    </div>
+                    <button onClick={handleRaiseTicket} className="w-full py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Submit Ticket</button>
+                  </div>
+
+                  {/* Track Tickets */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-3">
+                    <div className="font-bold text-primary-dark text-sm">Your Tickets</div>
+                    {(team.supportTickets || []).length === 0 ? (
+                      <div className="text-sm text-gray-400 py-8 text-center">No tickets raised yet.</div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {(team.supportTickets || []).map((tk) => (
+                          <div key={tk.id} className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-xs font-bold text-primary-dark">{tk.category}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tk.status === "Resolved" || tk.status === "Closed" ? "bg-emerald-100 text-emerald-700" : tk.status === "Open" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{tk.status}</span>
+                            </div>
+                            <p className="text-xs text-gray-500">{tk.description}</p>
+                            <div className="text-[10px] text-gray-400 mt-1">{tk.priority} · {new Date(tk.createdAt).toLocaleString()}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* FAQs */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-3">
+                  <div className="font-bold text-primary-dark text-sm flex items-center gap-2"><Info className="h-4 w-4 text-primary-green" /> FAQs</div>
+                  <div className="flex flex-col gap-2">
+                    {INITIAL_FAQS.map((faq) => {
+                      const open = ticketFaqOpen === faq.id;
+                      return (
+                        <div key={faq.id} className="rounded-xl border border-gray-100 overflow-hidden">
+                          <button onClick={() => setTicketFaqOpen(open ? null : faq.id)}
+                            className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors cursor-pointer">
+                            <span className="text-sm font-semibold text-gray-700">{faq.question}</span>
+                            <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+                          </button>
+                          <AnimatePresence>
+                            {open && (
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                                <p className="px-4 pb-4 text-xs text-gray-500 leading-relaxed">{faq.answer}</p>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Discord + Emergency Contact */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <a href="https://discord.gg/siet-ai-lab" target="_blank" rel="noopener noreferrer"
+                    className="group flex items-center gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:border-primary-green/30 hover:shadow-md transition-all cursor-pointer">
+                    <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600"><MessageCircle className="h-5 w-5" /></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-primary-dark text-sm">Discord Community</div>
+                      <div className="text-xs text-gray-500">Get instant help from mentors & organizers</div>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-gray-300 group-hover:text-primary-green transition-colors" />
+                  </a>
+                  <div className="group flex items-center gap-3 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <div className="p-2.5 rounded-xl bg-red-50 text-red-600"><AlertTriangle className="h-5 w-5" /></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-primary-dark text-sm">Emergency Contact</div>
+                      <div className="text-xs text-gray-500">Help Desk: +91 98765 43210 · helpdesk@ai-lab.in</div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}

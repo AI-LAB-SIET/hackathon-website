@@ -1,18 +1,47 @@
 @import "tailwindcss";
 
+/*
+  ──────────────────────────────────────────────────────────────
+  Design system tokens (Duolingo-style).
+  Green remains the brand/primary action color.
+  These map directly to Tailwind utilities: --color-foo → bg-foo,
+  text-foo, border-foo, ring-foo, etc.
+  ──────────────────────────────────────────────────────────────
+*/
 @theme {
-  --color-primary-dark: #004D00;
-  --color-primary-green: #006400;
-  --color-accent-green: #4CAF50;
-  --color-accent-yellow: #F7E035;
-  --color-card-bg: #E6FFE6;
-  --color-input-border: #A3C65F;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Brand / action */
+  --color-primary-green: #58cc02;     /* primary action (was #006400) */
+  --color-green-hover: #4bb200;       /* darker green for hover/active */
+  --color-green-shadow: #61b800;      /* hard 3D button shadow base */
+  --color-accent-green: #4ec604;      /* gradient variety / footer green */
+
+  /* Deep surface + ink */
+  --color-primary-dark: #100f3e;      /* dark panels + strong headings (was #004D00) */
+
+  /* Accents */
+  --color-blue: #1cb0f6;              /* secondary action text, links */
+  --color-accent-yellow: #ffc800;     /* was #F7E035 — golden */
+  --color-golden: #ffc800;
+  --color-orange: #ff9600;
+  --color-red: #ff4b4b;
+
+  /* Surfaces + borders */
+  --color-card-bg: #e5fbd4;           /* light-green tile/pill surface */
+  --color-input-border: #e5e5e5;      /* Duolingo light-gray borders */
+
+  /* Text tones */
+  --color-gray-text: #4b4b4b;
+  --color-gray-light: #777777;
+  --color-nav-text: #afafaf;
+
+  /* Typography */
+  --font-sans: var(--font-nunito), "DIN Round Pro", -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
 }
 
 :root {
   --background: #ffffff;
-  --foreground: #111827; /* Tailwind Gray 900 for high quality readability */
+  --foreground: #4b4b4b; /* gray-text — comfortable reading tone */
 }
 
 body {
@@ -28,14 +57,14 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f3f4f6;
+  background: #f7f7f7;
 }
 ::-webkit-scrollbar-thumb {
-  background: #006400;
+  background: #58cc02;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #004D00;
+  background: #4bb200;
 }
 
 /* Custom animation classes */
@@ -56,6 +85,12 @@ body {
   50% { opacity: 0.55; }
 }
 
+/* Cinematic fade-rise entrance (hero) — refined, Apple-style soft motion */
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -68,11 +103,23 @@ body {
   animation: pulse-slow 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Aurora background glow mesh styles */
+.animate-fade-rise {
+  animation: fade-rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-rise-delay {
+  animation: fade-rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}
+
+.animate-fade-rise-delay-2 {
+  animation: fade-rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.36s both;
+}
+
+/* Aurora background glow mesh styles — retuned to the #58CC02 hue */
 .gradient-mesh {
-  background-image: radial-gradient(at 0% 0%, hsla(120, 100%, 15%, 0.1) 0px, transparent 50%),
-                    radial-gradient(at 50% 0%, hsla(120, 100%, 20%, 0.08) 0px, transparent 50%),
-                    radial-gradient(at 100% 0%, hsla(68, 62%, 57%, 0.12) 0px, transparent 50%);
+  background-image: radial-gradient(at 0% 0%, hsla(99, 96%, 40%, 0.1) 0px, transparent 50%),
+                    radial-gradient(at 50% 0%, hsla(99, 96%, 48%, 0.08) 0px, transparent 50%),
+                    radial-gradient(at 100% 0%, hsla(48, 100%, 50%, 0.12) 0px, transparent 50%);
 }
 
 .glow-orb {
@@ -85,12 +132,12 @@ body {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 77, 0, 0.08);
+  border: 1px solid rgba(16, 15, 62, 0.08);
 }
 
 .glassmorphism-card {
-  background: rgba(230, 255, 230, 0.6);
+  background: rgba(229, 251, 212, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(163, 198, 95, 0.25);
+  border: 1px solid rgba(229, 229, 229, 0.6);
 }

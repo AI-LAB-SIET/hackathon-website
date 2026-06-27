@@ -90,27 +90,28 @@ export function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-40 w-full glassmorphism">
-        <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 select-none group">
-            <div className="relative h-9 w-9 overflow-hidden group-hover:scale-105 transition-transform duration-300">
-              <Image src="/siet_logo.png" alt="SIET Logo" fill sizes="36px" priority className="object-contain" />
+          <Link href="/" className="flex items-center gap-2.5 select-none group">
+            <div className="relative h-7 w-7 overflow-hidden">
+              <Image src="/siet_logo.png" alt="SIET Logo" fill sizes="28px" priority className="object-contain" />
             </div>
-            <span className="font-extrabold tracking-tight text-primary-dark text-base sm:text-lg">
-              SIET<span className="text-accent-green">AI_LAB</span>
+            <span className="font-serif text-xl tracking-tight text-black">
+              SIET<span className="text-primary-green"> AI_LAB</span>
             </span>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-9">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
-                <Link key={link.href} href={link.href} className="relative text-sm font-semibold text-gray-700 hover:text-primary-green transition-colors py-2">
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-[13px] font-medium tracking-wide transition-colors duration-300 ${isActive ? "text-black" : "text-[#6F6F6F] hover:text-black"}`}
+                >
                   {link.name}
-                  {isActive && (
-                    <motion.div layoutId="activeNavBorder" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-green rounded-full" transition={{ type: "spring", stiffness: 350, damping: 30 }} />
-                  )}
                 </Link>
               );
             })}
@@ -124,7 +125,7 @@ export function Navbar() {
                 {showQRScan && (
                   <button
                     onClick={() => setScannerOpen(true)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-full bg-primary-green/10 text-primary-green hover:bg-primary-green/20 transition-colors cursor-pointer"
                   >
                     <QrCode className="h-4 w-4" />
                     Scan QR
@@ -135,7 +136,7 @@ export function Navbar() {
                 <div ref={bellRef} className="relative">
                   <button
                     onClick={() => setBellOpen(!bellOpen)}
-                    className="relative p-2 rounded-xl bg-card-bg border border-input-border/30 text-gray-600 hover:text-primary-green hover:border-primary-green/30 transition-colors cursor-pointer"
+                    className="relative p-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors cursor-pointer"
                   >
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
@@ -193,14 +194,14 @@ export function Navbar() {
 
                 <Link
                   href={rolePortalHref}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-card-bg border border-input-border/30 text-primary-dark hover:bg-emerald-100/50 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors"
                 >
-                  {session.role === "admin" ? <Shield className="h-4 w-4 text-primary-green" /> : <User className="h-4 w-4 text-primary-green" />}
+                  {session.role === "admin" ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
                   {rolePortalLabel}
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-transparent border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
@@ -208,8 +209,8 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/login" className="text-sm font-semibold text-primary-dark hover:text-primary-green transition-colors px-3 py-2">Login</Link>
-                <Link href="/register" className="inline-flex items-center text-sm font-semibold px-5 py-2.5 rounded-xl bg-primary-green text-white shadow-md hover:bg-primary-dark transition-all duration-200">
+                <Link href="/login" className="text-[13px] font-medium text-[#6F6F6F] hover:text-black transition-colors duration-300 px-1">Login</Link>
+                <Link href="/register" className="inline-flex items-center text-[13px] font-medium px-5 py-2 rounded-full bg-black text-white transition-all duration-300 hover:bg-[#222] hover:-translate-y-0.5">
                   Register Team
                 </Link>
               </>

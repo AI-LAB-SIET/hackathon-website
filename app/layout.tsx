@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Nunito, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { StateProvider } from "@/components/layout/StateProvider";
 import { ToastProvider } from "@/components/ui/toast";
 
-const inter = Inter({
-  variable: "--font-inter",
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -24,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${inter.variable} antialiased font-sans bg-white text-gray-900 selection:bg-accent-green selection:text-white`}
+        className={`${nunito.variable} ${instrumentSerif.variable} antialiased font-sans bg-white text-[#4B4B4B] selection:bg-primary-green selection:text-white`}
       >
         <StateProvider>
           <ToastProvider>

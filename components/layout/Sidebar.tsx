@@ -11,12 +11,10 @@ import {
   LayoutDashboard,
   Users,
   FolderCode,
-  Inbox,
   Calendar,
   BookOpen,
   Megaphone,
   MessageSquare,
-  HelpCircle,
   Settings,
   Gavel,
   UserCheck,
@@ -27,6 +25,9 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Bell,
+  LifeBuoy,
+  User,
 } from "lucide-react";
 import { Avatar } from "../ui/avatar";
 
@@ -55,13 +56,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           { id: "home", name: "Home", icon: <LayoutDashboard className="h-5 w-5" /> },
           { id: "team", name: "My Team", icon: <Users className="h-5 w-5" /> },
           { id: "project", name: "Project", icon: <FolderCode className="h-5 w-5" /> },
-          { id: "deliverables", name: "Deliverables", icon: <Inbox className="h-5 w-5" /> },
-          { id: "timeline", name: "Timeline", icon: <Calendar className="h-5 w-5" /> },
+          { id: "notifications", name: "Notifications", icon: <Bell className="h-5 w-5" /> },
           { id: "resources", name: "Resources", icon: <BookOpen className="h-5 w-5" /> },
-          { id: "announcements", name: "Announcements", icon: <Megaphone className="h-5 w-5" /> },
-          { id: "messages", name: "Messages", icon: <MessageSquare className="h-5 w-5" /> },
-          { id: "support", name: "Support", icon: <HelpCircle className="h-5 w-5" /> },
-          { id: "settings", name: "Settings", icon: <Settings className="h-5 w-5" /> },
+          { id: "support", name: "Support", icon: <LifeBuoy className="h-5 w-5" /> },
+          { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
         ];
       case "judge":
         return [
