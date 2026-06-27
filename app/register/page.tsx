@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Users, CheckCircle, ArrowRight, ArrowLeft,
@@ -196,21 +197,18 @@ export default function Register() {
             {/* Navigation Buttons */}
             <div className="px-8 pb-8 flex gap-3">
               {step > 1 && (
-                <button onClick={() => setStep(step - 1)}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800">
+                <Button variant="secondary" onClick={() => setStep(step - 1)} className="flex items-center gap-2 text-xs">
                   <ArrowLeft className="h-4 w-4" /> Back
-                </button>
+                </Button>
               )}
               {step < 3 ? (
-                <button onClick={handleNext}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-green text-white text-sm font-bold hover:bg-primary-dark cursor-pointer transition-colors shadow-md">
+                <Button onClick={handleNext} className="flex-1 flex items-center justify-center gap-2 text-xs">
                   Continue <ArrowRight className="h-4 w-4" />
-                </button>
+                </Button>
               ) : (
-                <button onClick={handleSubmit}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-green text-white text-sm font-bold hover:bg-primary-dark cursor-pointer transition-colors shadow-md">
+                <Button onClick={handleSubmit} className="flex-1 flex items-center justify-center gap-2 text-xs">
                   <Send className="h-4 w-4" /> Submit Registration
-                </button>
+                </Button>
               )}
             </div>
           </div>

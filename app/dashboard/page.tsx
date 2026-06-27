@@ -167,7 +167,7 @@ export default function ParticipantDashboard() {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4">
         <div className="text-gray-400 text-sm dark:text-gray-500">No team found. Please register a team first.</div>
-        <button onClick={() => router.push("/register")} className="px-4 py-2 bg-primary-green text-white rounded-xl text-sm font-semibold cursor-pointer">Register Team</button>
+        <button onClick={() => router.push("/register")} className="px-4 py-2 bg-primary-green text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors cursor-pointer">Register Team</button>
       </div>
     );
   }
