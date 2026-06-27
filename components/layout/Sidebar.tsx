@@ -68,14 +68,6 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           { id: "queue", name: "Review Queue", icon: <ListChecks className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
         ];
-      case "mentor":
-        return [
-          { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-          { id: "teams", name: "Assigned Teams", icon: <Users className="h-5 w-5" /> },
-          { id: "schedules", name: "Schedules", icon: <Calendar className="h-5 w-5" /> },
-          { id: "feedback", name: "Feedback Logs", icon: <MessageSquare className="h-5 w-5" /> },
-          { id: "settings", name: "Settings", icon: <Settings className="h-5 w-5" /> },
-        ];
       case "volunteer":
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },

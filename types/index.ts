@@ -103,7 +103,7 @@ export interface FAQItem {
 
 export interface UserSession {
   isLoggedIn: boolean;
-  role: "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer" | null;
+  role: "participant" | "admin" | "judge" | "organizer" | "volunteer" | null;
   email: string | null;
   name?: string | null;
   teamId?: string | null;
@@ -134,7 +134,7 @@ export interface UserProfile {
   bio?: string;
   skills?: string[];
   socialLinks?: { platform: string; url: string }[];
-  role: "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer";
+  role: "participant" | "admin" | "judge" | "organizer" | "volunteer";
   teamId?: string;
 }
 

@@ -35,7 +35,6 @@ export function Navbar() {
   const rolePortalHref =
     session.role === "admin" ? "/admin"
     : session.role === "judge" ? "/judge"
-    : session.role === "mentor" ? "/mentor"
     : session.role === "organizer" ? "/organizer"
     : session.role === "volunteer" ? "/volunteer"
     : "/dashboard";
@@ -43,7 +42,6 @@ export function Navbar() {
   const rolePortalLabel =
     session.role === "admin" ? "Admin Panel"
     : session.role === "judge" ? "Judge Portal"
-    : session.role === "mentor" ? "Mentor Portal"
     : session.role === "organizer" ? "Organizer Portal"
     : session.role === "volunteer" ? "Volunteer Portal"
     : "My Dashboard";

@@ -14,7 +14,7 @@ interface StateContextType {
   problemStatements: ProblemStatement[];
   tickets: Ticket[];
   // Auth
-  login: (email: string, role: "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer") => boolean;
+  login: (email: string, role: "participant" | "admin" | "judge" | "organizer" | "volunteer") => boolean;
   logout: () => void;
   // Teams
   registerTeam: (teamData: { name: string; projectDescription: string; members: Participant[] }) => void;
@@ -157,11 +157,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (initialized) localStorage.setItem("siet_problems", JSON.stringify(problemStatements)); }, [problemStatements, initialized]);
   useEffect(() => { if (initialized) localStorage.setItem("siet_tickets", JSON.stringify(tickets)); }, [tickets, initialized]);
 
-  const login = (email: string, role: "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer"): boolean => {
+  const login = (email: string, role: "participant" | "admin" | "judge" | "organizer" | "volunteer"): boolean => {
     const names: Record<string, string> = {
       "admin@college.edu": "Admin User",
       "judge@college.edu": "Dr. Priya Rajan",
-      "mentor@college.edu": "Dr. A. Rajesh",
       "organizer@college.edu": "Prof. Suresh Kumar",
     };
     if (role === "admin" && email === "admin@college.edu") {
@@ -170,10 +169,6 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     }
     if (role === "judge" && email === "judge@college.edu") {
       setSession({ isLoggedIn: true, role: "judge", email, name: names[email] });
-      return true;
-    }
-    if (role === "mentor" && email === "mentor@college.edu") {
-      setSession({ isLoggedIn: true, role: "mentor", email, name: names[email] });
       return true;
     }
     if (role === "organizer" && email === "organizer@college.edu") {

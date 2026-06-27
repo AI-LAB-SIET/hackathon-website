@@ -12,7 +12,7 @@ import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { ShieldCheck } from "lucide-react";
 
-type RoleType = "participant" | "admin" | "judge" | "mentor" | "organizer" | "volunteer";
+type RoleType = "participant" | "admin" | "judge" | "organizer" | "volunteer";
 
 export default function Login() {
   const router = useRouter();
@@ -35,9 +35,6 @@ export default function Login() {
           break;
         case "judge":
           router.push("/judge");
-          break;
-        case "mentor":
-          router.push("/mentor");
           break;
         case "organizer":
           router.push("/organizer");
@@ -84,9 +81,6 @@ export default function Login() {
           case "judge":
             router.push("/judge");
             break;
-          case "mentor":
-            router.push("/mentor");
-            break;
           case "organizer":
             router.push("/organizer");
             break;
@@ -105,8 +99,6 @@ export default function Login() {
             ? "admin@college.edu"
             : role === "judge"
             ? "judge@college.edu"
-            : role === "mentor"
-            ? "mentor@college.edu"
             : role === "organizer"
             ? "organizer@college.edu"
             : role === "volunteer"
@@ -158,7 +150,6 @@ export default function Login() {
               >
                 <option value="participant">Participant Workspace</option>
                 <option value="judge">Judge Evaluation Portal</option>
-                <option value="mentor">Mentor Feedback Desk</option>
                 <option value="organizer">Organizer Audit Control</option>
                 <option value="volunteer">Volunteer Help Desk</option>
                 <option value="admin">System Administration</option>
@@ -172,8 +163,6 @@ export default function Login() {
                   ? "admin@college.edu"
                   : role === "judge"
                   ? "judge@college.edu"
-                  : role === "mentor"
-                  ? "mentor@college.edu"
                   : role === "organizer"
                   ? "organizer@college.edu"
                   : role === "volunteer"
@@ -235,7 +224,6 @@ export default function Login() {
               {[
                 { roleName: "Participant", r: "participant" as const, email: "abhishek@college.edu" },
                 { roleName: "Judge", r: "judge" as const, email: "judge@college.edu" },
-                { roleName: "Mentor", r: "mentor" as const, email: "mentor@college.edu" },
                 { roleName: "Organizer", r: "organizer" as const, email: "organizer@college.edu" },
                 { roleName: "Volunteer", r: "volunteer" as const, email: "riya@college.edu" },
                 { roleName: "Admin", r: "admin" as const, email: "admin@college.edu" },
