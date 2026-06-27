@@ -18,10 +18,17 @@ import {
   CheckCircle,
   Clock,
   Filter,
+  QrCode,
+  ClipboardCheck,
+  HelpCircle,
+  Phone,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
-import { SupportTicket } from "@/types";
+import { QRScanner } from "@/components/ui/QRScanner";
+import { SupportTicket, Team } from "@/types";
 
-type TabType = "dashboard" | "tickets" | "profile";
+type TabType = "dashboard" | "tickets" | "profile" | "attendance" | "scanner" | "support" | "approval";
 type ProfileTabType = "edit" | "appearance";
 type TicketFilter = "all" | "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
 
@@ -50,6 +57,8 @@ export default function VolunteerDashboard() {
   const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>("all");
   const [notifOpen, setNotifOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [teamForAction, setTeamForAction] = useState<Team | null>(null);
 
   // Profile form state
   const [profileName, setProfileName] = useState("");
@@ -147,6 +156,10 @@ export default function VolunteerDashboard() {
           {[
             { id: "dashboard", label: "Dashboard" },
             { id: "tickets", label: "Tickets" },
+            { id: "attendance", label: "Attendance" },
+            { id: "scanner", label: "Scanner" },
+            { id: "support", label: "Support" },
+            { id: "approval", label: "Approval" },
             { id: "profile", label: "Profile" },
           ].map((item) => (
             <button
@@ -568,9 +581,264 @@ export default function VolunteerDashboard() {
                 </div>
               </div>
             )}
+
+            {/* ==================== ATTENDANCE TAB ==================== */}
+            {activeTab === "attendance" && (
+              <div className="flex flex-col gap-6">
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
+                    <CheckCircle className="h-4.5 w-4.5 text-primary-green" /> Teams Checked In Today
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {teams.filter((t) => t.status === "APPROVED").slice(0, 10).map((team) => (
+                      <div
+                        key={team.id}
+                        className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                            {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-800 dark:text-gray-100">{team.name}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                              {team.members.length} members · {team.trackId || "No track"}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                          {team.status}
+                        </span>
+                      </div>
+                    ))}
+                    {teams.filter((t) => t.status === "APPROVED").length === 0 && (
+                      <p className="text-xs text-gray-400 italic">No teams checked in today.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
+                    <Clock className="h-4.5 w-4.5 text-amber-500" /> Check-in History
+                  </h3>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <p>Attendance records are updated in real-time as teams scan in at stations.</p>
+                    <p className="mt-2">Use the <strong>QR Scanner</strong> tab to scan team QR codes for attendance tracking.</p>
+                  </div>
+                </div>
+
+                {volunteerInfo?.assignedArea && (
+                  <div className="rounded-3xl border border-input-border/30 bg-gradient-to-r from-primary-green/5 to-emerald-50 p-5 sm:p-6 shadow-sm dark:from-primary-green/10 dark:to-emerald-900/20">
+                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                      <Info className="h-4.5 w-4.5 text-primary-green" /> Your Station
+                    </h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      You are assigned to <strong>{volunteerInfo.assignedArea}</strong>. Scan QR codes at this station to track attendance.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ==================== SCANNER TAB ==================== */}
+            {activeTab === "scanner" && (
+              <div className="flex flex-col gap-6">
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
+                    <QrCode className="h-4.5 w-4.5 text-primary-green" /> QR Scanner
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Scan team or participant QR codes to check attendance or access team information.
+                  </p>
+                  <button
+                    onClick={() => setScannerOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-green text-white text-sm font-bold hover:bg-primary-green/90 transition-colors cursor-pointer"
+                  >
+                    <QrCode className="h-4 w-4" />
+                    Open Scanner
+                  </button>
+                </div>
+
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
+                    <HelpCircle className="h-4.5 w-4.5 text-blue-500" /> How to Use
+                  </h3>
+                  <div className="space-y-3 text-xs text-gray-600 dark:text-gray-400">
+                    <div className="flex items-start gap-2">
+                      <span className="h-5 w-5 rounded-full bg-primary-green/10 flex items-center justify-center text-primary-green font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                      <p>Tap <strong>Open Scanner</strong> to activate your camera.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="h-5 w-5 rounded-full bg-primary-green/10 flex items-center justify-center text-primary-green font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                      <p>Point your camera at a team&apos;s QR code or participant badge.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="h-5 w-5 rounded-full bg-primary-green/10 flex items-center justify-center text-primary-green font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                      <p>The system will automatically recognize the code and route you to the appropriate action.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ==================== SUPPORT TAB ==================== */}
+            {activeTab === "support" && (
+              <div className="flex flex-col gap-6">
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
+                    <HelpCircle className="h-4.5 w-4.5 text-primary-green" /> FAQ &amp; Help Resources
+                  </h3>
+                  <div className="space-y-4">
+                    {[
+                      { q: "How do I check in a team?", a: "Use the QR Scanner tab to scan the team's QR code. The system will automatically log their attendance." },
+                      { q: "What if a team has lost their QR code?", a: "You can search for the team manually in the QR Scanner fallback mode by team name or member name." },
+                      { q: "How do I handle a support ticket?", a: "Go to the Tickets tab, find tickets assigned to you, and update their status as you work through them." },
+                      { q: "What if I can't access the scanner?", a: "Make sure you've granted camera permissions. You can also use the manual search fallback in the scanner." },
+                    ].map((faq, idx) => (
+                      <div key={idx} className="p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs">
+                        <div className="font-bold text-primary-dark dark:text-gray-100 mb-1">{faq.q}</div>
+                        <p className="text-gray-500 dark:text-gray-400">{faq.a}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
+                    <Phone className="h-4.5 w-4.5 text-red-500" /> Emergency Contacts
+                  </h3>
+                  <div className="space-y-3">
+                    {[
+                      { role: "Event Coordinator", contact: " coordinator@siet-ai.edu", note: "For event-wide issues" },
+                      { role: "Technical Support", contact: "tech@siet-ai.edu", note: "For system/website issues" },
+                      { role: "Campus Security", contact: "Ext. 100", note: "For safety emergencies" },
+                    ].map((c, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs">
+                        <Phone className="h-4 w-4 text-red-500 shrink-0" />
+                        <div>
+                          <div className="font-bold text-primary-dark dark:text-gray-100">{c.role}</div>
+                          <div className="text-gray-500 dark:text-gray-400">{c.contact} · {c.note}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-input-border/30 bg-gradient-to-r from-amber-50 to-orange-50 p-5 sm:p-6 shadow-sm dark:from-amber-900/20 dark:to-orange-900/20">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                    <AlertTriangle className="h-4.5 w-4.5 text-amber-500" /> Handling Common Issues
+                  </h3>
+                  <ul className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-500 mt-0.5">•</span>
+                      <p><strong>Team not found:</strong> Verify you&apos;re scanning the correct QR code. Use manual search as backup.</p>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-500 mt-0.5">•</span>
+                      <p><strong>Duplicate check-in:</strong> Inform the team that attendance has already been recorded.</p>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-500 mt-0.5">•</span>
+                      <p><strong>Camera issues:</strong> Switch to manual search or restart the scanner from the QR Scanner tab.</p>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-500 mt-0.5">•</span>
+                      <p><strong>Urgent problems:</strong> Contact the Event Coordinator immediately using the emergency contacts above.</p>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* ==================== APPROVAL VIEW TAB ==================== */}
+            {activeTab === "approval" && (
+              <div className="flex flex-col gap-6">
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                    <ClipboardCheck className="h-4.5 w-4.5 text-primary-green" /> Approval View
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Read-only view of team approval status. Actual approvals are managed by organizers.
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-amber-600 flex items-center gap-2 mb-4">
+                    <Clock className="h-4.5 w-4.5" /> Pending Approval
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {teams.filter((t) => t.status === "PENDING").map((team) => (
+                      <div
+                        key={team.id}
+                        className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                            {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-800 dark:text-gray-100">{team.name}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                              {team.members.length} members · Submitted {team.createdAt ? new Date(team.createdAt).toLocaleDateString() : "N/A"}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                          PENDING
+                        </span>
+                      </div>
+                    ))}
+                    {teams.filter((t) => t.status === "PENDING").length === 0 && (
+                      <p className="text-xs text-gray-400 italic">No teams pending approval.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                  <h3 className="text-sm font-bold text-emerald-600 flex items-center gap-2 mb-4">
+                    <CheckCircle className="h-4.5 w-4.5" /> Approved Teams
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {teams.filter((t) => t.status === "APPROVED").map((team) => (
+                      <div
+                        key={team.id}
+                        className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                            {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-800 dark:text-gray-100">{team.name}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                              {team.members.length} members · {team.trackId || "No track"}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                          APPROVED
+                        </span>
+                      </div>
+                    ))}
+                    {teams.filter((t) => t.status === "APPROVED").length === 0 && (
+                      <p className="text-xs text-gray-400 italic">No approved teams yet.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <QRScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onSelectTeam={(team: Team) => {
+          setTeamForAction(team);
+          toast(`Selected team: ${team.name}`, "success");
+        }}
+      />
     </PageWrapper>
   );
 }
