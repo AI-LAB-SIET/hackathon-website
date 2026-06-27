@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
 import { motion } from "framer-motion";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -11,7 +11,8 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, shake, className = "", id, ...props }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const inputId = id || generatedId;
 
     // Framer motion shake variant
     const shakeVariants = {

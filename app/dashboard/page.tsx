@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -167,29 +167,33 @@ export default function ParticipantDashboard() {
     : null;
 
   // Journey status calculation
-  const getStageStatus = (stageId: string) => {
-    switch (stageId) {
-      case "registration": return "completed";
-      case "team_created": return team.members.length >= 2 ? "completed" : "current";
-      case "payment": return team.paymentVerified ? "completed" : team.members.length >= 2 ? "current" : "locked";
-      case "idea": return team.ideaSubmitted ? "completed" : team.paymentVerified ? "current" : "locked";
-      case "shortlist": return team.shortlisted ? "completed" : team.ideaSubmitted ? "upcoming" : "locked";
-      case "hackathon": return team.shortlisted ? "upcoming" : "locked";
-      case "evaluation": return "locked";
-      case "results": return "locked";
-      default: return "locked";
-    }
-  };
+  const getStageStatus = useMemo(() => {
+    return (stageId: string) => {
+      switch (stageId) {
+        case "registration": return "completed";
+        case "team_created": return team.members.length >= 2 ? "completed" : "current";
+        case "payment": return team.paymentVerified ? "completed" : team.members.length >= 2 ? "current" : "locked";
+        case "idea": return team.ideaSubmitted ? "completed" : team.paymentVerified ? "current" : "locked";
+        case "shortlist": return team.shortlisted ? "completed" : team.ideaSubmitted ? "upcoming" : "locked";
+        case "hackathon": return team.shortlisted ? "upcoming" : "locked";
+        case "evaluation": return "locked";
+        case "results": return "locked";
+        default: return "locked";
+      }
+    };
+  }, [team]);
 
   // Registration progress
-  const regChecklist = [
-    { label: "Account Created", done: true },
-    { label: "Team Registered", done: team.status !== "PENDING" },
-    { label: "Members Added (2+)", done: team.members.length >= 2 },
-    { label: "Payment Verified", done: !!team.paymentVerified },
-    { label: "Faculty Approval", done: !!team.facultyApproved },
-    { label: "Idea Submitted", done: !!team.ideaSubmitted },
-  ];
+  const regChecklist = useMemo(() => {
+    return [
+      { label: "Account Created", done: true },
+      { label: "Team Registered", done: team.status !== "PENDING" },
+      { label: "Members Added (2+)", done: team.members.length >= 2 },
+      { label: "Payment Verified", done: !!team.paymentVerified },
+      { label: "Faculty Approval", done: !!team.facultyApproved },
+      { label: "Idea Submitted", done: !!team.ideaSubmitted },
+    ];
+  }, [team]);
   const regPercent = Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100);
 
   // Notifications

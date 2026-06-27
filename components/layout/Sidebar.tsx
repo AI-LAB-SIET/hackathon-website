@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -51,7 +51,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   };
 
   // Get role-specific tabs
-  const getTabs = () => {
+  const tabs = useMemo(() => {
     switch (session.role) {
       case "participant":
         return [
@@ -97,9 +97,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       default:
         return [];
     }
-  };
-
-  const tabs = getTabs();
+  }, [session.role]);
 
   // If there's no session role, just display general links
   const displayTabs = tabs.length > 0;

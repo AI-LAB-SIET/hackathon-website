@@ -10,7 +10,7 @@ interface FeatureCardProps {
   delay?: number;
 }
 
-export function FeatureCard({ title, description, icon, delay = 0 }: FeatureCardProps) {
+export const FeatureCard = React.memo(function FeatureCard({ title, description, icon, delay = 0 }: FeatureCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -42,4 +42,4 @@ export function FeatureCard({ title, description, icon, delay = 0 }: FeatureCard
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-green via-accent-green to-accent-yellow scale-x-0 origin-left hover:scale-x-100 transition-transform duration-300" />
     </motion.div>
   );
-}
+});

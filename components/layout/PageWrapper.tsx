@@ -8,7 +8,7 @@ interface PageWrapperProps {
   className?: string;
 }
 
-export function PageWrapper({ children, className = "" }: PageWrapperProps) {
+export const PageWrapper = React.memo(function PageWrapper({ children, className = "" }: PageWrapperProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15, scale: 0.99 }}
@@ -20,4 +20,4 @@ export function PageWrapper({ children, className = "" }: PageWrapperProps) {
       {children}
     </motion.div>
   );
-}
+});

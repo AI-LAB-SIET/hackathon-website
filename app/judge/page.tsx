@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -70,28 +70,32 @@ export default function JudgeDashboard() {
     return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading judge portal...</div>;
   }
 
-  const assignedTeams = teams.filter((t) => t.status === "APPROVED");
-  const reviewedTeams = assignedTeams.filter((t) => t.evaluations?.some((e) => e.judgeEmail === session.email));
-  const pendingTeams = assignedTeams.filter((t) => !t.evaluations?.some((e) => e.judgeEmail === session.email));
-  const avgScore = reviewedTeams.length > 0
-    ? Math.round(reviewedTeams.reduce((acc, t) => {
-        const ev = t.evaluations?.find((e) => e.judgeEmail === session.email);
-        return acc + (ev ? (ev.innovation + ev.feasibility + ev.presentation + (ev.technicalDepth ?? 0) + (ev.aiUsage ?? 0)) / 5 : 0);
-      }, 0) / reviewedTeams.length * 10) / 10
-    : 0;
+  const assignedTeams = useMemo(() => teams.filter((t) => t.status === "APPROVED"), [teams]);
+  const reviewedTeams = useMemo(() => assignedTeams.filter((t) => t.evaluations?.some((e) => e.judgeEmail === session.email)), [assignedTeams, session.email]);
+  const pendingTeams = useMemo(() => assignedTeams.filter((t) => !t.evaluations?.some((e) => e.judgeEmail === session.email)), [assignedTeams, session.email]);
+  const avgScore = useMemo(() => {
+    return reviewedTeams.length > 0
+      ? Math.round(reviewedTeams.reduce((acc, t) => {
+          const ev = t.evaluations?.find((e) => e.judgeEmail === session.email);
+          return acc + (ev ? (ev.innovation + ev.feasibility + ev.presentation + (ev.technicalDepth ?? 0) + (ev.aiUsage ?? 0)) / 5 : 0);
+        }, 0) / reviewedTeams.length * 10) / 10
+      : 0;
+  }, [reviewedTeams, session.email]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Apply filters to queue
-  const departments = Array.from(new Set(assignedTeams.flatMap((t) => t.members.map((m) => m.department))));
-  const filteredQueue = assignedTeams.filter((t) => {
-    if (trackFilter !== "all" && t.trackId !== trackFilter) return false;
-    if (statusFilter === "pending" && t.evaluations?.some((e) => e.judgeEmail === session.email)) return false;
-    if (statusFilter === "reviewed" && !t.evaluations?.some((e) => e.judgeEmail === session.email)) return false;
-    if (deptFilter !== "all" && !t.members.some((m) => m.department === deptFilter)) return false;
-    if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const departments = useMemo(() => Array.from(new Set(assignedTeams.flatMap((t) => t.members.map((m) => m.department)))), [assignedTeams]);
+  const filteredQueue = useMemo(() => {
+    return assignedTeams.filter((t) => {
+      if (trackFilter !== "all" && t.trackId !== trackFilter) return false;
+      if (statusFilter === "pending" && t.evaluations?.some((e) => e.judgeEmail === session.email)) return false;
+      if (statusFilter === "reviewed" && !t.evaluations?.some((e) => e.judgeEmail === session.email)) return false;
+      if (deptFilter !== "all" && !t.members.some((m) => m.department === deptFilter)) return false;
+      if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [assignedTeams, trackFilter, statusFilter, deptFilter, search, session.email]);
 
   const openEvalModal = (team: Team) => {
     setEvalTeam(team);

@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { motion } from "framer-motion";
 
@@ -10,7 +8,7 @@ interface BadgeProps {
   className?: string;
 }
 
-export function Badge({
+export const Badge = React.memo(function Badge({
   children,
   variant = "primary",
   pulse = false,
@@ -48,4 +46,4 @@ export function Badge({
       {children}
     </span>
   );
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -90,23 +90,30 @@ export default function VolunteerDashboard() {
   const volunteerInfo = volunteers.find((v) => v.email.toLowerCase() === (session.email || "").toLowerCase());
 
   // Aggregate tickets from teams' supportTickets
-  const allTickets: (SupportTicket & { teamName?: string })[] = tickets.length > 0
-    ? tickets
-    : teams.flatMap((t) => (t.supportTickets || []).map((tk) => ({ ...tk, teamName: t.name })));
+  const allTickets: (SupportTicket & { teamName?: string })[] = useMemo(() => {
+    return tickets.length > 0
+      ? tickets
+      : teams.flatMap((t) => (t.supportTickets || []).map((tk) => ({ ...tk, teamName: t.name })));
+  }, [tickets, teams]);
 
   // Tickets assigned to this volunteer
-  const myTickets = allTickets.filter(
-    (t) => t.assignedTo && t.assignedTo.toLowerCase() === (session.email || "").toLowerCase()
-  );
-  const pendingTickets = myTickets.filter((t) => t.status !== "Resolved" && t.status !== "Closed");
-  const recentlyResolved = myTickets.filter((t) => {
-    if (t.status !== "Resolved") return false;
-    const created = new Date(t.createdAt);
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    return created >= sevenDaysAgo;
-  });
+  const myTickets = useMemo(() => {
+    return allTickets.filter(
+      (t) => t.assignedTo && t.assignedTo.toLowerCase() === (session.email || "").toLowerCase()
+    );
+  }, [allTickets, session.email]);
 
-  const filteredTickets = allTickets.filter((t) => ticketFilter === "all" || t.status === ticketFilter);
+  const pendingTickets = useMemo(() => myTickets.filter((t) => t.status !== "Resolved" && t.status !== "Closed"), [myTickets]);
+  const recentlyResolved = useMemo(() => {
+    return myTickets.filter((t) => {
+      if (t.status !== "Resolved") return false;
+      const created = new Date(t.createdAt);
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      return created >= sevenDaysAgo;
+    });
+  }, [myTickets]);
+
+  const filteredTickets = useMemo(() => allTickets.filter((t) => ticketFilter === "all" || t.status === ticketFilter), [allTickets, ticketFilter]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

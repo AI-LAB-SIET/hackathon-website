@@ -47,7 +47,11 @@ export function CinematicHero({ session }: CinematicHeroProps) {
         } else if (duration - currentTime < FADE_DURATION) {
           target = (duration - currentTime) / FADE_DURATION; // fade out before end
         }
-        setVideoOpacity(Math.max(0, Math.min(1, target)));
+        const newOpacity = Math.max(0, Math.min(1, target));
+        setVideoOpacity(newOpacity);
+        if (Math.abs(newOpacity - target) < 0.01 && (target === 0 || target === 1)) {
+          return; // stop loop when at steady state
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };

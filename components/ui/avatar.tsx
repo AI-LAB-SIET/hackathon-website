@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 
 interface AvatarProps {
@@ -8,7 +6,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export function Avatar({ name, size = "md", className = "" }: AvatarProps) {
+export const Avatar = React.memo(function Avatar({ name, size = "md", className = "" }: AvatarProps) {
   const getInitials = (n: string) => {
     const parts = n.trim().split(" ");
     if (parts.length >= 2) {
@@ -30,4 +28,4 @@ export function Avatar({ name, size = "md", className = "" }: AvatarProps) {
       {getInitials(name)}
     </div>
   );
-}
+});
