@@ -1,0 +1,11 @@
+// storage.rules
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // KB documents – only admin can upload/delete, any signed‑in user can read
+    match /demo/documents/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.role == 'admin';
+    }
+  }
+}

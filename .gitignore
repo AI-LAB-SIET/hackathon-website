@@ -42,3 +42,8 @@ next-env.d.ts
 
 # Windows reserved file name
 nul
+
+# Firebase service account credentials — NEVER commit these
+service-account.json
+service-account*.json
+scripts/*.env

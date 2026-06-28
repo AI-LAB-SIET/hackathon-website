@@ -12,6 +12,7 @@ import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { ShieldCheck, Plus, ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { signInAsAdmin } from "@/lib/firebaseAuth";
 
 type RoleType = "participant" | "admin" | "judge" | "organizer" | "volunteer";
 
@@ -26,6 +27,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [firebaseError, setFirebaseError] = useState("");
 
   // Google Sign-In Simulation States
   const [googleModalOpen, setGoogleModalOpen] = useState(false);
@@ -102,9 +104,10 @@ export default function Login() {
     setError("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setFirebaseError("");
 
     if (!email.trim() || !password.trim()) {
       setError("Please fill in all credentials.");
@@ -113,6 +116,26 @@ export default function Login() {
     }
 
     setSubmitting(true);
+
+    // ── Admin: authenticate via Firebase Auth ──────────────────────────────
+    if (role === "admin") {
+      try {
+        const result = await signInAsAdmin(email.trim(), password);
+        // Sync Firebase session into the existing StateProvider for UI continuity
+        login(result.email, "admin");
+        toast(`Welcome, ${result.displayName || "Admin"}! Logged in as ADMIN.`, "success");
+        router.push("/admin");
+      } catch (err: unknown) {
+        const msg = (err as { userFriendly?: string })?.userFriendly ?? "Authentication failed.";
+        setFirebaseError(msg);
+        toast(msg, "error");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // ── All other roles: existing mock authentication ──────────────────────
     setTimeout(() => {
       const success = login(email, role);
       setSubmitting(false);
@@ -120,9 +143,6 @@ export default function Login() {
       if (success) {
         toast(`Welcome back! Logged in as ${role.toUpperCase()}.`, "success");
         switch (role) {
-          case "admin":
-            router.push("/admin");
-            break;
           case "judge":
             router.push("/judge");
             break;
@@ -192,10 +212,10 @@ export default function Login() {
             </div>
 
             <Input
-              label="Account Email ID"
+              label={role === "admin" ? "Admin Username" : "Account Email ID"}
               placeholder={
                 role === "admin"
-                  ? "admin@college.edu"
+                  ? "Admin2727"
                   : role === "judge"
                   ? "judge@college.edu"
                   : role === "organizer"
@@ -204,10 +224,10 @@ export default function Login() {
                   ? "riya@college.edu"
                   : "abhishek@college.edu"
               }
-              type="email"
+              type={role === "admin" ? "text" : "email"}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={error ? " " : undefined}
+              onChange={(e) => { setEmail(e.target.value); setFirebaseError(""); }}
+              error={(error || firebaseError) ? " " : undefined}
             />
 
             <Input
@@ -215,13 +235,13 @@ export default function Login() {
               placeholder="••••••••"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={error ? " " : undefined}
+              onChange={(e) => { setPassword(e.target.value); setFirebaseError(""); }}
+              error={(error || firebaseError) ? " " : undefined}
             />
 
-            {error && (
+            {(error || firebaseError) && (
               <span className="text-xs text-red-600 font-semibold leading-relaxed">
-                {error}
+                {firebaseError || error}
               </span>
             )}
 
@@ -282,7 +302,6 @@ export default function Login() {
                 { roleName: "Judge", r: "judge" as const, email: "judge@college.edu" },
                 { roleName: "Organizer", r: "organizer" as const, email: "organizer@college.edu" },
                 { roleName: "Volunteer", r: "volunteer" as const, email: "riya@college.edu" },
-                { roleName: "Admin", r: "admin" as const, email: "admin@college.edu" },
               ].map((item, index) => (
                 <div key={index} className="flex justify-between items-center bg-white/60 p-1.5 rounded-lg border border-gray-150/40 dark:bg-gray-800/60 dark:border-gray-700">
                   <span className="font-bold text-gray-800 dark:text-gray-200">{item.roleName}</span>

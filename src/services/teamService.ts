@@ -18,7 +18,17 @@ function getStoredTeams(): MockTeam[] {
 
 function setStoredTeams(teams: MockTeam[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(TEAMS_KEY, JSON.stringify(teams));
+  localStorage.setItem('siet_teams_v2', JSON.stringify(teams));
+}
+
+function getStoredSession(): { isLoggedIn: boolean; role: string | null; email: string | null; name: string | null; teamId: string | null } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('siet_session');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
 }
 
 export const teamService = {
@@ -77,6 +87,7 @@ export const teamService = {
   async createTeam(data: TeamRegistrationRequest): Promise<MockTeam> {
     await mockDelay();
     const teams = getStoredTeams();
+    const session = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('siet_session') || '{}') : { email: '', role: 'participant' };
     
     const teamId = `team_${generateId()}`;
     const prefix = data.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);

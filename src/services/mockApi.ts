@@ -1,8 +1,27 @@
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: ApiError;
+  meta?: ResponseMeta;
+}
+
+interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+  field?: string;
+}
+
 interface ResponseMeta {
   page?: number;
   limit?: number;
   total?: number;
   totalPages?: number;
+}
+
+interface PaginatedResponse<T> {
+  items: T[];
+  meta: ResponseMeta;
 }
 
 const MOCK_DELAY_MIN = 300;

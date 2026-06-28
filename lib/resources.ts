@@ -7,6 +7,59 @@ export interface ResourceCard {
   badgeColor?: string;
 }
 
+export const apis: ResourceCard[] = [
+  {
+    title: "Groq Cloud",
+    description:
+      "Ultra-fast inference for Llama 3, Mixtral, and Gemma models. Free tier includes 14,400 requests/day with millisecond latency.",
+    tags: ["LLM", "Free Tier", "REST"],
+    url: "https://console.groq.com",
+    badge: "Recommended",
+    badgeColor: "bg-emerald-100 text-emerald-700",
+  },
+  {
+    title: "Google Gemini API",
+    description:
+      "Access Gemini 1.5 Flash and Pro for multimodal tasks — vision, audio, code, and text. 1M context window.",
+    tags: ["Multimodal", "Free Tier", "Vision"],
+    url: "https://aistudio.google.com",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "Hugging Face Inference API",
+    description:
+      "Serverless access to 200,000+ open-source models — BERT, Stable Diffusion, Whisper, and more.",
+    tags: ["Open Source", "NLP", "Vision"],
+    url: "https://huggingface.co/inference-api",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "Together AI",
+    description:
+      "Run open-source LLMs like Llama 3, Code Llama, and Mistral with fast inference and generous free credits.",
+    tags: ["LLM", "Code Gen", "Credits"],
+    url: "https://www.together.ai",
+  },
+  {
+    title: "Cohere API",
+    description:
+      "Enterprise-grade NLP — embeddings, reranking, chat, and command models. Developer tier is free.",
+    tags: ["Embeddings", "RAG", "NLP"],
+    url: "https://dashboard.cohere.com",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "Replicate",
+    description:
+      "Deploy and run ML models via simple REST API. Stable Diffusion, ControlNet, Whisper, LLaVA, and thousands more.",
+    tags: ["Image Gen", "Vision", "Audio"],
+    url: "https://replicate.com",
+  },
+];
+
 export const pptTemplates: ResourceCard[] = [
   {
     title: "Official AI Hackathon 2026 Pitch Deck",
@@ -76,81 +129,5 @@ export const datasets: ResourceCard[] = [
       "Classic benchmarks for ML. Includes 650+ tabular and time-series datasets for regression, clustering, and classification.",
     tags: ["Benchmark", "Classic ML"],
     url: "https://archive.ics.uci.edu",
-  },
-];
-
-export const apis: ResourceCard[] = [
-  {
-    title: "OpenAI API",
-    description: "LLM, vision, speech, and embeddings APIs for AI prototypes and copilots.",
-    tags: ["LLM", "Vision", "Speech"],
-    url: "https://platform.openai.com/docs",
-    badge: "AI",
-    badgeColor: "bg-emerald-100 text-emerald-700",
-  },
-  {
-    title: "Hugging Face Inference",
-    description: "Hosted access to open models for NLP, vision, audio, and multimodal experiments.",
-    tags: ["Models", "Inference", "Open Source"],
-    url: "https://huggingface.co/docs/api-inference/index",
-  },
-];
-
-export const tools: ResourceCard[] = [
-  {
-    title: "Google Colab",
-    description: "Browser-based Python notebooks with free compute for quick ML experiments.",
-    tags: ["Notebook", "Python", "GPU"],
-    url: "https://colab.research.google.com",
-    badge: "Notebook",
-    badgeColor: "bg-blue-100 text-blue-700",
-  },
-  {
-    title: "GitHub",
-    description: "Host repositories, collaborate as a team, and submit project source code.",
-    tags: ["Git", "Collaboration", "Submission"],
-    url: "https://github.com",
-  },
-];
-
-export const learning: ResourceCard[] = [
-  {
-    title: "Fast.ai Practical Deep Learning",
-    description: "Hands-on deep learning lessons for building useful AI systems quickly.",
-    tags: ["Deep Learning", "Course"],
-    url: "https://course.fast.ai",
-  },
-  {
-    title: "Google Machine Learning Crash Course",
-    description: "Short ML lessons covering core concepts, TensorFlow examples, and evaluation basics.",
-    tags: ["ML Basics", "TensorFlow"],
-    url: "https://developers.google.com/machine-learning/crash-course",
-  },
-];
-
-export const templates: ResourceCard[] = [
-  ...pptTemplates,
-  {
-    title: "Next.js Starter",
-    description: "A production-friendly React framework starter for dashboards, web apps, and AI frontends.",
-    tags: ["React", "Next.js", "Frontend"],
-    url: "https://nextjs.org/docs/app/getting-started/installation",
-  },
-];
-
-export const cloud: ResourceCard[] = [
-  {
-    title: "Vercel",
-    description: "Deploy frontend apps and API routes quickly from GitHub repositories.",
-    tags: ["Deploy", "Frontend", "Hosting"],
-    url: "https://vercel.com",
-  },
-  {
-    title: "Google Cloud Free Program",
-    description: "Cloud credits and free-tier services for hosting, storage, and AI experiments.",
-    tags: ["Cloud", "Credits", "Compute"],
-    url: "https://cloud.google.com/free",
-    badge: "Free Tier",
-    badgeColor: "bg-amber-100 text-amber-700",
   },
 ];

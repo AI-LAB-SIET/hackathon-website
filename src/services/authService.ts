@@ -5,6 +5,19 @@ import type {
 import { INITIAL_TEAMS } from '@/lib/mockData';
 import type { Team as MockTeam } from '@/types';
 
+const STORAGE_KEYS = {
+  TEAMS: 'siet_teams_v2',
+  SESSION: 'siet_session',
+  ANNOUNCEMENTS: 'siet_announcements',
+  NOTIFICATIONS: 'siet_notifications_v2',
+  VOLUNTEERS: 'siet_volunteers',
+  USER_PROFILES: 'siet_profiles',
+  PROBLEM_STATEMENTS: 'siet_problems',
+  TICKETS: 'siet_tickets',
+  SUBMISSIONS: 'siet_submissions',
+  USER_CREDENTIALS: 'siet_user_credentials',
+} as const;
+
 function getStoredTeams(): MockTeam[] {
   if (typeof window === 'undefined') return INITIAL_TEAMS;
   try {
@@ -13,6 +26,11 @@ function getStoredTeams(): MockTeam[] {
   } catch {
     return INITIAL_TEAMS;
   }
+}
+
+function setStoredTeams(teams: MockTeam[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('siet_teams_v2', JSON.stringify(teams));
 }
 
 function getStoredSession(): { isLoggedIn: boolean; role: UserRole | null; email: string | null; name: string | null; teamId: string | null } | null {
@@ -43,6 +61,11 @@ function getStoredCredentials(): Record<string, { password: string; role: UserRo
   } catch {
     return {};
   }
+}
+
+function setStoredCredentials(creds: Record<string, { password: string; role: UserRole; name: string }>): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('siet_user_credentials', JSON.stringify(creds));
 }
 
 function generateId(prefix = 'id'): string {
@@ -108,16 +131,30 @@ export const authService = {
 
   async register(request: RegisterRequest): Promise<{ user: User; tokens: AuthTokens }> {
     await mockDelay();
-    
+
+    // Security: Admin role cannot be self-registered under any circumstances.
+    // Admin accounts are created exclusively via the Firebase Admin SDK seed script.
+    if (request.role === 'admin') {
+      throw new Error('Registration as Admin is not permitted. Contact the system administrator.');
+    }
+
     const creds = getStoredCredentials();
     const email = request.email.toLowerCase();
-    
+
     if (creds[email]) {
       throw new Error('Email already registered');
     }
-    
+
+    // Participants are the only self-registering role.
+    // Organizer, Judge, Volunteer accounts are created server-side by Admin/Organizer.
+    const allowedSelfRegisterRoles: (typeof request.role)[] = ['participant', undefined, null];
+    if (!allowedSelfRegisterRoles.includes(request.role)) {
+      throw new Error(`Self-registration as ${request.role} is not permitted.`);
+    }
+
     creds[email] = { password: request.password, role: request.role || 'participant', name: request.name };
     localStorage.setItem('siet_user_credentials', JSON.stringify(creds));
+
     
     const tokens: AuthTokens = {
       accessToken: `mock_access_${generateId('token')}`,
