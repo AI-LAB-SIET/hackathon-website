@@ -39,7 +39,7 @@ const timelineSteps = [
   { num: "01", date: "June 25, 2026", title: "Registrations Open", desc: "Submit member registry, department details, and roll numbers.", status: "completed" },
   { num: "02", date: "July 05, 2026", title: "Idea Abstract Deadline", desc: "Upload a 2-page PDF detailing your AI solution architecture & datasets.", status: "ongoing" },
   { num: "03", date: "July 12, 2026", title: "Shortlist Broadcast", desc: "Top 20 teams selected to receive cloud GPU credit credentials.", status: "upcoming" },
-  { num: "04", date: "July 18, 2026", title: "24-Hour Physical Hackathon", desc: "Live coding sprint, mentor clinics, and review checkpoints at SIET AI Lab.", status: "upcoming" },
+  { num: "04", date: "July 18, 2026", title: "24-Hour Physical Hackathon", desc: "Live coding sprint, mentor clinics, and review checkpoints at AI Research Lab.", status: "upcoming" },
   { num: "05", date: "July 19, 2026", title: "Final Pitch & Awards", desc: "Live prototype demo to industry panels, announcements of winners.", status: "upcoming" },
 ];
 
@@ -58,7 +58,7 @@ const prizes = [
 ];
 
 const faqs = [
-  { q: "What is the registration fee?", a: "There is absolutely no registration fee. The event is fully sponsored by the SIET AI Research Lab." },
+  { q: "What is the registration fee?", a: "There is absolutely no registration fee. The event is fully sponsored by the AI Research Lab." },
   { q: "What hardware support will be provided?", a: "Each shortlisted team will be provided with high-speed Wi-Fi, desk space, and power connections in the AI Lab. All teams also receive ₹5,000 in GPU cloud credits." },
   { q: "Can we modify our team members after registration?", a: "Team rosters can be managed inside the workspace up until the abstract submission deadline on July 5th." },
   { q: "Who can I contact if I face errors?", a: "You can submit support tickets directly from the dashboard workspace, join our official Discord server, or email the organizing desk." },
@@ -151,14 +151,14 @@ export default function HackathonPage() {
                       Welcome to the AI Hack Lab 2026
                     </h2>
                     <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-medium">
-                      The SIET AI Research Lab Hackathon challenges student developers to move beyond simple boilerplate code. Our 24-hour physical sprint offers direct access to top deep learning mentors, cloud infrastructure, and a dedicated platform workspace.
+                      The AI Hackathon, conducted by AI Research Lab, challenges student developers to move beyond simple boilerplate code. Our 24-hour physical sprint offers direct access to top deep learning mentors, cloud infrastructure, and a dedicated platform workspace.
                     </p>
                     <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-medium">
                       This year, we focus on <span className="font-bold">Agentic Intelligence</span>—autonomous software agents that can reason, orchestrate APIs, and deliver end-to-end user flows.
                     </p>
                     <div className="flex items-center gap-4 text-xs font-bold text-gray-700 mt-2 dark:text-gray-300">
                       <span className="flex items-center gap-1 bg-card-bg px-3 py-1.5 rounded-lg border border-input-border/20">
-                        <MapPin className="h-4 w-4 text-primary-green" /> Main Research Lab, SIET
+                        <MapPin className="h-4 w-4 text-primary-green" /> Main Research Lab
                       </span>
                       <span className="flex items-center gap-1 bg-card-bg px-3 py-1.5 rounded-lg border border-input-border/20">
                         <Calendar className="h-4 w-4 text-primary-green" /> 24 Hrs Physical

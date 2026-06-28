@@ -113,14 +113,14 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             <div className="relative h-8 w-8 overflow-hidden">
               <Image
                 src="/siet_logo.png"
-                alt="SIET Logo"
+                alt="AI Lab Logo"
                 fill
                 sizes="32px"
                 className="object-contain"
               />
             </div>
             <span className="font-extrabold tracking-tight text-primary-dark text-sm dark:text-gray-100">
-              SIET<span className="text-accent-green"> AI_LAB</span>
+              AI<span className="text-accent-green">_LAB</span>
             </span>
           </Link>
         )}
@@ -128,7 +128,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           <div className="mx-auto relative h-8 w-8 overflow-hidden">
             <Image
               src="/siet_logo.png"
-              alt="SIET Logo"
+              alt="AI Lab Logo"
               fill
               sizes="32px"
               className="object-contain"

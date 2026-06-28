@@ -17,7 +17,7 @@ import { useTheme } from "./ThemeProvider";
  *  - Resizes are respected (radius is recomputed from live viewport bounds).
  *  - All RAF + canvas resources are cleaned up on unmount / completion.
  */
-export function ThemeToggle({ className = "" }: { className?: string }) {
+export function ThemeToggle({ className = "", transparent = false }: { className?: string; transparent?: boolean }) {
   const { theme, setTheme } = useTheme();
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -64,7 +64,8 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     ctx.arc(s.cx, s.cy, radius, 0, Math.PI * 2);
     ctx.rect(0, 0, canvas.width, canvas.height);
     // Even-odd fill carves a hole: viewport filled except the circle (reveal).
-    ctx.fillStyle = s.targetTheme === "dark" ? "#0f172a" : "#ffffff";
+    // The canvas should be filled with the OLD theme color so that the transparent circle reveals the NEW page theme.
+    ctx.fillStyle = s.targetTheme === "dark" ? "#ffffff" : "#0f172a";
     ctx.fill("evenodd");
 
     if (linear >= 1) {
@@ -166,7 +167,11 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       onClick={handleToggle}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       title={theme === "dark" ? "Light mode" : "Dark mode"}
-      className={`relative p-2.5 rounded-xl bg-card-bg border border-input-border/30 text-gray-600 dark:text-gray-400 hover:text-primary-green hover:border-primary-green/30 dark:hover:text-primary-green dark:hover:border-primary-green/40 transition-colors cursor-pointer ${className}`}
+      className={
+        transparent
+          ? `relative p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/75 hover:text-white hover:bg-white/10 transition-colors cursor-pointer ${className}`
+          : `relative p-2.5 rounded-xl bg-card-bg border border-input-border/30 text-gray-600 dark:text-gray-400 hover:text-primary-green hover:border-primary-green/30 dark:hover:text-primary-green dark:hover:border-primary-green/40 transition-colors cursor-pointer ${className}`
+      }
     >
       {theme === "dark" ? (
         <Moon className="h-4 w-4" />

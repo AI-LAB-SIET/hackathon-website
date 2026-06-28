@@ -349,7 +349,7 @@ export default function JudgeDashboard() {
                         <div>
                           <div className="font-extrabold text-primary-dark dark:text-gray-100 text-lg">{session.name || "Judge"}</div>
                           <div className="text-gray-400 dark:text-gray-500 text-sm">{session.email}</div>
-                          <div className="text-xs font-semibold text-blue-600 mt-0.5">Judge · SIET AI Hack Lab 2026</div>
+                          <div className="text-xs font-semibold text-blue-600 mt-0.5">Judge · AI Hackathon 2026</div>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

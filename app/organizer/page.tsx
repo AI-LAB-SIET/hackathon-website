@@ -409,7 +409,6 @@ export default function OrganizerDashboard() {
                     const regChecklist = [
                       { label: "Team Created", done: true },
                       { label: "Members", done: team.size >= 2 },
-                      { label: "Payment", done: !!team.paymentVerified },
                       { label: "Faculty Approval", done: !!team.facultyApproved },
                     ];
                     const regPct = Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100);
@@ -528,7 +527,6 @@ export default function OrganizerDashboard() {
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-bold text-primary-dark dark:text-gray-100 text-sm">{team?.name || "Unknown Team"}</span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityColors[ticket.priority]}`}>{ticket.priority}</span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColors[ticket.status]}`}>{ticket.status}</span>
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{ticket.description}</div>
@@ -586,7 +584,7 @@ export default function OrganizerDashboard() {
                         <div>
                           <div className="font-extrabold text-primary-dark dark:text-gray-100 text-lg">{session.name || "Organizer"}</div>
                           <div className="text-gray-400 dark:text-gray-500 text-sm">{session.email}</div>
-                          <div className="text-xs font-semibold text-amber-600 mt-0.5">Organizer · SIET AI Hack Lab 2026</div>
+                          <div className="text-xs font-semibold text-amber-600 mt-0.5">Organizer · AI Hackathon 2026</div>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -671,10 +669,7 @@ export default function OrganizerDashboard() {
                     <div className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold uppercase">QR Token</div>
                     <div className="text-primary-dark dark:text-gray-100 font-semibold font-mono text-xs">{selectedTeam.qrToken || "—"}</div>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                    <div className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold uppercase">Payment</div>
-                    <div className={`font-semibold ${selectedTeam.paymentVerified ? "text-emerald-600" : "text-gray-500"}`}>{selectedTeam.paymentVerified ? "Verified" : "Pending"}</div>
-                  </div>
+
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
                     <div className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold uppercase">Faculty Approval</div>
                     <div className={`font-semibold ${selectedTeam.facultyApproved ? "text-emerald-600" : "text-gray-500"}`}>{selectedTeam.facultyApproved ? "Approved" : "Pending"}</div>
@@ -710,7 +705,6 @@ export default function OrganizerDashboard() {
                     {[
                       { label: "Team Created", done: true },
                       { label: "Members Added", done: selectedTeam.size >= 2 },
-                      { label: "Payment Verified", done: !!selectedTeam.paymentVerified },
                       { label: "Faculty Approved", done: !!selectedTeam.facultyApproved },
                     ].map((item) => (
                       <div key={item.label} className="flex items-center gap-2 text-sm">

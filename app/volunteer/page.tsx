@@ -334,13 +334,7 @@ export default function VolunteerDashboard() {
                             <span className="font-bold text-gray-800 dark:text-gray-100">
                               {ticket.teamName || getTeamName(ticket.teamId)}
                             </span>
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                priorityColors[ticket.priority] || ""
-                              }`}
-                            >
-                              {ticket.priority}
-                            </span>
+
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                 statusColors[ticket.status] || ""
@@ -402,13 +396,7 @@ export default function VolunteerDashboard() {
                             <span className="font-bold text-primary-dark text-sm dark:text-gray-100">
                               {ticket.teamName || getTeamName(ticket.teamId)}
                             </span>
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                priorityColors[ticket.priority] || ""
-                              }`}
-                            >
-                              {ticket.priority}
-                            </span>
+
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                 statusColors[ticket.status] || ""
@@ -502,7 +490,7 @@ export default function VolunteerDashboard() {
                           </div>
                           <div className="text-gray-400 text-sm dark:text-gray-500">{session.email}</div>
                           <div className="text-xs font-semibold text-primary-green mt-0.5">
-                            Volunteer · SIET AI Hack Lab 2026
+                            Volunteer · AI Hackathon 2026
                           </div>
                         </div>
                       </div>
@@ -704,8 +692,8 @@ export default function VolunteerDashboard() {
                   </h3>
                   <div className="space-y-3">
                     {[
-                      { role: "Event Coordinator", contact: " coordinator@siet-ai.edu", note: "For event-wide issues" },
-                      { role: "Technical Support", contact: "tech@siet-ai.edu", note: "For system/website issues" },
+                      { role: "Event Coordinator", contact: "coordinator@ai-lab.in", note: "For event-wide issues" },
+                      { role: "Technical Support", contact: "tech@ai-lab.in", note: "For system/website issues" },
                       { role: "Campus Security", contact: "Ext. 100", note: "For safety emergencies" },
                     ].map((c, idx) => (
                       <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs">

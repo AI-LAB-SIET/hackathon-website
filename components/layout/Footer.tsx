@@ -27,18 +27,18 @@ export function Footer() {
               <div className="relative h-9 w-9 overflow-hidden">
                 <Image
                   src="/siet_logo.png"
-                  alt="SIET Logo"
+                  alt="AI Lab Logo"
                   fill
                   sizes="36px"
                   className="object-contain"
                 />
               </div>
               <span className="font-extrabold tracking-tight text-primary-dark text-lg dark:text-gray-100">
-                SIET<span className="text-accent-green"> AI_LAB</span>
+                AI<span className="text-accent-green">_LAB</span>
               </span>
             </Link>
             <p className="text-xs text-gray-500 leading-relaxed max-w-sm dark:text-gray-400">
-              Empowering undergraduate research, machine learning exploration, and agentic intelligence projects at the Sri Shakthi Institute of Engineering and Technology.
+              Empowering undergraduate research, machine learning exploration, and agentic intelligence projects, conducted by AI Research Lab.
             </p>
             <div className="flex gap-3 mt-2">
               {socialLinks.map((s, idx) => (
@@ -94,7 +94,7 @@ export function Footer() {
               </div>
               <div className="flex items-start gap-2.5">
                 <MapPin className="h-4 w-4 text-primary-green shrink-0 mt-0.5" />
-                <span className="leading-relaxed">SIET AI Research Lab, Main Block, Coimbatore, TN, India</span>
+                <span className="leading-relaxed">AI Research Lab, Main Block, Coimbatore, TN, India</span>
               </div>
             </div>
           </div>
@@ -106,7 +106,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] sm:text-xs text-gray-400">
-            &copy; {currentYear} SIET AI Lab. All rights reserved.
+            &copy; {currentYear} AI Research Lab. All rights reserved.
           </p>
         </div>
       </div>

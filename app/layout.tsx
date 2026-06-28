@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Nunito, Instrument_Serif } from "next/font/google";
+import { Nunito, Instrument_Serif, Inter } from "next/font/google";
 import "./globals.css";
 import { StateProvider } from "@/components/layout/StateProvider";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
@@ -13,8 +13,14 @@ const nunito = Nunito({
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
+const inter = Inter({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
 const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+  variable: "--font-display",
   subsets: ["latin"],
   weight: ["400"],
   style: ["normal", "italic"],
@@ -41,7 +47,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${nunito.variable} ${instrumentSerif.variable} antialiased font-sans bg-white text-[#4B4B4B] selection:bg-primary-green selection:text-white dark:bg-primary-dark dark:text-gray-200`}
+        className={`${nunito.variable} ${inter.variable} ${instrumentSerif.variable} antialiased font-sans bg-white text-[#4B4B4B] selection:bg-primary-green selection:text-white dark:bg-primary-dark dark:text-gray-200`}
       >
         <ErrorBoundary>
           <StateProvider>

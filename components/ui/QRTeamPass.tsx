@@ -77,7 +77,7 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
                 <p><strong>Status:</strong> <span class="status">${team.status}</span></p>
               </div>
             </div>
-            <div class="footer">SIET AI Lab · July 18–19, 2026 · Scan QR for instant access</div>
+            <div class="footer">AI Research Lab · July 18–19, 2026 · Scan QR for instant access</div>
           </div>
         </body>
       </html>

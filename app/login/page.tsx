@@ -112,7 +112,7 @@ export default function Login() {
             <div className="relative h-10 w-10 overflow-hidden">
               <Image
                 src="/siet_logo.png"
-                alt="SIET Logo"
+                alt="AI Lab Logo"
                 fill
                 sizes="40px"
                 className="object-contain"

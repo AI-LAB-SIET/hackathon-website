@@ -53,7 +53,7 @@ const ROLE_SUGGESTIONS: Record<string, string[]> = {
   ],
   admin: [
     "How do I manage platform volunteers?",
-    "How do I verify team payments?",
+    "How do I verify team profiles?",
     "How can I edit problem statements?",
     "Where do I view all platform activity?"
   ]
@@ -134,7 +134,7 @@ Organizers have high-level overview controls:
     response: `### Admin Privileges
 The Admin has full control over the platform's infrastructure:
 - **Volunteer Management**: Add, edit, or remove volunteers and assign them responsibilities.
-- **Global Overview**: Track all teams, verify payments, and inspect support tickets across the venue.`
+- **Global Overview**: Track all teams, verify profiles, and inspect support tickets across the venue.`
   },
   {
     keywords: ["timeline", "schedule", "events", "dates"],

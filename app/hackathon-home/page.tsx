@@ -73,7 +73,7 @@ export default function Home() {
   ];
 
   return (
-    <PageWrapper className="dark relative bg-gray-950 min-h-screen text-white">
+    <PageWrapper className="relative bg-white min-h-screen dark:bg-gray-950">
       <Navbar />
 
       {/* Hero Section — cinematic looping video background */}
@@ -151,7 +151,7 @@ export default function Home() {
           {/* Vertical Preview Stack */}
           <div className="flex flex-col gap-4 w-full max-w-lg">
             {[
-              { num: "01", title: "Registrations & Faculty Approval", desc: "Submit department logs and faculty confirmation.", active: true },
+              { num: "01", title: "Registrations & Profile Audit", desc: "Submit member handles and department logs.", active: true },
               { num: "02", title: "Ideation & Technical Layouts", desc: "Draft a system design diagram and flow description.", active: false },
               { num: "03", title: "Final Physical Prototype Hacking", desc: "24 hours inside the College AI Lab to deploy models.", active: false },
             ].map((step, idx) => (

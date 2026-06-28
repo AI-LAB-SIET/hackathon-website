@@ -8,6 +8,7 @@ import { useAppState } from "./StateProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, LogOut, User, Shield, Bell, QrCode, CheckCircle, Clock, AlertTriangle, Info, Sun, Moon } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { ThemeToggle } from "./ThemeToggle";
 import { useToast } from "../ui/toast";
 import { QRScanner } from "../ui/QRScanner";
 import { AttendancePanel } from "../ui/AttendancePanel";
@@ -24,6 +25,20 @@ export function Navbar() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [attendanceTeam, setAttendanceTeam] = useState<Team | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Check immediately on mount
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -88,17 +103,20 @@ export function Navbar() {
 
   const showQRScan = session.isLoggedIn && ["judge", "organizer", "admin"].includes(session.role || "");
 
+  const isHome = pathname === "/";
+  const useTransparent = isHome && !scrolled;
+
   return (
     <>
-      <header className="sticky top-0 z-40 w-full glassmorphism">
+      <header className={isHome ? (useTransparent ? "fixed top-0 left-0 right-0 z-40 w-full bg-transparent border-none shadow-none transition-all duration-300" : "fixed top-0 left-0 right-0 z-40 w-full glassmorphism border-b border-input-border/10 dark:border-gray-800 transition-all duration-300") : "sticky top-0 z-40 w-full glassmorphism"}>
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 select-none group">
             <div className="relative h-7 w-7 overflow-hidden">
-              <Image src="/siet_logo.png" alt="SIET Logo" fill sizes="28px" priority className="object-contain" />
+              <Image src="/siet_logo.png" alt="AI Lab Logo" fill sizes="28px" priority className="object-contain" />
             </div>
-            <span className="font-serif text-xl tracking-tight text-black dark:text-white">
-              SIET<span className="text-primary-green"> AI_LAB</span>
+            <span className={`font-serif text-xl tracking-tight transition-colors duration-300 ${useTransparent ? "text-white" : "text-black dark:text-white"}`}>
+              AI<span className="text-primary-green">_LAB</span>
             </span>
           </Link>
 
@@ -110,7 +128,15 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-[13px] font-medium tracking-wide transition-colors duration-300 ${isActive ? "text-black dark:text-white" : "text-[#6F6F6F] hover:text-black dark:text-gray-400 dark:hover:text-white"}`}
+                  className={`text-[13px] font-medium tracking-wide transition-colors duration-300 ${
+                    useTransparent
+                      ? isActive
+                        ? "text-white"
+                        : "text-white/60 hover:text-white"
+                      : isActive
+                      ? "text-black dark:text-white"
+                      : "text-[#6F6F6F] hover:text-black dark:text-gray-400 dark:hover:text-white"
+                  }`}
                 >
                   {link.name}
                 </Link>
@@ -134,12 +160,16 @@ export function Navbar() {
                   </button>
                 )}
 
-                {/* Notification Bell */}
+                 {/* Notification Bell */}
                 <div ref={bellRef} className="relative">
                   <button
                     onClick={() => setBellOpen(!bellOpen)}
                     aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
-                    className="relative p-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors cursor-pointer dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
+                    className={
+                      useTransparent
+                        ? "relative p-2 rounded-full text-white/75 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                        : "relative p-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors cursor-pointer dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
+                    }
                   >
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
@@ -196,17 +226,15 @@ export function Navbar() {
                 </div>
 
                 {/* Theme Toggle */}
-                <button
-                  onClick={(e) => { toggleTheme(); animateToggle(e.currentTarget); }}
-                  className="p-2.5 rounded-xl bg-card-bg border border-input-border/30 text-gray-600 hover:text-primary-green transition-colors cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
-                  aria-label="Toggle theme"
-                >
-                  {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                </button>
+                <ThemeToggle transparent={useTransparent} />
 
                 <Link
                   href={rolePortalHref}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
+                  className={
+                    useTransparent
+                      ? "inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full text-white/75 hover:text-white hover:bg-white/10 transition-colors"
+                      : "inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full text-[#6F6F6F] hover:text-black hover:bg-black/5 transition-colors dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
+                  }
                 >
                   {session.role === "admin" ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
                   {rolePortalLabel}
@@ -220,11 +248,25 @@ export function Navbar() {
                   Logout
                 </button>
               </>
-            ) : (
+             ) : (
               <>
-                <Link href="/login" className="text-[13px] font-medium text-[#6F6F6F] hover:text-black transition-colors duration-300 px-1 dark:text-gray-400 dark:hover:text-white">Login</Link>
-                <Link href="/register" className="inline-flex items-center text-[13px] font-medium px-5 py-2 rounded-full bg-black text-white transition-all duration-300 hover:bg-[#222] hover:-translate-y-0.5 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200">
-                  Register Team
+                <Link
+                  href="/login"
+                  className={`text-[13px] font-medium transition-colors duration-300 px-1 ${
+                    useTransparent ? "text-white/60 hover:text-white" : "text-[#6F6F6F] hover:text-black dark:text-gray-400 dark:hover:text-white"
+                  }`}
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className={`inline-flex items-center text-[13px] font-medium px-5 py-2 rounded-full transition-all duration-300 hover:-translate-y-0.5 ${
+                    useTransparent
+                      ? "bg-white text-[#001f2d] hover:bg-white/90"
+                      : "bg-black text-white hover:bg-[#222] dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+                  }`}
+                >
+                  Sign Up
                 </Link>
               </>
             )}
@@ -234,7 +276,11 @@ export function Navbar() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            className="md:hidden p-1.5 text-gray-700 hover:bg-card-bg hover:text-primary-dark rounded-xl transition-colors cursor-pointer dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+            className={`md:hidden p-1.5 rounded-xl transition-colors cursor-pointer ${
+              useTransparent
+                ? "text-white hover:bg-white/10"
+                : "text-gray-700 hover:bg-card-bg hover:text-primary-dark dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+            }`}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -285,7 +331,7 @@ export function Navbar() {
                     >Login</Link>
                     <Link href="/register" onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center justify-center w-full py-3 rounded-xl bg-primary-green text-white font-bold text-sm shadow-md hover:bg-primary-dark transition-all"
-                    >Register Team</Link>
+                    >Sign Up</Link>
                   </>
                 )}
               </div>

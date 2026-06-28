@@ -147,8 +147,8 @@ export const INITIAL_NOTIFICATIONS: Notification[] = [
   {
     id: "notif-5",
     type: "action",
-    title: "Payment Verification Pending",
-    body: "Your team registration fee payment has not been verified. Contact the organizers with payment proof.",
+    title: "Profile Audit Pending",
+    body: "Your team profile audit is pending review. The organizers will verify your department credentials soon.",
     read: true,
     priority: "high",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),

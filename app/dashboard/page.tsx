@@ -23,7 +23,7 @@ type SupportTicketCategory = SupportTicket["category"];
 type SupportTicketPriority = SupportTicket["priority"];
 import { HACK_TRACKS, INITIAL_FAQS } from "@/lib/mockData";
 import {
-  apis, datasets, tools, learning, templates, cloud,
+  pptTemplates, datasets,
   type ResourceCard,
 } from "@/lib/resources";
 
@@ -33,10 +33,10 @@ import {
 const JOURNEY_STAGES = [
   { id: "registration", label: "Registration", desc: "Account created and team registered with the platform.", icon: "📋" },
   { id: "team_created", label: "Team Created", desc: "Team profile is set up with all members added.", icon: "👥" },
-  { id: "payment", label: "Payment Verified", desc: "Registration fee payment confirmed by organizers.", icon: "💳" },
+  { id: "payment", label: "Faculty Approval", desc: "Academic mentor or department head approved team participation.", icon: "👨‍🏫" },
   { id: "idea", label: "Idea Submission", desc: "2-page abstract PDF submitted before July 5, 11:59 PM.", icon: "💡" },
   { id: "shortlist", label: "Shortlisted", desc: "Team selected in top 20 — cloud GPU credits unlocked.", icon: "⭐" },
-  { id: "hackathon", label: "Hackathon Day", desc: "24-hour physical sprint at SIET AI Lab — July 18.", icon: "🚀" },
+  { id: "hackathon", label: "Hackathon Day", desc: "24-hour physical sprint at AI Research Lab — July 18.", icon: "🚀" },
   { id: "evaluation", label: "Final Evaluation", desc: "Live demo presented to industry judges.", icon: "🎯" },
   { id: "results", label: "Results", desc: "Winners announced and certificates issued.", icon: "🏆" },
 ];
@@ -73,7 +73,7 @@ export default function ParticipantDashboard() {
   const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
   const [showAddMember, setShowAddMember] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [resourceTab, setResourceTab] = useState<"templates" | "datasets" | "apis" | "tools" | "cloud">("templates");
+  const [resourceTab, setResourceTab] = useState<"templates" | "datasets">("templates");
   const [ticketCategory, setTicketCategory] = useState<SupportTicketCategory>("Other");
   const [ticketPriority, setTicketPriority] = useState<SupportTicketPriority>("Medium");
   const [ticketDescription, setTicketDescription] = useState("");
@@ -173,8 +173,8 @@ export default function ParticipantDashboard() {
       switch (stageId) {
         case "registration": return "completed";
         case "team_created": return team.members.length >= 2 ? "completed" : "current";
-        case "payment": return team.paymentVerified ? "completed" : team.members.length >= 2 ? "current" : "locked";
-        case "idea": return team.ideaSubmitted ? "completed" : team.paymentVerified ? "current" : "locked";
+        case "payment": return team.facultyApproved ? "completed" : team.members.length >= 2 ? "current" : "locked";
+        case "idea": return team.ideaSubmitted ? "completed" : team.facultyApproved ? "current" : "locked";
         case "shortlist": return team.shortlisted ? "completed" : team.ideaSubmitted ? "upcoming" : "locked";
         case "hackathon": return team.shortlisted ? "upcoming" : "locked";
         case "evaluation": return "locked";
@@ -191,7 +191,6 @@ export default function ParticipantDashboard() {
       { label: "Account Created", done: true },
       { label: "Team Registered", done: team.status !== "PENDING" },
       { label: "Members Added (2+)", done: team.members.length >= 2 },
-      { label: "Payment Verified", done: !!team.paymentVerified },
       { label: "Faculty Approval", done: !!team.facultyApproved },
       { label: "Idea Submitted", done: !!team.ideaSubmitted },
     ];
@@ -238,11 +237,8 @@ export default function ParticipantDashboard() {
 
   // Resources sub-category data (derived from shared lib/resources.ts)
   const resourceData: Record<typeof resourceTab, { label: string; items: ResourceCard[]; desc: string }> = {
-    templates: { label: "Templates & Starter Kits", items: [...templates, ...learning], desc: "Starter codebases and GitHub repos to fork and build on — plus learning resources." },
+    templates: { label: "PPT Templates", items: pptTemplates, desc: "Official presentation guidelines and pitch deck templates." },
     datasets: { label: "Datasets", items: datasets, desc: "Curated open datasets across all hackathon tracks." },
-    apis: { label: "API Docs", items: apis, desc: "Pre-approved AI APIs with free tiers." },
-    tools: { label: "Dev Tools", items: tools, desc: "Frameworks and libraries recommended by the organizing team." },
-    cloud: { label: "GPU & Cloud Credits", items: cloud, desc: "Free cloud compute, hosting, and credits for participants." },
   };
 
   const handleRaiseTicket = () => {
@@ -916,10 +912,7 @@ export default function ParticipantDashboard() {
                     >
                       {k === "templates" && <Code2 className="h-4 w-4" />}
                       {k === "datasets" && <Database className="h-4 w-4" />}
-                      {k === "apis" && <Brain className="h-4 w-4" />}
-                      {k === "tools" && <Terminal className="h-4 w-4" />}
-                      {k === "cloud" && <Cloud className="h-4 w-4" />}
-                      {resourceData[k].label.split(" ")[0]}
+                      {resourceData[k].label}
                     </button>
                   ))}
                 </div>
@@ -969,21 +962,12 @@ export default function ParticipantDashboard() {
                   {/* Raise Ticket form */}
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
                     <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Raise a Ticket</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Category</label>
-                        <select value={ticketCategory} onChange={(e) => setTicketCategory(e.target.value as SupportTicketCategory)}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                          {(["Internet", "Power", "Mentor Needed", "Hardware", "Food", "Venue", "Other"] as SupportTicketCategory[]).map((c) => <option key={c}>{c}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Priority</label>
-                        <select value={ticketPriority} onChange={(e) => setTicketPriority(e.target.value as SupportTicketPriority)}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                          {(["Low", "Medium", "High", "Critical"] as SupportTicketPriority[]).map((p) => <option key={p}>{p}</option>)}
-                        </select>
-                      </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Category</label>
+                      <select value={ticketCategory} onChange={(e) => setTicketCategory(e.target.value as SupportTicketCategory)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                        {(["Internet", "Power", "Mentor Needed", "Hardware", "Food", "Venue", "Other"] as SupportTicketCategory[]).map((c) => <option key={c}>{c}</option>)}
+                      </select>
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Describe your issue</label>
@@ -1008,7 +992,7 @@ export default function ParticipantDashboard() {
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tk.status === "Resolved" || tk.status === "Closed" ? "bg-emerald-100 text-emerald-700" : tk.status === "Open" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{tk.status}</span>
                             </div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{tk.description}</p>
-                            <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{tk.priority} · {new Date(tk.createdAt).toLocaleString()}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{new Date(tk.createdAt).toLocaleString()}</div>
                           </div>
                         ))}
                       </div>

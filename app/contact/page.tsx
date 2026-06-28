@@ -89,7 +89,7 @@ export default function Contact() {
           {/* Contact Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
-              { icon: <MapPin className="h-5 w-5" />, title: "SIET AI Research Lab", val: "Main Block, L&T Bypass Road, Coimbatore, Tamil Nadu, 641062" },
+              { icon: <MapPin className="h-5 w-5" />, title: "AI Research Lab", val: "Main Block, L&T Bypass Road, Coimbatore, Tamil Nadu, 641062" },
               { icon: <Clock className="h-5 w-5" />, title: "Working Hours", val: "Monday - Saturday: 9:00 AM - 5:00 PM IST" },
               { icon: <Mail className="h-5 w-5" />, title: "Email Support Desk", val: "ailab@siet.ac.in (Queries resolved within 4 hours)" },
               { icon: <Phone className="h-5 w-5" />, title: "Lab Desk Phone", val: "+91 98765 43210 (Direct extension to lab floor)" },

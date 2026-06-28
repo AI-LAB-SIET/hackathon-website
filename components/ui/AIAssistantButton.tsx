@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, Sparkles } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 
 interface AIAssistantButtonProps {
   onClick: () => void;
@@ -48,7 +48,7 @@ export default function AIAssistantButton({ onClick, isOpen, hasUnread }: AIAssi
             transition={{ duration: 0.2 }}
             className="flex items-center justify-center"
           >
-            <Sparkles className="w-6 h-6 animate-pulse-slow" />
+            <CuteRoboIcon />
           </motion.div>
         )}
 
@@ -65,5 +65,87 @@ export default function AIAssistantButton({ onClick, isOpen, hasUnread }: AIAssi
         )}
       </div>
     </motion.button>
+  );
+}
+
+function CuteRoboIcon() {
+  return (
+    <svg
+      width="34"
+      height="34"
+      viewBox="0 0 36 36"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="text-white"
+    >
+      {/* Antenna */}
+      <rect x="17" y="3" width="2" height="5" rx="1" fill="currentColor" />
+      <motion.circle
+        cx="18"
+        cy="3"
+        r="2"
+        fill="#fcd34d"
+        animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+      />
+      
+      {/* Ears */}
+      <rect x="4" y="15" width="3" height="8" rx="1.5" fill="#a7f3d0" />
+      <rect x="29" y="15" width="3" height="8" rx="1.5" fill="#a7f3d0" />
+
+      {/* Head Body */}
+      <rect
+        x="6"
+        y="8"
+        width="24"
+        height="22"
+        rx="6"
+        fill="currentColor"
+        stroke="#100f3e"
+        strokeWidth="2"
+      />
+
+      {/* Glass Face Screen */}
+      <rect
+        x="9"
+        y="11"
+        width="18"
+        height="13"
+        rx="4"
+        fill="#100f3e"
+      />
+
+      {/* Eyes */}
+      <motion.circle
+        cx="14"
+        cy="17"
+        r="2"
+        fill="#58cc02"
+        animate={{ scaleY: [1, 1, 0.1, 1] }}
+        transition={{ repeat: Infinity, duration: 4, repeatDelay: 1.5 }}
+      />
+      <motion.circle
+        cx="22"
+        cy="17"
+        r="2"
+        fill="#58cc02"
+        animate={{ scaleY: [1, 1, 0.1, 1] }}
+        transition={{ repeat: Infinity, duration: 4, repeatDelay: 1.5 }}
+      />
+
+      {/* Rosy Cheeks */}
+      <circle cx="11" cy="20" r="1" fill="#f43f5e" opacity="0.6" />
+      <circle cx="25" cy="20" r="1" fill="#f43f5e" opacity="0.6" />
+
+      {/* Happy Mouth */}
+      <motion.path
+        d="M16 21 Q18 23 20 21"
+        stroke="#58cc02"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        animate={{ d: ["M16 21 Q18 23 20 21", "M15 21 H21", "M16 21 Q18 23 20 21"] }}
+        transition={{ repeat: Infinity, duration: 3, repeatDelay: 2 }}
+      />
+    </svg>
   );
 }

@@ -155,7 +155,7 @@ export default function ResourcesPage() {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="text-lg text-gray-500 max-w-2xl mx-auto"
           >
-            Curated APIs, datasets, tools, cloud credits, and starter templates — handpicked by the SIET AI Lab organizing team to help you ship faster.
+            Curated APIs, datasets, tools, cloud credits, and starter templates — handpicked by the AI Research Lab organizing team to help you ship faster.
           </motion.p>
         </div>
       </section>
