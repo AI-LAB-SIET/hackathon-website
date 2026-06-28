@@ -147,8 +147,8 @@ export const authService = {
 
     // Participants are the only self-registering role.
     // Organizer, Judge, Volunteer accounts are created server-side by Admin/Organizer.
-    const allowedSelfRegisterRoles: (typeof request.role)[] = ['participant', undefined, null];
-    if (!allowedSelfRegisterRoles.includes(request.role)) {
+    const allowedSelfRegisterRoles: (string | undefined | null)[] = ['participant', undefined, null];
+    if (!allowedSelfRegisterRoles.includes(request.role as string | undefined | null)) {
       throw new Error(`Self-registration as ${request.role} is not permitted.`);
     }
 

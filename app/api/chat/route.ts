@@ -26,11 +26,11 @@
  *   - NVIDIA_NIM_API_KEY must be set in environment
  */
 
-import * as admin from 'firebase-admin';
 import { vectorStore } from '@/lib/kb/vectorStore';
 import { detectIntent, Intent } from '@/lib/ai/intentDetector';
-import { db as adminDb } from '@/lib/firebaseAdmin';
-import { UserRole, ChatRequest, ChatError, StreamChunk } from '@/lib/ai/types';
+import { db as adminDb, auth as adminAuth } from '@/lib/firebaseAdmin';
+import { chatService } from '@/lib/ai/chatService';
+import { UserRole, ChatRequest, ChatError } from '@/lib/ai/types';
 import { NextRequest, NextResponse } from 'next/server';
 
 // ── Verify Firebase ID token (if provided) ─────────────────────────────────────
@@ -53,9 +53,9 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const idToken = authHeader.split(' ')[1];
     try {
-      const decoded = await (admin as any).auth().verifyIdToken(idToken);
+      const decoded = await adminAuth.verifyIdToken(idToken);
       uid = decoded.uid;
-    } catch (e) {
+    } catch {
       return errorResponse('Invalid Firebase ID token.', 'AUTH_ERROR', 401);
     }
   }
@@ -125,7 +125,8 @@ export async function POST(req: NextRequest): Promise<Response> {
       const teamsSnap = await adminDb.collection('teams')
         .where('memberUids', 'array-contains', uid)
         .get();
-      const teams = teamsSnap.docs.map(d => d.data());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const teams = teamsSnap.docs.map((d: any) => d.data());
       if (teams.length) {
         cleanMessage = `Team info: ${JSON.stringify(teams)}\n\n${cleanMessage}`;
       }

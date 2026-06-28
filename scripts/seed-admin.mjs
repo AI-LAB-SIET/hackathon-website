@@ -199,7 +199,9 @@ function buildProfile(uid) {
   };
 }
 
-main().catch((err) => {
-  console.error('\n❌  Seed script failed:', err.message || err);
-  process.exit(1);
-});
+if (process.argv[1] && (process.argv[1].endsWith('seed-admin.mjs') || process.argv[1].endsWith('seed-admin.js'))) {
+  main().catch((err) => {
+    console.error('\n❌  Seed script failed:', err.message || err);
+    process.exit(1);
+  });
+}
