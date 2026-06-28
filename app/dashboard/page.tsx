@@ -1026,13 +1026,13 @@ export default function ParticipantDashboard() {
                   </div>
                 </div>
 
-                {/* Discord + Emergency Contact */}
+                {/* WhatsApp + Emergency Contact */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <a href="https://discord.gg/siet-ai-lab" target="_blank" rel="noopener noreferrer"
+                  <a href="https://chat.whatsapp.com/ai-lab-hackathon" target="_blank" rel="noopener noreferrer"
                     className="group flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:border-primary-green/30 hover:shadow-md transition-all cursor-pointer">
-                    <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"><MessageCircle className="h-5 w-5" /></div>
+                    <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"><MessageCircle className="h-5 w-5" /></div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">Discord Community</div>
+                      <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">WhatsApp Group</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">Get instant help from mentors & organizers</div>
                     </div>
                     <ExternalLink className="h-4 w-4 text-gray-300 group-hover:text-primary-green transition-colors" />

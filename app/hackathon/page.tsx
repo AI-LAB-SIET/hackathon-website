@@ -61,7 +61,7 @@ const faqs = [
   { q: "What is the registration fee?", a: "There is absolutely no registration fee. The event is fully sponsored by the AI Research Lab." },
   { q: "What hardware support will be provided?", a: "Each shortlisted team will be provided with high-speed Wi-Fi, desk space, and power connections in the AI Lab. All teams also receive ₹5,000 in GPU cloud credits." },
   { q: "Can we modify our team members after registration?", a: "Team rosters can be managed inside the workspace up until the abstract submission deadline on July 5th." },
-  { q: "Who can I contact if I face errors?", a: "You can submit support tickets directly from the dashboard workspace, join our official Discord server, or email the organizing desk." },
+  { q: "Who can I contact if I face errors?", a: "You can submit support tickets directly from the dashboard workspace, join our official WhatsApp group, or email the organizing desk." },
 ];
 
 const statusStyles: Record<string, { dot: string; text: string; border: string }> = {

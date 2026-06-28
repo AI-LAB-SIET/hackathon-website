@@ -232,7 +232,7 @@ export default function ResourcesPage() {
             Can&apos;t find what you need?
           </h2>
           <p className="text-white/70 text-base mb-8">
-            Reach out to the organizing team on Discord or at the help desk during the hackathon. We&apos;ll source it for you.
+            Reach out to the organizing team on the official WhatsApp group or at the help desk during the hackathon. We&apos;ll source it for you.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <a

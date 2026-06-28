@@ -44,10 +44,39 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
         <head>
           <title>Team Pass — ${team.name}</title>
           <style>
-            body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f0fdf4; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-            .pass { background: white; border: 2px solid #059669; border-radius: 16px; padding: 32px; width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+            body { 
+              margin: 0; 
+              font-family: 'Segoe UI', sans-serif; 
+              background: #f0fdf4; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              min-height: 100vh; 
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact; 
+            }
+            .pass { 
+              background: white; 
+              border: 2px solid #059669; 
+              border-radius: 16px; 
+              padding: 32px; 
+              width: 380px; 
+              box-shadow: 0 8px 32px rgba(0,0,0,0.12); 
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact; 
+            }
             .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #d1fae5; padding-bottom: 16px; }
-            .badge { background: #059669; color: white; border-radius: 8px; padding: 4px 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+            .badge { 
+              background: #059669; 
+              color: white; 
+              border-radius: 8px; 
+              padding: 4px 12px; 
+              font-size: 11px; 
+              font-weight: 700; 
+              letter-spacing: 1px; 
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact; 
+            }
             h1 { font-size: 22px; font-weight: 800; color: #064e3b; margin: 0 0 4px; }
             .id { font-size: 13px; color: #6b7280; font-family: monospace; }
             .qr-section { display: flex; align-items: center; gap: 20px; margin: 16px 0; }
@@ -55,8 +84,21 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
             .info p { margin: 4px 0; font-size: 13px; color: #374151; }
             .info strong { color: #064e3b; }
             .footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid #d1fae5; font-size: 11px; color: #9ca3af; text-align: center; }
-            .status { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; background: #d1fae5; color: #065f46; }
-            @media print { body { background: white; } }
+            .status { 
+              display: inline-block; 
+              padding: 2px 10px; 
+              border-radius: 99px; 
+              font-size: 11px; 
+              font-weight: 700; 
+              background: #d1fae5; 
+              color: #065f46; 
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact; 
+            }
+            @media print { 
+              body { background: white; } 
+              @page { size: auto; margin: 0mm; } 
+            }
           </style>
         </head>
         <body>
@@ -79,12 +121,16 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
             </div>
             <div class="footer">AI Research Lab · July 18–19, 2026 · Scan QR for instant access</div>
           </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
         </body>
       </html>
     `);
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
   };
 
   return (
@@ -145,11 +191,11 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
         </button>
         <button
           onClick={handleDownloadPass}
-          aria-label="Download team pass"
+          aria-label="Download team pass as PDF"
           className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary-dark text-white text-sm font-semibold hover:bg-emerald-900 transition-colors cursor-pointer"
         >
           <Printer className="h-4 w-4" />
-          Team Pass
+          Download Pass (PDF)
         </button>
       </div>
     </div>
