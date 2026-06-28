@@ -260,7 +260,7 @@ export default function OrganizerDashboard() {
             {/* ─── DASHBOARD ─── */}
             {activeTab === "dashboard" && (
               <motion.div key="dash" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <div className="bg-gradient-to-br from-amber-600 to-orange-500 rounded-2xl p-6 text-white">
+                <div className="bg-linear-to-br from-amber-600 to-orange-500 rounded-2xl p-6 text-white">
                   <div className="text-amber-100 text-xs font-bold uppercase tracking-widest mb-1">Organizer Control</div>
                   <h1 className="text-2xl font-extrabold mb-1">Welcome, {session.name || "Organizer"}</h1>
                   <p className="text-amber-100 text-sm">{pendingTeams.length} teams awaiting approval · {openTickets.length} open support tickets</p>
@@ -417,7 +417,7 @@ export default function OrganizerDashboard() {
                         className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all"
                       >
                         <div className="flex items-start gap-4 flex-wrap">
-                          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold shrink-0">
+                          <div className="h-12 w-12 rounded-xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold shrink-0">
                             {team.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -468,7 +468,7 @@ export default function OrganizerDashboard() {
                       className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all"
                     >
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                        <div className="h-10 w-10 rounded-xl bg-linear-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
                           {vol.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                         </div>
                         <div className="min-w-0">
@@ -578,7 +578,7 @@ export default function OrganizerDashboard() {
                   {profileTab === "edit" && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
+                        <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
                           {(session.name || "O").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
                         <div>
@@ -645,7 +645,7 @@ export default function OrganizerDashboard() {
               <div className="space-y-5">
                 {/* Team Header */}
                 <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
+                  <div className="h-14 w-14 rounded-xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
                     {selectedTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -682,7 +682,7 @@ export default function OrganizerDashboard() {
                   <div className="flex flex-col gap-2">
                     {selectedTeam.members.map((m) => (
                       <div key={m.email} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-linear-to-br from-amber-300 to-orange-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
                           {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                         </div>
                         <div className="flex-1 min-w-0">

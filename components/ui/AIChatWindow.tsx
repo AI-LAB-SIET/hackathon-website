@@ -192,7 +192,7 @@ const MarkdownRenderer = React.memo(({ text }: { text: string }) => {
     return elements;
   };
 
-  return <div className="text-sm font-normal break-words">{parseStructure()}</div>;
+  return <div className="text-sm font-normal wrap-break-word">{parseStructure()}</div>;
 });
 MarkdownRenderer.displayName = "MarkdownRenderer";
 
@@ -340,13 +340,13 @@ How can I assist you with your hackathon journey today? Ask me about rules, dead
       animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
       exit={{ opacity: 0, scale: 0.85, y: 50, x: 20 }}
       transition={{ type: "spring", damping: 25, stiffness: 220 }}
-      className="fixed bottom-24 right-6 z-[9999] w-[92vw] sm:w-[420px] h-[550px] max-h-[75vh] flex flex-col rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden glassmorphism"
+      className="fixed bottom-24 right-6 z-9999 w-[92vw] sm:w-[420px] h-[550px] max-h-[75vh] flex flex-col rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden glassmorphism"
       role="dialog"
       aria-modal="true"
       aria-label="AI Platform Assistant Dialog"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-primary-dark to-slate-900 text-white select-none">
+      <div className="flex items-center justify-between px-4 py-3.5 bg-linear-to-r from-primary-dark to-slate-900 text-white select-none">
         <div className="flex items-center gap-2.5">
           <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-primary-green/20 border border-primary-green text-primary-green">
             <Bot className="w-4.5 h-4.5" />

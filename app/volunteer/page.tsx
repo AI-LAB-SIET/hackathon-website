@@ -258,7 +258,7 @@ export default function VolunteerDashboard() {
             {activeTab === "dashboard" && (
               <div className="flex flex-col gap-6">
                 {/* Welcome Banner */}
-                <div className="rounded-3xl border border-input-border/30 bg-gradient-to-r from-primary-green/5 to-emerald-50 p-6 shadow-sm">
+                <div className="rounded-3xl border border-input-border/30 bg-linear-to-r from-primary-green/5 to-emerald-50 p-6 shadow-sm">
                   <div className="flex items-center gap-4">
                     <div className="h-14 w-14 rounded-2xl bg-primary-green/10 flex items-center justify-center shrink-0">
                       <User className="h-7 w-7 text-primary-green" />
@@ -476,7 +476,7 @@ export default function VolunteerDashboard() {
                   {profileTab === "edit" && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary-green to-emerald-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
+                        <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-primary-green to-emerald-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
                           {(profileName || "V")
                             .split(" ")
                             .map((w: string) => w[0])
@@ -579,7 +579,7 @@ export default function VolunteerDashboard() {
                         className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
                             {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
                           </div>
                           <div>
@@ -611,7 +611,7 @@ export default function VolunteerDashboard() {
                 </div>
 
                 {volunteerInfo?.assignedArea && (
-                  <div className="rounded-3xl border border-input-border/30 bg-gradient-to-r from-primary-green/5 to-emerald-50 p-5 sm:p-6 shadow-sm dark:from-primary-green/10 dark:to-emerald-900/20">
+                  <div className="rounded-3xl border border-input-border/30 bg-linear-to-r from-primary-green/5 to-emerald-50 p-5 sm:p-6 shadow-sm dark:from-primary-green/10 dark:to-emerald-900/20">
                     <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
                       <Info className="h-4.5 w-4.5 text-primary-green" /> Your Station
                     </h3>
@@ -707,7 +707,7 @@ export default function VolunteerDashboard() {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-input-border/30 bg-gradient-to-r from-amber-50 to-orange-50 p-5 sm:p-6 shadow-sm dark:from-amber-900/20 dark:to-orange-900/20">
+                <div className="rounded-3xl border border-input-border/30 bg-linear-to-r from-amber-50 to-orange-50 p-5 sm:p-6 shadow-sm dark:from-amber-900/20 dark:to-orange-900/20">
                   <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
                     <AlertTriangle className="h-4.5 w-4.5 text-amber-500" /> Handling Common Issues
                   </h3>
@@ -756,7 +756,7 @@ export default function VolunteerDashboard() {
                         className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
                             {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
                           </div>
                           <div>
@@ -788,7 +788,7 @@ export default function VolunteerDashboard() {
                         className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
                             {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
                           </div>
                           <div>

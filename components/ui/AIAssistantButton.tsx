@@ -17,7 +17,7 @@ export default function AIAssistantButton({ onClick, isOpen, hasUnread }: AIAssi
       aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
       aria-expanded={isOpen}
       aria-haspopup="dialog"
-      className="fixed bottom-6 right-6 z-[9999] flex items-center justify-center w-14 h-14 rounded-full bg-primary-green hover:bg-green-hover text-white shadow-[0_8px_32px_rgba(88,204,2,0.3)] hover:shadow-[0_12px_40px_rgba(88,204,2,0.55)] border-2 border-white dark:border-primary-dark cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-4 focus-visible:ring-primary-green/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0f172a]"
+      className="fixed bottom-6 right-6 z-9999 flex items-center justify-center w-14 h-14 rounded-full bg-primary-green hover:bg-green-hover text-white shadow-[0_8px_32px_rgba(88,204,2,0.3)] hover:shadow-[0_12px_40px_rgba(88,204,2,0.55)] border-2 border-white dark:border-primary-dark cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-4 focus-visible:ring-primary-green/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0f172a]"
       // Smooth floating idle animation when closed
       animate={isOpen ? { scale: 0.95 } : {
         y: [0, -6, 0],

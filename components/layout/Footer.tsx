@@ -101,7 +101,7 @@ export function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-input-border/30 to-transparent my-10" />
+        <div className="h-px bg-linear-to-r from-transparent via-input-border/30 to-transparent my-10" />
 
         {/* Bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

@@ -360,7 +360,7 @@ export default function ParticipantDashboard() {
                   onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-card-bg dark:bg-gray-800 border border-input-border/30 dark:border-gray-700 text-primary-dark dark:text-gray-100 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-colors cursor-pointer"
                 >
-                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs">
+                  <div className="h-7 w-7 rounded-lg bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs">
                     {(session.name || session.email || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <span className="text-sm font-bold hidden sm:inline">{session.name?.split(" ")[0] || "Profile"}</span>
@@ -407,7 +407,7 @@ export default function ParticipantDashboard() {
             {activeTab === "home" && (
               <motion.div key="home" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
                 {/* Welcome */}
-                <div className="bg-gradient-to-br from-primary-dark to-emerald-700 rounded-2xl p-6 text-white">
+                <div className="bg-linear-to-br from-primary-dark to-emerald-700 rounded-2xl p-6 text-white">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
                       <div className="text-emerald-200 text-xs font-semibold uppercase tracking-widest mb-1">Mission Control</div>
@@ -542,7 +542,7 @@ export default function ParticipantDashboard() {
 
                 {/* Registration Section — shown when team needs registration work */}
                 {needsRegistration && (
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm p-6 space-y-5 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800">
+                  <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm p-6 space-y-5 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
                         <CheckCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -628,7 +628,7 @@ export default function ParticipantDashboard() {
                         <div className="text-2xl font-extrabold text-primary-green">{regPercent}%</div>
                       </div>
                       <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mb-4">
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${regPercent}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-gradient-to-r from-primary-green to-teal-400" />
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${regPercent}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-linear-to-r from-primary-green to-teal-400" />
                       </div>
                       <div className="flex flex-col gap-2">
                         {regChecklist.map((item) => (
@@ -655,7 +655,7 @@ export default function ParticipantDashboard() {
                       <div className="flex flex-col gap-3">
                         {team.members.map((m) => (
                           <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                            <div className="h-10 w-10 rounded-xl bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
                               {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -1064,7 +1064,7 @@ export default function ParticipantDashboard() {
                   <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-6">
                     {/* Profile Header */}
                     <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl shrink-0">
+                      <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl shrink-0">
                         {profileEdit.profilePicture ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={profileEdit.profilePicture} alt="Profile" className="h-full w-full rounded-2xl object-cover" />

@@ -124,7 +124,7 @@ export default function ResourcesPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden pt-20 pb-14 px-6">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-emerald-50 via-white to-teal-50" />
+        <div className="absolute inset-0 -z-10 bg-linear-to-br from-emerald-50 via-white to-teal-50" />
         <div className="absolute top-10 right-20 w-72 h-72 rounded-full bg-emerald-200/30 blur-3xl -z-10" />
         <div className="absolute bottom-0 left-10 w-56 h-56 rounded-full bg-teal-200/20 blur-3xl -z-10" />
 
@@ -146,7 +146,7 @@ export default function ResourcesPage() {
             className="text-4xl sm:text-5xl font-extrabold text-primary-dark mb-4 leading-tight"
           >
             Everything You Need to
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500"> Build & Win</span>
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-600 to-teal-500"> Build & Win</span>
           </motion.h1>
 
           <motion.p
@@ -222,7 +222,7 @@ export default function ResourcesPage() {
       </section>
 
       {/* Bottom CTA */}
-      <section className="bg-gradient-to-br from-primary-dark to-emerald-900 py-14 px-6">
+      <section className="bg-linear-to-br from-primary-dark to-emerald-900 py-14 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm font-semibold mb-5">
             <FileText className="h-4 w-4" />

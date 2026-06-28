@@ -201,7 +201,7 @@ export default function HackathonPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                     {prizes.map((p, idx) => (
                       <div key={idx} className={`border rounded-3xl p-6 text-center flex flex-col items-center gap-3 shadow-sm hover:shadow-md transition-all dark:bg-gray-900 dark:border-gray-700 ${p.glow}`}>
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-primary-green to-accent-green text-white font-extrabold flex items-center justify-center text-sm shadow">
+                        <div className="h-12 w-12 rounded-full bg-linear-to-tr from-primary-green to-accent-green text-white font-extrabold flex items-center justify-center text-sm shadow">
                           <Award className="h-6 w-6" />
                         </div>
                         <h4 className="text-sm sm:text-base font-bold text-primary-dark mt-1 dark:text-gray-100">{p.title}</h4>
@@ -228,7 +228,7 @@ export default function HackathonPage() {
                       onClick={() => setSelectedTrack(idx)}
                       className="border border-input-border/30 rounded-3xl p-6 bg-white shadow-sm flex flex-col gap-3 relative overflow-hidden group hover:border-primary-green/30 transition-all duration-300 text-left cursor-pointer dark:bg-gray-900 dark:border-gray-700"
                     >
-                      <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${t.color}`} />
+                      <div className={`absolute top-0 left-0 w-2 h-full bg-linear-to-b ${t.color}`} />
                       <h4 className="text-base sm:text-lg font-extrabold text-primary-dark ml-2 group-hover:text-primary-green transition-colors dark:text-gray-100">{t.title}</h4>
                       <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold ml-2 dark:text-gray-400">{t.desc}</p>
                     </button>
@@ -245,7 +245,7 @@ export default function HackathonPage() {
             >
               {selectedTrackData && (
                 <div className="flex flex-col gap-4">
-                  <div className={`h-1.5 w-full rounded-full bg-gradient-to-r ${selectedTrackData.color}`} />
+                  <div className={`h-1.5 w-full rounded-full bg-linear-to-r ${selectedTrackData.color}`} />
                   <p className="text-sm text-gray-600 leading-relaxed font-medium">
                     {selectedTrackData.desc}
                   </p>

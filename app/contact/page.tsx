@@ -227,7 +227,7 @@ export default function Contact() {
         <h3 className="text-xs font-bold text-primary-green uppercase tracking-widest mb-4">Campus Location Map</h3>
         <div className="relative h-72 rounded-3xl overflow-hidden border border-input-border/30 bg-card-bg shadow-sm flex flex-col items-center justify-center p-8 text-center gap-3 dark:bg-gray-800 dark:border-gray-700">
           {/* Grid effect background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(163,198,95,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(163,198,95,0.05)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(163,198,95,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(163,198,95,0.05)_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-accent-green/5 blur-2xl pointer-events-none" />
 
           <div className="h-12 w-12 rounded-2xl bg-white border border-input-border/30 text-primary-green flex items-center justify-center shadow-md animate-float relative z-10 shrink-0">

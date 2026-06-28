@@ -189,7 +189,7 @@ export default function JudgeDashboard() {
             {/* ─── DASHBOARD ─── */}
             {activeTab === "dashboard" && (
               <motion.div key="dash" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <div className="bg-gradient-to-br from-blue-800 to-indigo-700 rounded-2xl p-6 text-white">
+                <div className="bg-linear-to-br from-blue-800 to-indigo-700 rounded-2xl p-6 text-white">
                   <div className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Judge Portal</div>
                   <h1 className="text-2xl font-extrabold mb-1">Welcome, {session.name || "Judge"}</h1>
                   <p className="text-blue-200 text-sm">You have {pendingTeams.length} teams remaining to evaluate.</p>
@@ -218,7 +218,7 @@ export default function JudgeDashboard() {
                     <div className="text-sm font-semibold text-blue-600">{reviewedTeams.length} / {assignedTeams.length}</div>
                   </div>
                   <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${assignedTeams.length > 0 ? (reviewedTeams.length / assignedTeams.length) * 100 : 0}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${assignedTeams.length > 0 ? (reviewedTeams.length / assignedTeams.length) * 100 : 0}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-linear-to-r from-blue-500 to-indigo-500" />
                   </div>
                 </div>
 
@@ -231,7 +231,7 @@ export default function JudgeDashboard() {
                       return (
                         <button key={t.id} onClick={() => openEvalModal(t)}
                           className="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer group text-left">
-                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                             {t.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -289,7 +289,7 @@ export default function JudgeDashboard() {
                     return (
                       <div key={team.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow dark:bg-gray-900 dark:border-gray-700">
                         <div className="flex items-start gap-3">
-                          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                          <div className="h-11 w-11 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
                             {team.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -343,7 +343,7 @@ export default function JudgeDashboard() {
                   {profileTab === "edit" && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
+                        <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
                           {(session.name || "J").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
                         <div>
@@ -413,7 +413,7 @@ export default function JudgeDashboard() {
               <div className="space-y-5">
                 {/* Team Info */}
                 <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
+                  <div className="h-12 w-12 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
                     {evalTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                   </div>
                   <div>
@@ -428,7 +428,7 @@ export default function JudgeDashboard() {
                   <div className="flex flex-col gap-1.5">
                     {evalTeam.members.map((m) => (
                       <div key={m.email} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                        <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+                        <div className="h-6 w-6 rounded-full bg-linear-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
                           {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                         </div>
                         <span className="font-medium">{m.name}</span>
@@ -525,7 +525,7 @@ export default function JudgeDashboard() {
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
                   className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[85vh] overflow-y-auto"
                 >
-                  <div className="bg-gradient-to-r from-blue-700 to-indigo-600 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
+                  <div className="bg-linear-to-r from-blue-700 to-indigo-600 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
                     <div>
                       <div className="text-blue-200 text-xs font-bold uppercase tracking-wide">Team Details</div>
                       <div className="text-white font-extrabold text-lg">{selectedTeam.name}</div>
@@ -539,7 +539,7 @@ export default function JudgeDashboard() {
                       <div className="flex flex-col gap-2">
                         {selectedTeam.members.map((m) => (
                           <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            <div className="h-9 w-9 rounded-xl bg-linear-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                               {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                             </div>
                             <div className="flex-1 min-w-0">

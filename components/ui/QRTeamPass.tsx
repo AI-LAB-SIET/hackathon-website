@@ -136,7 +136,7 @@ export function QRTeamPass({ team }: QRTeamPassProps) {
   return (
     <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
       {/* Header */}
-        <div className="bg-gradient-to-r from-primary-dark to-emerald-700 px-5 py-4 flex items-center justify-between">
+        <div className="bg-linear-to-r from-primary-dark to-emerald-700 px-5 py-4 flex items-center justify-between">
         <div>
           <div className="text-xs font-bold text-emerald-200 tracking-widest uppercase mb-1">Team QR Pass</div>
           <div className="text-white font-extrabold text-lg leading-tight">{team.name}</div>
