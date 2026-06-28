@@ -15,12 +15,22 @@ export function CinematicHero({ session }: CinematicHeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
 
   const toggleMute = () => {
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted;
       setIsMuted(videoRef.current.muted);
     }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMousePos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
   };
 
   useEffect(() => {
@@ -32,7 +42,12 @@ export function CinematicHero({ session }: CinematicHeroProps) {
   }, []);
 
   return (
-    <section className="velorah-theme relative w-full min-h-[92vh] sm:min-h-screen overflow-hidden flex flex-col items-center justify-center bg-[#001f2d]">
+    <section
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      className="velorah-theme relative w-full min-h-[92vh] sm:min-h-screen overflow-hidden flex flex-col items-center justify-center bg-[#001f2d]"
+    >
       {/* ── Fullscreen Background Video (inset-0, object-cover, z-0) ── */}
       <video
         ref={videoRef}
@@ -46,6 +61,15 @@ export function CinematicHero({ session }: CinematicHeroProps) {
       />
       {/* Subtle tint to guarantee readable contrast while maintaining deep cinematic depth */}
       <div className="absolute inset-0 bg-black/10 mix-blend-multiply z-0 pointer-events-none" />
+
+      {/* Interactive Cursor Spotlight Glow */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-300"
+        style={{
+          opacity: isHovering ? 0.35 : 0,
+          background: `radial-gradient(500px circle at ${mousePos.x}px ${mousePos.y}px, rgba(88, 204, 2, 0.18), transparent 80%)`,
+        }}
+      />
 
       {/* ── Content Area (z-10): Centered, editorial ── */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center pt-24 pb-20">

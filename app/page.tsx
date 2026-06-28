@@ -18,10 +18,12 @@ import {
   Clock,
   ExternalLink,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const { session } = useAppState();
   const [stats, setStats] = useState({ teams: 0, prize: 0, hours: 0, mentors: 0 });
+  const [activeStep, setActiveStep] = useState(0);
 
   // Stagger stats counting upwards
   useEffect(() => {
@@ -88,7 +90,15 @@ export default function Home() {
             { value: `${stats.hours} Hrs`, label: "Live Hacking", icon: <Clock className="h-5 w-5" /> },
             { value: `${stats.mentors}+`, label: "Industry Mentors", icon: <Cpu className="h-5 w-5" /> },
           ].map((item, idx) => (
-            <div key={idx} className="flex flex-col items-center gap-1 p-4">
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.4, delay: idx * 0.08 }}
+              whileHover={{ y: -6, scale: 1.03, boxShadow: "0 8px 30px rgba(88,204,2,0.12)", borderColor: "rgba(88,204,2,0.3)" }}
+              className="flex flex-col items-center gap-1 p-4 rounded-2xl border border-transparent transition-all duration-300 bg-white/5 backdrop-blur-[2px] dark:bg-gray-900/10 hover:bg-white/40 dark:hover:bg-gray-800/40"
+            >
               <div className="h-10 w-10 rounded-xl bg-white border border-input-border/20 text-primary-green flex items-center justify-center shadow-sm dark:bg-gray-900 dark:border-gray-700">
                 {item.icon}
               </div>
@@ -98,7 +108,7 @@ export default function Home() {
               <span className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-wider dark:text-gray-400">
                 {item.label}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -151,29 +161,65 @@ export default function Home() {
           {/* Vertical Preview Stack */}
           <div className="flex flex-col gap-4 w-full max-w-lg">
             {[
-              { num: "01", title: "Registrations & Faculty Approval", desc: "Submit department logs and faculty confirmation.", active: true },
-              { num: "02", title: "Ideation & Technical Layouts", desc: "Draft a system design diagram and flow description.", active: false },
-              { num: "03", title: "Final Physical Prototype Hacking", desc: "24 hours inside the College AI Lab to deploy models.", active: false },
-            ].map((step, idx) => (
-              <div
-                key={idx}
-                className={`p-5 rounded-2xl border transition-all duration-200 flex gap-4 bg-white dark:bg-gray-900 dark:border-gray-700
-                  ${
-                    step.active
-                      ? "border-primary-green shadow-md shadow-primary-green/5"
-                      : "border-gray-200/60"
-                  }
-                `}
-              >
-                <span className={`text-sm font-extrabold ${step.active ? "text-primary-green" : "text-gray-400"}`}>
-                  {step.num}
-                </span>
-                <div className="flex flex-col gap-0.5">
-                  <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark dark:text-gray-100">{step.title}</h4>
-                  <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">{step.desc}</p>
-                </div>
-              </div>
-            ))}
+              { 
+                num: "01", 
+                title: "Registrations & Faculty Approval", 
+                desc: "Complete your participant registration and get your academic mentor to sign off on your department log.",
+                detail: "All members must submit their rolls and department codes. Faculty approval is verified online before abstract uploads are unlocked."
+              },
+              { 
+                num: "02", 
+                title: "Ideation & Technical Layouts", 
+                desc: "Draft a system design diagram and flow description.",
+                detail: "Prepare a clear architectural map of your solution including deep learning models, datasets used, and layout pipelines."
+              },
+              { 
+                num: "03", 
+                title: "Final Physical Prototype Hacking", 
+                desc: "24 hours inside the College AI Lab to deploy models.",
+                detail: "Enter the physical hacking floor, plug into our high-speed compute clusters, and deploy your live working agentic prototypes."
+              },
+            ].map((step, idx) => {
+              const isActive = activeStep === idx;
+              return (
+                <motion.div
+                  key={idx}
+                  onClick={() => setActiveStep(idx)}
+                  className={`p-5 rounded-2xl border transition-all duration-300 flex gap-4 cursor-pointer select-none
+                    ${
+                      isActive
+                        ? "border-primary-green bg-emerald-50/10 dark:bg-emerald-950/10 shadow-md shadow-primary-green/5"
+                        : "border-gray-250 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary-green/30 hover:bg-gray-50/50 dark:hover:bg-gray-850/50"
+                    }
+                  `}
+                  whileHover={{ x: 6 }}
+                  layout
+                >
+                  <span className={`text-sm font-extrabold ${isActive ? "text-primary-green" : "text-gray-400"}`}>
+                    {step.num}
+                  </span>
+                  <div className="flex flex-col gap-1 w-full">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark dark:text-gray-100">{step.title}</h4>
+                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">{step.desc}</p>
+                    
+                    {/* Expandable detail section */}
+                    <AnimatePresence>
+                      {isActive && (
+                        <motion.p
+                          initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                          animate={{ height: "auto", opacity: 0.85, marginTop: 8 }}
+                          exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="text-[10px] sm:text-[11px] text-gray-450 dark:text-gray-300 border-t border-input-border/10 pt-2 leading-relaxed"
+                        >
+                          {step.detail}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
