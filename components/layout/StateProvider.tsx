@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Team, UserSession, Announcement, Participant, Notification, SupportTicket, Volunteer, UserProfile, ProblemStatement, Ticket } from "@/types";
-import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS, INITIAL_NOTIFICATIONS } from "@/lib/mockData";
+import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS, INITIAL_NOTIFICATIONS, INITIAL_VOLUNTEERS } from "@/lib/mockData";
 
 interface StateContextType {
   teams: Team[];
@@ -114,10 +114,14 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       // Volunteers
       try {
         const storedVolunteers = localStorage.getItem("siet_volunteers");
-        if (storedVolunteers) {
-          setVolunteers(JSON.parse(storedVolunteers));
+        const parsed = storedVolunteers ? JSON.parse(storedVolunteers) : [];
+        if (parsed && parsed.length > 0) {
+          setVolunteers(parsed);
+        } else {
+          setVolunteers(INITIAL_VOLUNTEERS);
+          localStorage.setItem("siet_volunteers", JSON.stringify(INITIAL_VOLUNTEERS));
         }
-      } catch { /* keep empty */ }
+      } catch { setVolunteers(INITIAL_VOLUNTEERS); }
 
       // User Profiles
       try {

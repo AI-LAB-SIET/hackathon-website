@@ -18,7 +18,7 @@ import { useTheme } from "./ThemeProvider";
  *  - All RAF + canvas resources are cleaned up on unmount / completion.
  */
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const revealRef = useRef({
@@ -91,6 +91,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       const elapsed = performance.now() - s.start;
       s.start = performance.now() - (s.duration - elapsed);
       applyThemeClass(next);
+      setTheme(next);
       return;
     }
 
@@ -126,8 +127,9 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     canvas.style.display = "block";
 
     applyThemeClass(next);
+    setTheme(next);
     s.raf = requestAnimationFrame(draw);
-  }, [theme, applyThemeClass, draw]);
+  }, [theme, setTheme, applyThemeClass, draw]);
 
   // Recompute coverage if the viewport resizes mid-animation.
   useEffect(() => {

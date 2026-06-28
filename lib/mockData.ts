@@ -414,3 +414,15 @@ export const INITIAL_TEAMS: Team[] = [
     supportTickets: [],
   },
 ];
+
+export const INITIAL_VOLUNTEERS = [
+  {
+    id: "vol-1",
+    name: "Riya Sharma",
+    phone: "9876543219",
+    email: "riya@college.edu",
+    assignedArea: "Lab 3 (AI Research Lab)",
+    assignedResponsibilities: "Network & Power stability support",
+    createdAt: new Date().toISOString(),
+  }
+];
