@@ -53,7 +53,6 @@ export default function Register() {
 
   // Step 2: Team
   const [teamName, setTeamName] = useState("");
-  const [projectDescription, setProjectDescription] = useState("");
 
   const validateStep1 = () => {
     const errs: Record<string, string> = {};
@@ -68,7 +67,6 @@ export default function Register() {
   const validateStep2 = () => {
     const errs: Record<string, string> = {};
     if (!teamName.trim()) errs.teamName = "Team name is required";
-    if (!projectDescription.trim()) errs.projectDescription = "Project description is required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -83,7 +81,7 @@ export default function Register() {
   const handleSubmit = () => {
     registerTeam({
       name: teamName,
-      projectDescription,
+      projectDescription: "",
       members: [{ name: account.name, email: account.email, registerNumber: "", phone: "", department: "", year: "", skills: [], github: "", isLeader: true }],
     });
     toast("Team registered successfully! You can now log in.", "success");
@@ -200,7 +198,7 @@ export default function Register() {
                 <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-5">
                   <div>
                     <h2 className="font-extrabold text-primary-dark text-xl mb-1 dark:text-gray-100">Set Up Your Team</h2>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Create a new team by giving it a name and brief description.</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Give your team a name to get started.</p>
                   </div>
                   <Input
                     label="Team Name"
@@ -209,21 +207,7 @@ export default function Register() {
                     onChange={(e) => setTeamName(e.target.value)}
                     error={errors.teamName}
                   />
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-primary-dark select-none dark:text-gray-200">Project Brief</label>
-                    <textarea
-                      rows={3}
-                      value={projectDescription}
-                      onChange={(e) => setProjectDescription(e.target.value)}
-                      placeholder="Briefly describe your AI project idea..."
-                      className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all duration-200 text-sm resize-none dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500
-                        ${errors.projectDescription
-                          ? "border-red-500 focus:ring-1 focus:ring-red-500"
-                          : "border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green shadow-[0_2px_4px_rgba(0,100,0,0.02)] dark:border-gray-700 dark:hover:border-primary-green"
-                        }`}
-                    />
-                    {errors.projectDescription && <span className="text-xs text-red-600 font-medium">{errors.projectDescription}</span>}
-                  </div>
+
                 </motion.div>
               )}
 
@@ -244,7 +228,6 @@ export default function Register() {
                     <div>
                       <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 dark:text-gray-500">Team</div>
                       <div className="text-sm font-semibold text-primary-dark dark:text-gray-100">{teamName}</div>
-                      <div className="text-xs text-gray-500 mt-1 dark:text-gray-400">{projectDescription}</div>
                     </div>
                   </div>
 

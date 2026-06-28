@@ -77,6 +77,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
           { id: "teams", name: "Teams Directory", icon: <Users className="h-5 w-5" /> },
           { id: "approval", name: "Approval Queue", icon: <UserCheck className="h-5 w-5" /> },
+          { id: "problems", name: "On-Spot Materials", icon: <BookOpen className="h-5 w-5" /> },
           { id: "volunteers", name: "Volunteers", icon: <UserCheck className="h-5 w-5" /> },
           { id: "tickets", name: "Tickets", icon: <LifeBuoy className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },

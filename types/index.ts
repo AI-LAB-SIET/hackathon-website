@@ -138,6 +138,15 @@ export interface UserProfile {
   teamId?: string;
 }
 
+export interface FileAttachment {
+  id: string;
+  name: string;
+  type: string;       // MIME type
+  size: number;       // bytes
+  dataUrl: string;    // base64 data URL for client-side storage
+  uploadedAt: string;
+}
+
 export interface ProblemStatement {
   id: string;
   title: string;
@@ -145,6 +154,7 @@ export interface ProblemStatement {
   trackId: string;
   status: "draft" | "published" | "archived";
   createdAt: string;
+  attachments?: FileAttachment[];
 }
 
 export type Ticket = SupportTicket;

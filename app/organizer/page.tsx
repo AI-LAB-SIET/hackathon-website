@@ -16,19 +16,25 @@ import {
   CheckCircle, Clock, XCircle, Search, QrCode,
   Mail, Phone, ChevronRight, Activity, Ticket,
   Download, UserPlus, Trash2, UserCheck,
-  Github, Video, Globe
+  Github, Video, Globe, BookOpen, Upload, FileText, Paperclip,
+  Archive, Send, Edit3, X
 } from "lucide-react";
-import { Team, Volunteer, SupportTicket } from "@/types";
+import { FileAttachment, ProblemStatement, Team, Volunteer, SupportTicket } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
 
-type TabType = "dashboard" | "teams" | "approval" | "volunteers" | "tickets" | "profile";
+type TabType = "dashboard" | "teams" | "approval" | "problems" | "volunteers" | "tickets" | "profile";
 type ApprovalFilter = "all" | "pending" | "approved" | "rejected";
 type ProfileTabType = "edit" | "appearance";
 type TicketFilter = "all" | "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
 
 export default function OrganizerDashboard() {
   const router = useRouter();
-  const { session, teams, notifications, volunteers, tickets, approveTeam, rejectTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead, addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus } = useAppState();
+  const {
+    session, teams, notifications, volunteers, tickets, problemStatements,
+    approveTeam, rejectTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead,
+    addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus,
+    addProblemStatement, updateProblemStatement, archiveProblemStatement,
+  } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -48,6 +54,14 @@ export default function OrganizerDashboard() {
 
   // Announcement form
   const [annForm, setAnnForm] = useState({ title: "", content: "", type: "info" as "info" | "warning" | "success" });
+
+  // On-spot material form
+  const [psForm, setPsForm] = useState({ title: "", description: "", trackId: "gen-ai", status: "draft" as "draft" | "published" | "archived" });
+  const [psEditId, setPsEditId] = useState<string | null>(null);
+  const [psCreateOpen, setPsCreateOpen] = useState(false);
+  const [expandedPs, setExpandedPs] = useState<string | null>(null);
+  const [psAttachments, setPsAttachments] = useState<FileAttachment[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   // Team detail modal
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
@@ -131,6 +145,105 @@ export default function OrganizerDashboard() {
     toast("Announcement sent to all participants.", "success");
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast("File too large. Max 10MB allowed.", "error");
+      e.target.value = "";
+      return;
+    }
+
+    setUploadingFile(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const attachment: FileAttachment = {
+        id: `file-${Date.now()}`,
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        dataUrl: reader.result as string,
+        uploadedAt: new Date().toISOString(),
+      };
+      setPsAttachments((prev) => [...prev, attachment]);
+      setUploadingFile(false);
+      toast(`"${file.name}" attached successfully.`, "success");
+    };
+    reader.onerror = () => {
+      setUploadingFile(false);
+      toast("Failed to read file.", "error");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const downloadAttachment = (att: FileAttachment) => {
+    const link = document.createElement("a");
+    link.href = att.dataUrl;
+    link.download = att.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleRemoveAttachment = (attachmentId: string) => {
+    setPsAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    toast("Attachment removed.", "info");
+  };
+
+  const handleSaveProblemStatement = () => {
+    if (!psForm.title || !psForm.description) {
+      toast("Title and description are required.", "error");
+      return;
+    }
+
+    const payload = {
+      title: psForm.title,
+      description: psForm.description,
+      trackId: psForm.trackId,
+      status: psForm.status,
+      attachments: psAttachments,
+    };
+
+    if (psEditId) {
+      updateProblemStatement(psEditId, payload);
+      toast("On-spot material updated.", "success");
+    } else {
+      addProblemStatement(payload);
+      toast("On-spot material created.", "success");
+    }
+
+    setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+    setPsAttachments([]);
+    setPsEditId(null);
+    setPsCreateOpen(false);
+  };
+
+  const handleEditPs = (ps: ProblemStatement) => {
+    setPsEditId(ps.id);
+    setPsForm({ title: ps.title, description: ps.description, trackId: ps.trackId, status: ps.status });
+    setPsAttachments(ps.attachments || []);
+    setPsCreateOpen(true);
+  };
+
+  const handlePublishPs = (id: string) => {
+    updateProblemStatement(id, { status: "published" });
+    toast("Published for participants.", "success");
+  };
+
+  const handleArchivePs = (id: string) => {
+    archiveProblemStatement(id);
+    toast("Material archived.", "info");
+  };
+
   const handleExportCSV = () => {
     const headers = ["Team Name", "Status", "Members", "Track", "Attendance", "Checked In"];
     const rows = teams.map((t) => {
@@ -209,6 +322,19 @@ export default function OrganizerDashboard() {
               <button onClick={handleExportCSV}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
               ><Download className="h-4 w-4" /> Export CSV</button>
+              {activeTab === "problems" && (
+                <button
+                  onClick={() => {
+                    setPsEditId(null);
+                    setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+                    setPsAttachments([]);
+                    setPsCreateOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
+                >
+                  <Upload className="h-4 w-4" /> Upload Material
+                </button>
+              )}
 
               {/* Notification Bell */}
               <div className="relative">
@@ -453,7 +579,124 @@ export default function OrganizerDashboard() {
               </motion.div>
             )}
 
-            {/* ─── VOLUNTEERS ─── */}
+            {/* On-spot materials */}
+            {activeTab === "problems" && (
+              <motion.div key="problems" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">On-Spot Problem Materials</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Upload the problem statement, PPT template, datasets, and supporting files when the offline round begins.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setPsEditId(null);
+                      setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+                      setPsAttachments([]);
+                      setPsCreateOpen(true);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer"
+                  >
+                    <Upload className="h-4 w-4" /> Upload Material
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  {problemStatements.map((ps) => {
+                    const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
+                    const isExpanded = expandedPs === ps.id;
+                    return (
+                      <div key={ps.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                        <button
+                          onClick={() => setExpandedPs(isExpanded ? null : ps.id)}
+                          className="w-full p-5 flex items-center justify-between gap-4 text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                              <BookOpen className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-extrabold text-primary-dark dark:text-gray-100 text-sm">{ps.title}</h3>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  ps.status === "published" ? "bg-emerald-100 text-emerald-700" :
+                                  ps.status === "archived" ? "bg-red-100 text-red-700" :
+                                  "bg-amber-100 text-amber-700"
+                                }`}>
+                                  {ps.status.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                {track?.label || "General"} - {ps.attachments?.length || 0} files - Created {new Date(ps.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronRight className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                        </button>
+
+                        {isExpanded && (
+                          <div className="px-5 pb-5 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{ps.description}</p>
+
+                            {ps.attachments && ps.attachments.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                                  <Paperclip className="h-3.5 w-3.5" /> Attachments
+                                </div>
+                                {ps.attachments.map((att) => (
+                                  <div key={att.id} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                                        <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{att.name}</div>
+                                        <div className="text-xs text-gray-400 dark:text-gray-500">{formatFileSize(att.size)}</div>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => downloadAttachment(att)}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-100 cursor-pointer shrink-0"
+                                    >
+                                      <Download className="h-3.5 w-3.5" /> Download
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex gap-2 flex-wrap">
+                              <button onClick={() => handleEditPs(ps)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer">
+                                <Edit3 className="h-3.5 w-3.5" /> Edit
+                              </button>
+                              {ps.status !== "published" && (
+                                <button onClick={() => handlePublishPs(ps.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold hover:bg-emerald-200 cursor-pointer">
+                                  <Send className="h-3.5 w-3.5" /> Publish
+                                </button>
+                              )}
+                              {ps.status !== "archived" && (
+                                <button onClick={() => handleArchivePs(ps.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold hover:bg-amber-200 cursor-pointer">
+                                  <Archive className="h-3.5 w-3.5" /> Archive
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {problemStatements.length === 0 && (
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-10 text-center">
+                      <BookOpen className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                      <p className="text-sm text-gray-400 dark:text-gray-500">No on-spot materials uploaded yet.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {activeTab === "volunteers" && (
               <motion.div key="volunteers" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -640,6 +883,124 @@ export default function OrganizerDashboard() {
           )}
 
           {/* ─── TEAM DETAIL MODAL ─── */}
+          <Modal
+            isOpen={psCreateOpen}
+            onClose={() => {
+              setPsCreateOpen(false);
+              setPsEditId(null);
+              setPsAttachments([]);
+            }}
+            title={psEditId ? "Edit On-Spot Material" : "Upload On-Spot Material"}
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Title *</label>
+                <input
+                  type="text"
+                  value={psForm.title}
+                  onChange={(e) => setPsForm((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="Problem statement title"
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Description *</label>
+                <textarea
+                  rows={5}
+                  value={psForm.description}
+                  onChange={(e) => setPsForm((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Describe the on-spot problem statement..."
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Track</label>
+                  <select
+                    value={psForm.trackId}
+                    onChange={(e) => setPsForm((p) => ({ ...p, trackId: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer"
+                  >
+                    {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Status</label>
+                  <select
+                    value={psForm.status}
+                    onChange={(e) => setPsForm((p) => ({ ...p, status: e.target.value as typeof psForm.status }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Attachments</label>
+                <label className={`flex flex-col items-center justify-center w-full px-4 py-5 rounded-xl border-2 border-dashed transition-colors cursor-pointer ${
+                  uploadingFile
+                    ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-gray-300 dark:border-gray-700 hover:border-amber-400 hover:bg-amber-50/40 dark:hover:bg-amber-900/10"
+                }`}>
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    accept=".ppt,.pptx,.pdf,.csv,.xlsx,.xls,.zip,.rar,.doc,.docx,.txt,.json,.py,.ipynb,.png,.jpg,.jpeg"
+                    disabled={uploadingFile}
+                  />
+                  {uploadingFile ? (
+                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                      <div className="h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-bold">Processing file...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 text-gray-400 dark:text-gray-500 mb-1.5" />
+                      <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Click to upload PPT, dataset, or support files</span>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">PPT, PDF, CSV, XLSX, ZIP, DOCX, JSON, notebooks - Max 10MB each</span>
+                    </>
+                  )}
+                </label>
+
+                {psAttachments.length > 0 && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {psAttachments.map((att) => (
+                      <div key={att.id} className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl p-2.5 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                            <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-gray-700 dark:text-gray-200 truncate">{att.name}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500">{formatFileSize(att.size)}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAttachment(att.id)}
+                          className="p-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 cursor-pointer transition-colors shrink-0"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleSaveProblemStatement}
+                className="w-full py-2.5 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-colors cursor-pointer"
+              >
+                {psEditId ? "Update Material" : "Create Material"}
+              </button>
+            </div>
+          </Modal>
+
           <Modal isOpen={!!selectedTeam} onClose={() => { setSelectedTeam(null); setRejectReason(""); }} title="Team Details">
             {selectedTeam && (
               <div className="space-y-5">

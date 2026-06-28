@@ -18,7 +18,7 @@ import {
   LayoutDashboard, Layers, ChevronDown,
   BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Cloud, Code2, Brain, Terminal, LogOut, QrCode,
 } from "lucide-react";
-import { Participant, Notification, SupportTicket } from "@/types";
+import { FileAttachment, Participant, Notification, SupportTicket } from "@/types";
 type SupportTicketCategory = SupportTicket["category"];
 type SupportTicketPriority = SupportTicket["priority"];
 import { HACK_TRACKS, INITIAL_FAQS } from "@/lib/mockData";
@@ -59,7 +59,7 @@ const YEAR_OPTIONS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "PG 1st Ye
 export default function ParticipantDashboard() {
   const router = useRouter();
   const {
-    session, teams, notifications,
+    session, teams, notifications, problemStatements,
     updateProjectDetails, updateTeamMembers,
     markNotificationRead, markAllNotificationsRead,
     logout, raiseTicket, getProfile, updateProfile,
@@ -239,6 +239,23 @@ export default function ParticipantDashboard() {
   const resourceData: Record<typeof resourceTab, { label: string; items: ResourceCard[]; desc: string }> = {
     templates: { label: "PPT Templates", items: pptTemplates, desc: "Official presentation guidelines and pitch deck templates." },
     datasets: { label: "Datasets", items: datasets, desc: "Curated open datasets across all hackathon tracks." },
+  };
+
+  const publishedProblemStatements = problemStatements.filter((ps) => ps.status === "published");
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const downloadAttachment = (att: FileAttachment) => {
+    const link = document.createElement("a");
+    link.href = att.dataUrl;
+    link.download = att.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleRaiseTicket = () => {
@@ -904,6 +921,65 @@ export default function ParticipantDashboard() {
             {activeTab === "resources" && (
               <motion.div key="resources" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary-green" /> Resources</h2>
+
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-4">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                      <div className="font-extrabold text-primary-dark dark:text-gray-100 text-sm">On-Spot Problem Materials</div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Official problem statements, PPT templates, and datasets uploaded by the organizing team.</p>
+                    </div>
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                      {publishedProblemStatements.length} published
+                    </span>
+                  </div>
+
+                  {publishedProblemStatements.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-5 text-center text-sm text-gray-400 dark:text-gray-500">
+                      On-spot materials will appear here after organizers publish them.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {publishedProblemStatements.map((ps) => {
+                        const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
+                        return (
+                          <div key={ps.id} className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 space-y-3">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-extrabold text-primary-dark dark:text-gray-100 text-sm">{ps.title}</h3>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                  {track?.label || "General"}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">{ps.description}</p>
+                            </div>
+
+                            {ps.attachments && ps.attachments.length > 0 ? (
+                              <div className="space-y-2">
+                                {ps.attachments.map((att) => (
+                                  <div key={att.id} className="flex items-center justify-between gap-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-3">
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{att.name}</div>
+                                      <div className="text-[10px] text-gray-400 dark:text-gray-500">{formatFileSize(att.size)}</div>
+                                    </div>
+                                    <button
+                                      onClick={() => downloadAttachment(att)}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 cursor-pointer shrink-0"
+                                    >
+                                      <Download className="h-3.5 w-3.5" /> Download
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-400 dark:text-gray-500">No files attached yet.</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 {/* Sub-category pills */}
                 <div className="flex gap-2 flex-wrap">
                   {(Object.keys(resourceData) as (keyof typeof resourceData)[]).map((k) => (

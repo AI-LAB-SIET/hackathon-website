@@ -32,8 +32,13 @@ import {
   Plus,
   Activity,
   Bell,
+  Upload,
+  FileText,
+  Download,
+  X,
+  Paperclip,
 } from "lucide-react";
-import { Team, ProblemStatement } from "@/types";
+import { Team, ProblemStatement, FileAttachment } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
 
 type TabType = "dashboard" | "members" | "participants" | "announcements" | "problems" | "scanner" | "teams" | "profile";
@@ -82,6 +87,8 @@ export default function AdminDashboard() {
   const [psEditId, setPsEditId] = useState<string | null>(null);
   const [psCreateOpen, setPsCreateOpen] = useState(false);
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
+  const [psAttachments, setPsAttachments] = useState<FileAttachment[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   // QR Scanner
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -202,25 +209,81 @@ export default function AdminDashboard() {
   };
 
   // ─── PROBLEM STATEMENT HANDLERS ───
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingFile(true);
+    const file = files[0];
+    // Max 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      toast("File too large. Max 10MB allowed.", "error");
+      setUploadingFile(false);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const attachment: FileAttachment = {
+        id: `file-${Date.now()}`,
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        dataUrl: reader.result as string,
+        uploadedAt: new Date().toISOString(),
+      };
+      setPsAttachments((prev) => [...prev, attachment]);
+      setUploadingFile(false);
+      toast(`"${file.name}" attached successfully.`, "success");
+    };
+    reader.onerror = () => {
+      toast("Failed to read file.", "error");
+      setUploadingFile(false);
+    };
+    reader.readAsDataURL(file);
+    // Reset input
+    e.target.value = "";
+  };
+
+  const handleRemoveAttachment = (attachmentId: string) => {
+    setPsAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    toast("Attachment removed.", "info");
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const downloadAttachment = (att: FileAttachment) => {
+    const link = document.createElement("a");
+    link.href = att.dataUrl;
+    link.download = att.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleSaveProblemStatement = () => {
     if (!psForm.title || !psForm.description) {
       toast("Title and description are required.", "error");
       return;
     }
     if (psEditId) {
-      updateProblemStatement(psEditId, { title: psForm.title, description: psForm.description, trackId: psForm.trackId, status: psForm.status });
+      updateProblemStatement(psEditId, { title: psForm.title, description: psForm.description, trackId: psForm.trackId, status: psForm.status, attachments: psAttachments });
       toast("Problem statement updated.", "success");
       setPsEditId(null);
     } else {
-      addProblemStatement({ title: psForm.title, description: psForm.description, trackId: psForm.trackId, status: psForm.status });
+      addProblemStatement({ title: psForm.title, description: psForm.description, trackId: psForm.trackId, status: psForm.status, attachments: psAttachments });
       toast("Problem statement created.", "success");
     }
     setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+    setPsAttachments([]);
     setPsCreateOpen(false);
   };
   const handleEditPs = (ps: ProblemStatement) => {
     setPsEditId(ps.id);
     setPsForm({ title: ps.title, description: ps.description, trackId: ps.trackId, status: ps.status });
+    setPsAttachments(ps.attachments || []);
     setPsCreateOpen(true);
   };
   const handlePublishPs = (id: string) => {
@@ -590,6 +653,37 @@ export default function AdminDashboard() {
                       {isExpanded && (
                         <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 pt-4">
                           <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-4">{ps.description}</p>
+
+                          {/* Attachments */}
+                          {ps.attachments && ps.attachments.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                <Paperclip className="h-3 w-3" /> Attachments ({ps.attachments.length})
+                              </p>
+                              <div className="flex flex-col gap-2">
+                                {ps.attachments.map((att) => (
+                                  <div key={att.id} className="flex items-center justify-between gap-3 bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-xs">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                                        <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{att.name}</p>
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{formatFileSize(att.size)}</p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => downloadAttachment(att)}
+                                      className="shrink-0 px-2.5 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold hover:bg-emerald-200 cursor-pointer transition-colors flex items-center gap-1"
+                                    >
+                                      <Download className="h-3 w-3" /> Download
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           <div className="flex gap-2">
                             <button onClick={() => handleEditPs(ps)} className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] font-bold hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center gap-1">
                               <Edit3 className="h-3 w-3" /> Edit
@@ -853,7 +947,7 @@ export default function AdminDashboard() {
       </Modal>
 
       {/* Problem Statement Create/Edit Modal */}
-      <Modal isOpen={psCreateOpen} onClose={() => { setPsCreateOpen(false); setPsEditId(null); }} title={psEditId ? "Edit Problem Statement" : "Create Problem Statement"}>
+      <Modal isOpen={psCreateOpen} onClose={() => { setPsCreateOpen(false); setPsEditId(null); setPsAttachments([]); }} title={psEditId ? "Edit Problem Statement" : "Create Problem Statement"}>
         <div className="space-y-4">
           <Input
             label="Title *"
@@ -895,6 +989,65 @@ export default function AdminDashboard() {
               <option value="archived">Archived</option>
             </select>
           </div>
+
+          {/* ─── FILE UPLOAD ZONE ─── */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Attachments (PPT, Dataset, Docs)</label>
+            <label
+              className={`flex flex-col items-center justify-center w-full px-4 py-5 rounded-xl border-2 border-dashed transition-colors cursor-pointer ${
+                uploadingFile
+                  ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-300 dark:border-gray-700 hover:border-primary-green hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10"
+              }`}
+            >
+              <input
+                type="file"
+                className="hidden"
+                onChange={handleFileUpload}
+                accept=".ppt,.pptx,.pdf,.csv,.xlsx,.xls,.zip,.rar,.doc,.docx,.txt,.json,.py,.ipynb,.png,.jpg,.jpeg"
+                disabled={uploadingFile}
+              />
+              {uploadingFile ? (
+                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                  <div className="h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs font-bold">Processing file...</span>
+                </div>
+              ) : (
+                <>
+                  <Upload className="h-6 w-6 text-gray-400 dark:text-gray-500 mb-1.5" />
+                  <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Click to upload or drag & drop</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">PPT, PDF, CSV, XLSX, ZIP, DOCX, Images — Max 10MB each</span>
+                </>
+              )}
+            </label>
+
+            {/* Attached Files List */}
+            {psAttachments.length > 0 && (
+              <div className="mt-3 flex flex-col gap-2">
+                {psAttachments.map((att) => (
+                  <div key={att.id} className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl p-2.5 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                        <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-700 dark:text-gray-200 truncate">{att.name}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{formatFileSize(att.size)}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(att.id)}
+                      className="p-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 cursor-pointer transition-colors shrink-0"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <Button onClick={handleSaveProblemStatement} className="w-full text-xs">
             {psEditId ? "Update" : "Create Problem Statement"}
           </Button>
