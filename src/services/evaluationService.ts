@@ -1,5 +1,5 @@
 import { mockDelay, generateId } from './mockApi';
-import type { Evaluation, EvaluationRequest, EvaluationFilters, EvaluationScores, EvaluationStats } from '@/types/api/evaluation';
+import type { Evaluation, EvaluationRequest, EvaluationFilters, EvaluationStats } from '@/types/api/evaluation';
 import { notificationService } from './notificationService';
 
 const EVALUATIONS_KEY = 'siet_evaluations';

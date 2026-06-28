@@ -6,7 +6,7 @@ const NOTIFICATIONS_KEY = 'siet_notifications_v2';
 function getStoredNotifications(): Notification[] {
   if (typeof window === 'undefined') return [];
   try {
-    const stored = localStorage.getItem('siet_notifications_v2');
+    const stored = localStorage.getItem(NOTIFICATIONS_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -15,7 +15,7 @@ function getStoredNotifications(): Notification[] {
 
 function setStoredNotifications(notifications: Notification[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('siet_notifications_v2', JSON.stringify(notifications));
+  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
 }
 
 export const notificationService = {

@@ -1,23 +1,9 @@
 import type { 
   User, LoginRequest, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest, 
-  VerifyEmailRequest, AuthTokens, SessionData, UserRole, UserProfile 
+  VerifyEmailRequest, AuthTokens, SessionData, UserRole
 } from '@/types/api/auth';
-import type { Team as ApiTeam } from '@/types/api/team';
 import { INITIAL_TEAMS } from '@/lib/mockData';
 import type { Team as MockTeam } from '@/types';
-
-const STORAGE_KEYS = {
-  TEAMS: 'siet_teams_v2',
-  SESSION: 'siet_session',
-  ANNOUNCEMENTS: 'siet_announcements',
-  NOTIFICATIONS: 'siet_notifications_v2',
-  VOLUNTEERS: 'siet_volunteers',
-  USER_PROFILES: 'siet_profiles',
-  PROBLEM_STATEMENTS: 'siet_problems',
-  TICKETS: 'siet_tickets',
-  SUBMISSIONS: 'siet_submissions',
-  USER_CREDENTIALS: 'siet_user_credentials',
-} as const;
 
 function getStoredTeams(): MockTeam[] {
   if (typeof window === 'undefined') return INITIAL_TEAMS;
@@ -27,11 +13,6 @@ function getStoredTeams(): MockTeam[] {
   } catch {
     return INITIAL_TEAMS;
   }
-}
-
-function setStoredTeams(teams: MockTeam[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('siet_teams_v2', JSON.stringify(teams));
 }
 
 function getStoredSession(): { isLoggedIn: boolean; role: UserRole | null; email: string | null; name: string | null; teamId: string | null } | null {
@@ -62,11 +43,6 @@ function getStoredCredentials(): Record<string, { password: string; role: UserRo
   } catch {
     return {};
   }
-}
-
-function setStoredCredentials(creds: Record<string, { password: string; role: UserRole; name: string }>): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('siet_user_credentials', JSON.stringify(creds));
 }
 
 function generateId(prefix = 'id'): string {
@@ -210,7 +186,7 @@ export const authService = {
     };
   },
 
-  async refreshToken(refreshToken: string): Promise<AuthTokens> {
+  async refreshToken(): Promise<AuthTokens> {
     await mockDelay();
     return {
       accessToken: `mock_access_${generateId('token')}`,

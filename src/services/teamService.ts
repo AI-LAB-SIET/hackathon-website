@@ -1,7 +1,6 @@
-import { mockApi } from './mockApi';
 import { mockDelay, generateId } from './mockApi';
 import type { TeamRegistrationRequest, TeamUpdateRequest, TeamApprovalRequest, TeamFilters, TeamStatus } from '@/types/api/team';
-import type { Team as MockTeam, Participant } from '@/types';
+import type { Team as MockTeam } from '@/types';
 import { INITIAL_TEAMS } from '@/lib/mockData';
 import { notificationService } from './notificationService';
 
@@ -10,7 +9,7 @@ const TEAMS_KEY = 'siet_teams_v2';
 function getStoredTeams(): MockTeam[] {
   if (typeof window === 'undefined') return INITIAL_TEAMS;
   try {
-    const stored = localStorage.getItem('siet_teams_v2');
+    const stored = localStorage.getItem(TEAMS_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -19,17 +18,7 @@ function getStoredTeams(): MockTeam[] {
 
 function setStoredTeams(teams: MockTeam[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('siet_teams_v2', JSON.stringify(teams));
-}
-
-function getStoredSession(): { isLoggedIn: boolean; role: string | null; email: string | null; name: string | null; teamId: string | null } | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const stored = localStorage.getItem('siet_session');
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
+  localStorage.setItem(TEAMS_KEY, JSON.stringify(teams));
 }
 
 export const teamService = {
@@ -88,7 +77,6 @@ export const teamService = {
   async createTeam(data: TeamRegistrationRequest): Promise<MockTeam> {
     await mockDelay();
     const teams = getStoredTeams();
-    const session = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('siet_session') || '{}') : { email: '', role: 'participant' };
     
     const teamId = `team_${generateId()}`;
     const prefix = data.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
