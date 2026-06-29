@@ -43,7 +43,6 @@ import { HACK_TRACKS } from "@/lib/mockData";
 import { isConfigured } from "@/lib/firebase";
 
 type TabType = "dashboard" | "members" | "participants" | "announcements" | "problems" | "scanner" | "teams" | "profile";
-type ProfileTabType = "edit" | "appearance";
 
 interface Member {
   id: string;
@@ -63,7 +62,6 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
-  const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
 
   // Members local state
   const [members, setMembers] = useState<Member[]>([
@@ -849,82 +847,46 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* ═══════════════════════════════════════════ PROFILE TAB ═══════════════════════════════════════════ */}
             {activeTab === "profile" && (
               <div className="flex flex-col gap-6 max-w-xl">
-                {/* Profile sub-tabs */}
-                <div className="flex gap-2">
-                  {([
-                    { id: "edit" as ProfileTabType, label: "Edit Profile" },
-                    { id: "appearance" as ProfileTabType, label: "Appearance" },
-                  ]).map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setProfileTab(tab.id)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        profileTab === tab.id
-                          ? "bg-primary-green text-white shadow-sm"
-                          : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-primary-green/30"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+                <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-6 shadow-sm flex flex-col gap-5">
+                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-2">Edit Profile</h3>
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Email</label>
+                      <input
+                        type="email"
+                        value={session.email || ""}
+                        disabled
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                      />
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Email cannot be changed.</p>
+                    </div>
+                    <Input
+                      label="Display Name"
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
+                      placeholder="Your display name"
+                    />
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>
+                      <textarea
+                        rows={3}
+                        value={profileForm.bio}
+                        onChange={(e) => setProfileForm((p) => ({ ...p, bio: e.target.value }))}
+                        placeholder="A short bio about yourself..."
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+                    <Input
+                      label="Skills (comma separated)"
+                      value={profileForm.skills}
+                      onChange={(e) => setProfileForm((p) => ({ ...p, skills: e.target.value }))}
+                      placeholder="e.g. React, Python, ML"
+                    />
+                    <Button onClick={handleSaveProfile} className="text-xs mt-2">Save Profile</Button>
+                  </div>
                 </div>
-
-                {profileTab === "edit" && (
-                  <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-6 shadow-sm flex flex-col gap-5">
-                    <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-2">Edit Profile</h3>
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Email</label>
-                        <input
-                          type="email"
-                          value={session.email || ""}
-                          disabled
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                        />
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Email cannot be changed.</p>
-                      </div>
-                      <Input
-                        label="Display Name"
-                        value={profileForm.name}
-                        onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
-                        placeholder="Your display name"
-                      />
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>
-                        <textarea
-                          rows={3}
-                          value={profileForm.bio}
-                          onChange={(e) => setProfileForm((p) => ({ ...p, bio: e.target.value }))}
-                          placeholder="A short bio about yourself..."
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                        />
-                      </div>
-                      <Input
-                        label="Skills (comma separated)"
-                        value={profileForm.skills}
-                        onChange={(e) => setProfileForm((p) => ({ ...p, skills: e.target.value }))}
-                        placeholder="e.g. React, Python, ML"
-                      />
-                      <Button onClick={handleSaveProfile} className="text-xs mt-2">Save Profile</Button>
-                    </div>
-                  </div>
-                )}
-
-                {profileTab === "appearance" && (
-                  <div className="rounded-3xl border border-input-border/30 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm flex flex-col gap-6 max-w-md">
-                    <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-2">Appearance</h3>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Dark Mode</p>
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500">Toggle between light and dark themes. Also available beside the notification bell.</p>
-                      </div>
-                      <ThemeToggle />
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </motion.div>

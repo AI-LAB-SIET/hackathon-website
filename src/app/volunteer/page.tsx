@@ -26,7 +26,6 @@ import { QRScanner } from "@/components/ui/QRScanner";
 import { SupportTicket, Team } from "@/types";
 
 type TabType = "dashboard" | "tickets" | "profile" | "attendance" | "scanner" | "support" | "approval";
-type ProfileTabType = "edit" | "appearance";
 type TicketFilter = "all" | "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
 
 
@@ -44,7 +43,6 @@ export default function VolunteerDashboard() {
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
-  const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>("all");
   const [notifOpen, setNotifOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -450,111 +448,83 @@ export default function VolunteerDashboard() {
             {activeTab === "profile" && (
               <div className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Profile & Settings</h2>
-                <div className="flex gap-2 flex-wrap">
-                  {(["edit", "appearance"] as const).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setProfileTab(t)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${
-                        profileTab === t
-                          ? "bg-primary-green text-white"
-                          : "bg-white border border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      {t === "edit" ? "Edit Profile" : "Appearance"}
-                    </button>
-                  ))}
-                </div>
-
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700">
-                  {profileTab === "edit" && (
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                        <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-primary-green to-emerald-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
-                          {(profileName || "V")
-                            .split(" ")
-                            .map((w: string) => w[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-extrabold text-primary-dark text-lg dark:text-gray-100">
-                            {profileName || "Volunteer"}
-                          </div>
-                          <div className="text-gray-400 text-sm dark:text-gray-500">{session.email}</div>
-                          <div className="text-xs font-semibold text-primary-green mt-0.5">
-                            Volunteer · AI Hackathon 2026
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            value={profileName}
-                            onChange={(e) => setProfileName(e.target.value)}
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            value={session.email || ""}
-                            readOnly
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
-                          />
-                          <p className="text-[11px] text-gray-400 mt-1 dark:text-gray-500">Email cannot be changed</p>
-                        </div>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+                      <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-primary-green to-emerald-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
+                        {(profileName || "V")
+                          .split(" ")
+                          .map((w: string) => w[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
-                          Bio
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={profileBio}
-                          onChange={(e) => setProfileBio(e.target.value)}
-                          placeholder="Tell us about yourself..."
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                        />
+                        <div className="font-extrabold text-primary-dark text-lg dark:text-gray-100">
+                          {profileName || "Volunteer"}
+                        </div>
+                        <div className="text-gray-400 text-sm dark:text-gray-500">{session.email}</div>
+                        <div className="text-xs font-semibold text-primary-green mt-0.5">
+                          Volunteer · AI Hackathon 2026
+                        </div>
                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
-                          Skills (comma-separated)
+                          Full Name
                         </label>
                         <input
                           type="text"
-                          value={profileSkills}
-                          onChange={(e) => setProfileSkills(e.target.value)}
-                          placeholder="e.g. First Aid, Crowd Management, Logistics"
+                          value={profileName}
+                          onChange={(e) => setProfileName(e.target.value)}
                           className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                         />
                       </div>
-                      <button
-                        onClick={handleSaveProfile}
-                        className="px-6 py-2.5 rounded-xl bg-primary-green text-white text-sm font-bold hover:bg-primary-green/90 transition-colors cursor-pointer"
-                      >
-                        Save Changes
-                      </button>
-                    </div>
-                  )}
-
-                  {profileTab === "appearance" && (
-                    <div className="space-y-6">
                       <div>
-                        <div className="font-bold text-primary-dark text-sm mb-3 dark:text-gray-100">Theme</div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Toggle between light and dark mode. You can also switch anytime using the icon beside the notification bell.</p>
-                        <ThemeToggle />
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={session.email || ""}
+                          readOnly
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                        />
+                        <p className="text-[11px] text-gray-400 mt-1 dark:text-gray-500">Email cannot be changed</p>
                       </div>
                     </div>
-                  )}
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
+                        Bio
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={profileBio}
+                        onChange={(e) => setProfileBio(e.target.value)}
+                        placeholder="Tell us about yourself..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
+                        Skills (comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        value={profileSkills}
+                        onChange={(e) => setProfileSkills(e.target.value)}
+                        placeholder="e.g. First Aid, Crowd Management, Logistics"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSaveProfile}
+                      className="px-6 py-2.5 rounded-xl bg-primary-green text-white text-sm font-bold hover:bg-primary-green/90 transition-colors cursor-pointer"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

@@ -20,7 +20,6 @@ import { Team } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
 
 type TabType = "dashboard" | "queue" | "leaderboard" | "profile";
-type ProfileTabType = "edit" | "appearance";
 
 const SCORE_CRITERIA = [
   { key: "innovation" as const, label: "Innovation & Originality", max: 10 },
@@ -36,7 +35,6 @@ export default function JudgeDashboard() {
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
-  const [profileTab, setProfileTab] = useState<ProfileTabType>("edit");
 
   // Filters
   const [trackFilter, setTrackFilter] = useState("all");
@@ -409,73 +407,54 @@ export default function JudgeDashboard() {
             {activeTab === "profile" && (
               <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Profile & Settings</h2>
-                <div className="flex gap-2 flex-wrap">
-                  {(["edit", "appearance"] as const).map((t) => (
-                    <button key={t} onClick={() => setProfileTab(t)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize cursor-pointer transition-colors ${profileTab === t ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`}
-                    >{t === "edit" ? "Edit Profile" : "Appearance"}</button>
-                  ))}
-                </div>
                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
-                  {profileTab === "edit" && (
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                        <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
-                          {(session.name || "J").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-extrabold text-primary-dark dark:text-gray-100 text-lg">{session.name || "Judge"}</div>
-                          <div className="text-gray-400 dark:text-gray-500 text-sm">{session.email}</div>
-                          <div className="text-xs font-semibold text-blue-600 mt-0.5">Judge · AI Hackathon 2026</div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Full Name</label>
-                          <input type="text" defaultValue={session.name || ""} readOnly
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300" />
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Email</label>
-                          <input type="email" value={session.email || ""} readOnly
-                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
-                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Email cannot be changed</p>
-                        </div>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+                      <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold shrink-0">
+                        {(session.name || "J").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>
-                        <textarea rows={3} defaultValue="" placeholder="Tell us about yourself..."
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Skills</label>
-                        <input type="text" defaultValue="" placeholder="e.g. AI/ML, Web Dev, Cloud"
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Social Links</label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-400 dark:text-gray-500"><Github className="h-4 w-4" /></span>
-                          <input type="url" defaultValue="" placeholder="GitHub profile URL"
-                            className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-                        </div>
-                      </div>
-                      <button onClick={() => toast("Profile updated successfully", "success")}
-                        className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors cursor-pointer">
-                        Save Changes
-                      </button>
-                    </div>
-                  )}
-
-                  {profileTab === "appearance" && (
-                    <div className="space-y-6">
-                      <div>
-                        <div className="font-bold text-primary-dark text-sm mb-3 dark:text-gray-100">Theme</div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Toggle between light and dark mode. You can also switch anytime using the icon beside the notification bell.</p>
-                        <ThemeToggle />
+                        <div className="font-extrabold text-primary-dark dark:text-gray-100 text-lg">{session.name || "Judge"}</div>
+                        <div className="text-gray-400 dark:text-gray-500 text-sm">{session.email}</div>
+                        <div className="text-xs font-semibold text-blue-600 mt-0.5">Judge · AI Hackathon 2026</div>
                       </div>
                     </div>
-                  )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Full Name</label>
+                        <input type="text" defaultValue={session.name || ""} readOnly
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Email</label>
+                        <input type="email" value={session.email || ""} readOnly
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-550 dark:text-gray-400 cursor-not-allowed" />
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Email cannot be changed</p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>
+                      <textarea rows={3} defaultValue="" placeholder="Tell us about yourself..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Skills</label>
+                      <input type="text" defaultValue="" placeholder="e.g. AI/ML, Web Dev, Cloud"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Social Links</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 dark:text-gray-500"><Github className="h-4 w-4" /></span>
+                        <input type="url" defaultValue="" placeholder="GitHub profile URL"
+                          className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                      </div>
+                    </div>
+                    <button onClick={() => toast("Profile updated successfully", "success")}
+                      className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors cursor-pointer">
+                      Save Changes
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}

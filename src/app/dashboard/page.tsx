@@ -15,7 +15,7 @@ import {
   CheckCircle, Clock, ChevronRight,
   Github, Video, Globe, Plus, Trash2, Send, Download,
   AlertTriangle, Info, X,
-  LayoutDashboard, Layers, ChevronDown,
+  Layers, ChevronDown,
   BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Code2, LogOut, QrCode,
 } from "lucide-react";
 import { FileAttachment, Participant, Notification, SupportTicket } from "@/types";
@@ -69,7 +69,6 @@ export default function ParticipantDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [activeJourneyStage, setActiveJourneyStage] = useState<string | null>(null);
   const [projectTab, setProjectTab] = useState<"overview" | "repo" | "submission">("overview");
-  const [profileTab, setProfileTab] = useState<"edit" | "appearance">("edit");
   const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
   const [showAddMember, setShowAddMember] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -394,16 +393,10 @@ export default function ParticipantDashboard() {
                       className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 dark:bg-gray-900 dark:border-gray-700"
                     >
                       <button
-                        onClick={() => { setProfileTab("edit"); setActiveTab("profile"); setProfileMenuOpen(false); }}
+                        onClick={() => { setActiveTab("profile"); setProfileMenuOpen(false); }}
                         className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer text-left"
                       >
                         <User className="h-4 w-4 text-primary-green" /> My Profile
-                      </button>
-                      <button
-                        onClick={() => { setProfileTab("appearance"); setActiveTab("profile"); setProfileMenuOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer text-left"
-                      >
-                        <LayoutDashboard className="h-4 w-4 text-primary-green" /> Theme
                       </button>
                       <div className="border-t border-gray-100 dark:border-gray-800" />
                       <button
@@ -1124,128 +1117,109 @@ export default function ParticipantDashboard() {
               </motion.div>
             )}
 
-            {/* ─── PROFILE TAB ─── */}
             {activeTab === "profile" && (
               <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><User className="h-5 w-5 text-primary-green" /> Profile & Settings</h2>
-                <div className="flex gap-2 flex-wrap mb-4">
-                  {(["edit", "appearance"] as const).map((t) => (
-                    <button key={t} onClick={() => setProfileTab(t)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors cursor-pointer ${profileTab === t ? "bg-primary-green text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green/40"}`}
-                    >{t === "edit" ? "Edit Profile" : "Appearance"}</button>
-                  ))}
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-6">
+                  {/* Profile Header */}
+                  <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+                    <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl shrink-0">
+                      {profileEdit.profilePicture ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={profileEdit.profilePicture} alt="Profile" className="h-full w-full rounded-2xl object-cover" />
+                      ) : (
+                        currentUser.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-extrabold text-primary-dark text-lg">{currentUser.name}</div>
+                      <div className="text-gray-400 dark:text-gray-500 text-sm">{currentUser.email}</div>
+                      <div className="text-xs font-semibold text-primary-green mt-0.5">{team.name} · {currentUser.isLeader ? "Team Leader" : "Team Member"}</div>
+                    </div>
+                  </div>
+
+                  {/* Email (Immutable) */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 block mb-1">Email (immutable)</label>
+                    <div className="px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">{session.email}</div>
+                  </div>
+
+                  {/* Profile Picture URL */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Profile Picture URL</label>
+                    <input type="text" value={profileEdit.profilePicture}
+                      onChange={(e) => setProfileEdit((p) => ({ ...p, profilePicture: e.target.value }))}
+                      placeholder="https://example.com/avatar.jpg"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+
+                  {/* Bio */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Bio</label>
+                    <textarea rows={3} value={profileEdit.bio}
+                      onChange={(e) => setProfileEdit((p) => ({ ...p, bio: e.target.value }))}
+                      placeholder="Tell us about yourself..."
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+
+                  {/* Skills */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Skills (press Enter to add)</label>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {profileEdit.skills.map((s) => (
+                        <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                          {s}
+                          <button onClick={() => setProfileEdit((p) => ({ ...p, skills: p.skills.filter((sk) => sk !== s) }))} className="cursor-pointer"><X className="h-3 w-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                    <input type="text" placeholder="Add skill..." value={profileNewSkill}
+                      onChange={(e) => setProfileNewSkill(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && profileNewSkill.trim()) {
+                          setProfileEdit((p) => ({ ...p, skills: [...p.skills, profileNewSkill.trim()] }));
+                          setProfileNewSkill("");
+                        }
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+
+                  {/* Social Links */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Social Links</label>
+                    <div className="flex flex-col gap-2 mb-2">
+                      {profileEdit.socialLinks.map((link, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 w-20 shrink-0">{link.platform}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">{link.url}</span>
+                          <button onClick={() => setProfileEdit((p) => ({ ...p, socialLinks: p.socialLinks.filter((_, idx) => idx !== i) }))} className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 cursor-pointer"><X className="h-3.5 w-3.5" /></button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="Platform" value={newSocialPlatform}
+                        onChange={(e) => setNewSocialPlatform(e.target.value)}
+                        className="w-28 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      />
+                      <input type="text" placeholder="URL" value={newSocialUrl}
+                        onChange={(e) => setNewSocialUrl(e.target.value)}
+                        className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      />
+                      <button onClick={() => {
+                        if (newSocialPlatform.trim() && newSocialUrl.trim()) {
+                          setProfileEdit((p) => ({ ...p, socialLinks: [...p.socialLinks, { platform: newSocialPlatform.trim(), url: newSocialUrl.trim() }] }));
+                          setNewSocialPlatform("");
+                          setNewSocialUrl("");
+                        }
+                      }} className="px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 cursor-pointer"><Plus className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+
+                  <button onClick={handleSaveProfile} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Profile</button>
                 </div>
-
-                {profileTab === "edit" && (
-                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-6">
-                    {/* Profile Header */}
-                    <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                      <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xl shrink-0">
-                        {profileEdit.profilePicture ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={profileEdit.profilePicture} alt="Profile" className="h-full w-full rounded-2xl object-cover" />
-                        ) : (
-                          currentUser.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-extrabold text-primary-dark text-lg">{currentUser.name}</div>
-                        <div className="text-gray-400 dark:text-gray-500 text-sm">{currentUser.email}</div>
-                        <div className="text-xs font-semibold text-primary-green mt-0.5">{team.name} · {currentUser.isLeader ? "Team Leader" : "Team Member"}</div>
-                      </div>
-                    </div>
-
-                    {/* Email (Immutable) */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 block mb-1">Email (immutable)</label>
-                      <div className="px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">{session.email}</div>
-                    </div>
-
-                    {/* Profile Picture URL */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Profile Picture URL</label>
-                      <input type="text" value={profileEdit.profilePicture}
-                        onChange={(e) => setProfileEdit((p) => ({ ...p, profilePicture: e.target.value }))}
-                        placeholder="https://example.com/avatar.jpg"
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-
-                    {/* Bio */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Bio</label>
-                      <textarea rows={3} value={profileEdit.bio}
-                        onChange={(e) => setProfileEdit((p) => ({ ...p, bio: e.target.value }))}
-                        placeholder="Tell us about yourself..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-
-                    {/* Skills */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Skills (press Enter to add)</label>
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {profileEdit.skills.map((s) => (
-                          <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-                            {s}
-                            <button onClick={() => setProfileEdit((p) => ({ ...p, skills: p.skills.filter((sk) => sk !== s) }))} className="cursor-pointer"><X className="h-3 w-3" /></button>
-                          </span>
-                        ))}
-                      </div>
-                      <input type="text" placeholder="Add skill..." value={profileNewSkill}
-                        onChange={(e) => setProfileNewSkill(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && profileNewSkill.trim()) {
-                            setProfileEdit((p) => ({ ...p, skills: [...p.skills, profileNewSkill.trim()] }));
-                            setProfileNewSkill("");
-                          }
-                        }}
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-
-                    {/* Social Links */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Social Links</label>
-                      <div className="flex flex-col gap-2 mb-2">
-                        {profileEdit.socialLinks.map((link, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 w-20 shrink-0">{link.platform}</span>
-                            <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">{link.url}</span>
-                            <button onClick={() => setProfileEdit((p) => ({ ...p, socialLinks: p.socialLinks.filter((_, idx) => idx !== i) }))} className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 cursor-pointer"><X className="h-3.5 w-3.5" /></button>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input type="text" placeholder="Platform" value={newSocialPlatform}
-                          onChange={(e) => setNewSocialPlatform(e.target.value)}
-                          className="w-28 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                        />
-                        <input type="text" placeholder="URL" value={newSocialUrl}
-                          onChange={(e) => setNewSocialUrl(e.target.value)}
-                          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                        />
-                        <button onClick={() => {
-                          if (newSocialPlatform.trim() && newSocialUrl.trim()) {
-                            setProfileEdit((p) => ({ ...p, socialLinks: [...p.socialLinks, { platform: newSocialPlatform.trim(), url: newSocialUrl.trim() }] }));
-                            setNewSocialPlatform("");
-                            setNewSocialUrl("");
-                          }
-                        }} className="px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 cursor-pointer"><Plus className="h-4 w-4" /></button>
-                      </div>
-                    </div>
-
-                    <button onClick={handleSaveProfile} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Profile</button>
-                  </div>
-                )}
-
-                {profileTab === "appearance" && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
-                    <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">Theme</div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Toggle between light and dark mode. You can also switch anytime using the icon beside the notification bell.</p>
-                    <ThemeToggle />
-                  </div>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
