@@ -51,143 +51,152 @@ const VALID_ROLES: Array<NonNullable<UserRole>> = [
 const MAX_MESSAGE_LENGTH = 2000;
 
 export async function POST(req: NextRequest): Promise<Response> {
-  // ── 0. Verify Firebase ID token (if provided) ─────────────────────────────────────
-  const authHeader = req.headers.get('authorization');
-  let uid: string | null = null;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const idToken = authHeader.split(' ')[1];
-    try {
-      const decoded = await getAuth().verifyIdToken(idToken);
-      uid = decoded.uid;
-    } catch {
-      return errorResponse('Invalid Firebase ID token.', 'AUTH_ERROR', 401);
+  try {
+    // ── 0. Verify Firebase ID token (if provided) ─────────────────────────────────────
+    const authHeader = req.headers.get('authorization');
+    let uid: string | null = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const idToken = authHeader.split(' ')[1];
+      try {
+        const decoded = await getAuth().verifyIdToken(idToken);
+        uid = decoded.uid;
+      } catch {
+        return errorResponse('Invalid Firebase ID token.', 'AUTH_ERROR', 401);
+      }
     }
-  }
 
-  // ── 1. Environment guard ──────────────────────────────────────────────────
-  if (!process.env.NVIDIA_NIM_API_KEY) {
+    // ── 1. Environment guard ──────────────────────────────────────────────────
+    if (!process.env.NVIDIA_NIM_API_KEY) {
+      return errorResponse(
+        "NVIDIA_NIM_API_KEY is not configured on the server.",
+        "MISSING_ENV",
+        500
+      );
+    }
+
+    // ── 2. Parse & validate request body ─────────────────────────────────────
+    let body: Partial<ChatRequest>;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse("Request body must be valid JSON.", "INVALID_REQUEST", 400);
+    }
+
+    const { message, role, sessionId } = body;
+
+    if (!message || typeof message !== "string" || !message.trim()) {
+      return errorResponse("'message' is required and must be a non-empty string.", "INVALID_REQUEST", 400);
+    }
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return errorResponse(
+        `'message' must be ${MAX_MESSAGE_LENGTH} characters or fewer.`,
+        "INVALID_REQUEST",
+        400
+      );
+    }
+    if (!sessionId || typeof sessionId !== "string") {
+      return errorResponse("'sessionId' is required.", "INVALID_REQUEST", 400);
+    }
+    // role can be null (unauthenticated guest) — only validate if provided
+    if (role !== null && role !== undefined && !VALID_ROLES.includes(role as NonNullable<UserRole>)) {
+      return errorResponse(
+        `'role' must be one of: ${VALID_ROLES.join(", ")}, or null.`,
+        "INVALID_REQUEST",
+        400
+      );
+    }
+
+    const userRole: UserRole = (role ?? null) as UserRole;
+    let cleanMessage = message.trim();
+
+    // Intent detection and context enrichment
+    const intent = detectIntent(cleanMessage);
+    if (intent === Intent.KnowledgeBase) {
+      // Simple mock embedding (zero vector) for demo
+      const dummyEmbedding = new Array(128).fill(0);
+      const results = vectorStore.search(dummyEmbedding, 3);
+      const retrievedContext = results.map(r => r.text).join('\n');
+      cleanMessage = `${retrievedContext}\n\n${cleanMessage}`;
+    } else if (intent === Intent.UserProfile) {
+      if (uid) {
+        const userDoc = await adminDb.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          const profile = userDoc.data();
+          cleanMessage = `User profile: ${JSON.stringify(profile)}\n\n${cleanMessage}`;
+        }
+      }
+    } else if (intent === Intent.TeamInfo) {
+      if (uid) {
+        const teamsSnap = await adminDb.collection('teams')
+          .where('memberUids', 'array-contains', uid)
+          .get();
+        const teams = teamsSnap.docs.map((d: QueryDocumentSnapshot) => d.data());
+        if (teams.length) {
+          cleanMessage = `Team info: ${JSON.stringify(teams)}\n\n${cleanMessage}`;
+        }
+      }
+    }
+
+    // ── 3. Stream response ────────────────────────────────────────────────────
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const sendChunk = (delta: string, done: boolean) => {
+          const data = JSON.stringify({ delta, done });
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        };
+
+        try {
+          const generator = chatService.streamResponse(
+            sessionId,
+            cleanMessage,
+            userRole
+          );
+
+          for await (const delta of generator) {
+            sendChunk(delta, false);
+          }
+
+          // Signal completion
+          sendChunk("", true);
+        } catch (err: unknown) {
+          // Map known error codes to user-friendly messages
+          const code = (err as { code?: string })?.code ?? "UNKNOWN";
+          const userMessage = getFriendlyError(code, err);
+
+          // Send error as a special SSE event so the client can display it
+          const errorData = JSON.stringify({
+            delta: "",
+            done: true,
+            error: userMessage,
+            code,
+          });
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+
+          console.error("[POST /api/chat] AI error:", err);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-store",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no", // Prevent nginx from buffering SSE
+      },
+    });
+  } catch (globalErr: unknown) {
+    console.error("[POST /api/chat] Global crash:", globalErr);
     return errorResponse(
-      "NVIDIA_NIM_API_KEY is not configured on the server.",
-      "MISSING_ENV",
+      `Server crash: ${globalErr instanceof Error ? globalErr.message : String(globalErr)}`,
+      "UNKNOWN",
       500
     );
   }
-
-  // ── 2. Parse & validate request body ─────────────────────────────────────
-  let body: Partial<ChatRequest>;
-  try {
-    body = await req.json();
-  } catch {
-    return errorResponse("Request body must be valid JSON.", "INVALID_REQUEST", 400);
-  }
-
-  const { message, role, sessionId } = body;
-
-  if (!message || typeof message !== "string" || !message.trim()) {
-    return errorResponse("'message' is required and must be a non-empty string.", "INVALID_REQUEST", 400);
-  }
-  if (message.length > MAX_MESSAGE_LENGTH) {
-    return errorResponse(
-      `'message' must be ${MAX_MESSAGE_LENGTH} characters or fewer.`,
-      "INVALID_REQUEST",
-      400
-    );
-  }
-  if (!sessionId || typeof sessionId !== "string") {
-    return errorResponse("'sessionId' is required.", "INVALID_REQUEST", 400);
-  }
-  // role can be null (unauthenticated guest) — only validate if provided
-  if (role !== null && role !== undefined && !VALID_ROLES.includes(role as NonNullable<UserRole>)) {
-    return errorResponse(
-      `'role' must be one of: ${VALID_ROLES.join(", ")}, or null.`,
-      "INVALID_REQUEST",
-      400
-    );
-  }
-
-  const userRole: UserRole = (role ?? null) as UserRole;
-  let cleanMessage = message.trim();
-
-  // Intent detection and context enrichment
-  const intent = detectIntent(cleanMessage);
-  if (intent === Intent.KnowledgeBase) {
-    // Simple mock embedding (zero vector) for demo
-    const dummyEmbedding = new Array(128).fill(0);
-    const results = vectorStore.search(dummyEmbedding, 3);
-    const retrievedContext = results.map(r => r.text).join('\n');
-    cleanMessage = `${retrievedContext}\n\n${cleanMessage}`;
-  } else if (intent === Intent.UserProfile) {
-    if (uid) {
-      const userDoc = await adminDb.collection('users').doc(uid).get();
-      if (userDoc.exists) {
-        const profile = userDoc.data();
-        cleanMessage = `User profile: ${JSON.stringify(profile)}\n\n${cleanMessage}`;
-      }
-    }
-  } else if (intent === Intent.TeamInfo) {
-    if (uid) {
-      const teamsSnap = await adminDb.collection('teams')
-        .where('memberUids', 'array-contains', uid)
-        .get();
-      const teams = teamsSnap.docs.map((d: QueryDocumentSnapshot) => d.data());
-      if (teams.length) {
-        cleanMessage = `Team info: ${JSON.stringify(teams)}\n\n${cleanMessage}`;
-      }
-    }
-  }
-
-  // ── 3. Stream response ────────────────────────────────────────────────────
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      const sendChunk = (delta: string, done: boolean) => {
-        const data = JSON.stringify({ delta, done });
-        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-      };
-
-      try {
-        const generator = chatService.streamResponse(
-          sessionId,
-          cleanMessage,
-          userRole
-        );
-
-        for await (const delta of generator) {
-          sendChunk(delta, false);
-        }
-
-        // Signal completion
-        sendChunk("", true);
-      } catch (err: unknown) {
-        // Map known error codes to user-friendly messages
-        const code = (err as { code?: string })?.code ?? "UNKNOWN";
-        const userMessage = getFriendlyError(code, err);
-
-        // Send error as a special SSE event so the client can display it
-        const errorData = JSON.stringify({
-          delta: "",
-          done: true,
-          error: userMessage,
-          code,
-        });
-        controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-
-        console.error("[POST /api/chat] AI error:", err);
-      } finally {
-        controller.close();
-      }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-store",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no", // Prevent nginx from buffering SSE
-    },
-  });
 }
 
 /** Handle DELETE /api/chat — clears server-side conversation history for a session */
