@@ -14,6 +14,7 @@
  * This makes the AI behaviour unit-testable without spinning up the HTTP layer.
  */
 
+import { db } from "../firebaseAdmin";
 import { getNimClient } from "./nimClient";
 import { getSystemPrompt } from "./promptManager";
 import { conversationManager } from "./conversationManager";
@@ -53,6 +54,11 @@ export class ChatService {
           role: "assistant",
           content: fullReply,
         });
+
+        // Log the final NIM output asynchronously
+        this.logOutput(sessionId, userMessage, role, fullReply).catch((err) => {
+          console.error("[NVIDIA NIM Log] Logging task failed:", err);
+        });
       }
     }
   }
@@ -81,6 +87,11 @@ export class ChatService {
       content: reply,
     });
 
+    // Log the final NIM output asynchronously
+    this.logOutput(sessionId, userMessage, role, reply).catch((err) => {
+      console.error("[NVIDIA NIM Log] Logging task failed:", err);
+    });
+
     return reply;
   }
 
@@ -93,6 +104,56 @@ export class ChatService {
   }
 
   // ─── Private ────────────────────────────────────────────────────────────────
+
+  private async logOutput(
+    sessionId: string,
+    userMessage: string,
+    role: UserRole,
+    fullReply: string
+  ): Promise<void> {
+    const timestamp = new Date().toISOString();
+
+    // 1. Console Log (stdout, captured by Vercel Logs)
+    console.log(
+      `[NVIDIA NIM Output Log]\n` +
+      `Timestamp: ${timestamp}\n` +
+      `Session ID: ${sessionId}\n` +
+      `User Role: ${role ?? "guest"}\n` +
+      `User Prompt: "${userMessage}"\n` +
+      `NIM Output: "${fullReply}"\n` +
+      `----------------------------------------`
+    );
+
+    // 2. Firestore Log (if db is configured)
+    try {
+      await db.collection("nim_logs").add({
+        sessionId,
+        role: role ?? "guest",
+        prompt: userMessage,
+        response: fullReply,
+        timestamp,
+      });
+    } catch {
+      // Bypassed if firebase admin is not active/configured
+    }
+
+    // 3. Local log file (only if running locally in development)
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const fs = await import("fs");
+        const path = await import("path");
+        const logDir = path.resolve(process.cwd(), "logs");
+        if (!fs.existsSync(logDir)) {
+          fs.mkdirSync(logDir);
+        }
+        const logFile = path.resolve(logDir, "nim_outputs.log");
+        const logLine = `[${timestamp}] [Session: ${sessionId}] [Role: ${role ?? "guest"}] Prompt: "${userMessage}" | Output: "${fullReply}"\n`;
+        fs.appendFileSync(logFile, logLine, "utf-8");
+      } catch (err) {
+        console.error("[NVIDIA NIM Log] Failed to write local log file:", err);
+      }
+    }
+  }
 
   private buildMessageContext(
     sessionId: string,

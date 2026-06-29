@@ -35,6 +35,8 @@ import { db as adminDb } from '@/lib/firebaseAdmin';
 import { UserRole, ChatRequest, ChatError } from '@/lib/ai/types';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const maxDuration = 60; // Allow functions to stream up to 60 seconds on Vercel
+
 // ── Verify Firebase ID token (if provided) ─────────────────────────────────────
 
 

@@ -12,7 +12,56 @@ import { getApps, initializeApp, getApp, cert, App } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
-import { getServiceAccount } from '../../scripts/seed-admin.mjs'; // reuse resolver
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
+
+function getServiceAccount() {
+  // Priority 1: env var pointing to file path
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    const filePath = resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+    if (existsSync(filePath)) {
+      try {
+        return JSON.parse(readFileSync(filePath, 'utf-8'));
+      } catch (err) {
+        console.error("Error reading GOOGLE_APPLICATION_CREDENTIALS file:", err);
+      }
+    }
+  }
+
+  // Priority 2: base64-encoded JSON in env var
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString('utf-8');
+      return JSON.parse(decoded);
+    } catch (err) {
+      console.error("Error parsing FIREBASE_SERVICE_ACCOUNT env var:", err);
+    }
+  }
+
+  // Priority 3: service-account.json in project root
+  const localFile = resolve(process.cwd(), 'service-account.json');
+  if (existsSync(localFile)) {
+    try {
+      return JSON.parse(readFileSync(localFile, 'utf-8'));
+    } catch (err) {
+      console.error("Error reading local service-account.json file:", err);
+    }
+  }
+
+  // Fallback: dummy credentials to allow build compilation/bootstrapping
+  return {
+    type: "service_account",
+    project_id: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "dummy-project",
+    private_key_id: "dummy-key-id",
+    private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC3\n-----END PRIVATE KEY-----\n",
+    client_email: "dummy@dummy-project.iam.gserviceaccount.com",
+    client_id: "dummy-client-id",
+    auth_uri: "https://accounts.google.com/o/oauth2/auth",
+    token_uri: "https://oauth2.googleapis.com/token",
+    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+    client_x509_cert_url: "https://www.googleapis.com/metadata/x09/dummy"
+  };
+}
 
 let appInstance: App | null = null;
 

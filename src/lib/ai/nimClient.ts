@@ -185,15 +185,47 @@ export class NimClient {
       });
     }
 
-    const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
     let buffer = "";
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    // Support both Web ReadableStream (has getReader) and Node.js Readable stream
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof (response.body as any).getReader === "function") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const reader = (response.body as any).getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+
+            const data = trimmed.slice(5).trim();
+            if (data === "[DONE]") return;
+
+            try {
+              const parsed = JSON.parse(data);
+              const delta: string =
+                parsed?.choices?.[0]?.delta?.content ?? "";
+              if (delta) yield delta;
+            } catch {
+              // Malformed SSE data — skip silently
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } else {
+      // Fallback for Node.js Readable stream or other async iterables
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for await (const value of response.body as any) {
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
@@ -215,8 +247,6 @@ export class NimClient {
           }
         }
       }
-    } finally {
-      reader.releaseLock();
     }
   }
 }
