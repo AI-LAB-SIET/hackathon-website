@@ -21,8 +21,11 @@ let storage: FirebaseStorage | undefined;
 // Validate that required config exists to avoid initialization errors
 const isConfigured = Boolean(
   firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
   firebaseConfig.projectId &&
-  firebaseConfig.storageBucket
+  firebaseConfig.storageBucket &&
+  firebaseConfig.messagingSenderId &&
+  firebaseConfig.appId
 );
 
 if (isConfigured) {
@@ -35,11 +38,6 @@ if (isConfigured) {
   } catch (error) {
     console.error("Firebase initialization error:", error);
   }
-} else {
-  console.warn(
-    "Firebase environment variables are missing. Firebase features will be unavailable. " +
-    "Please configure .env.local with NEXT_PUBLIC_FIREBASE_API_KEY, etc."
-  );
 }
 
 export { app, auth, db, storage, isConfigured };
