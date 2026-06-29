@@ -44,5 +44,9 @@ next-env.d.ts
 nul
 
 # Firebase service account credentials — NEVER commit these
-*service-account*.json
-*adminsdk*.json
+service-account.json
+service-account*.json
+scripts/*.env
+hackathon-website-6f5b9-firebase-adminsdk-fbsvc-cdc69b3c1e.json
+*-firebase-adminsdk-*.json
+-service-account.json

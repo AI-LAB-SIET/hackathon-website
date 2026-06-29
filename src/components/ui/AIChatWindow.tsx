@@ -364,7 +364,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
             </div>
             <div className="text-[10px] text-slate-400 flex items-center gap-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary-green" />
-              Online • NVIDIA NIM
+              Online
             </div>
           </div>
         </div>
