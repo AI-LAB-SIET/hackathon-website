@@ -182,6 +182,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
         });
       });
       setAnnouncements(list);
+    }, (err) => {
+      console.warn("Firestore announcements listener error:", err.message);
     });
 
     const unsubProblems = onSnapshot(collection(firestore, "problemStatements"), (snap) => {
@@ -199,6 +201,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
         });
       });
       setProblemStatements(list);
+    }, (err) => {
+      console.warn("Firestore problemStatements listener error:", err.message);
     });
 
     // Subscribe to Auth state changes to dynamically load user-specific collections
@@ -251,6 +255,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
             });
           });
           setUserProfiles(list);
+        }, (err) => {
+          console.warn("Firestore users listener error:", err.message);
         });
 
         // Load teams
@@ -278,6 +284,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
             });
           });
           setTeams(list);
+        }, (err) => {
+          console.warn("Firestore teams listener error:", err.message);
         });
 
         // Load notifications for the user
@@ -299,6 +307,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
             });
           });
           setNotifications(list);
+        }, (err) => {
+          console.warn("Firestore notifications listener error:", err.message);
         });
 
         // Load tickets
@@ -319,6 +329,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
             });
           });
           setTickets(list);
+        }, (err) => {
+          console.warn("Firestore tickets listener error:", err.message);
         });
 
         // Load volunteers
@@ -337,6 +349,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
             });
           });
           setVolunteers(list);
+        }, (err) => {
+          console.warn("Firestore volunteers listener error:", err.message);
         });
 
         setInitialized(true);
