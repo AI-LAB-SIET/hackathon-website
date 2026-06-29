@@ -18,7 +18,7 @@ export default function AIAssistant() {
   // Show an unread badge 1.5 seconds after initial mount to gently invite interaction
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!isOpen && !sessionStorage.getItem("siet_ai_chat_v2")) {
+      if (!isOpen && !sessionStorage.getItem("siet_ai_chat_v3")) {
         setHasUnread(true);
       }
     }, 1500);

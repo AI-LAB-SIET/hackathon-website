@@ -178,14 +178,14 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
 
   // Load chat session history from session storage on mount
   useEffect(() => {
-    const saved = sessionStorage.getItem("siet_ai_chat_v2");
+    const saved = sessionStorage.getItem("siet_ai_chat_v3");
     if (saved) {
       try { setMessages(JSON.parse(saved)); } catch { /* ignore */ }
     } else {
       const welcome: AIMessage = {
         id: "welcome",
         sender: "ai",
-        text: `Welcome, **${session.name || "Guest"}**! 👋 I am your AI Hackathon assistant powered by NVIDIA NIM.\n\nHow can I assist you with your hackathon journey today? Ask me about rules, deadlines, check-ins, or submissions!`,
+        text: `Welcome, **${session.name || "Guest"}**! 👋 I am your AI Hackathon assistant.\n\nHow can I assist you with your hackathon journey today? Ask me about rules, deadlines, check-ins, or submissions!`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages([welcome]);
@@ -195,7 +195,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
   // Persist messages to session storage
   useEffect(() => {
     if (messages.length > 0) {
-      sessionStorage.setItem("siet_ai_chat_v2", JSON.stringify(messages));
+      sessionStorage.setItem("siet_ai_chat_v3", JSON.stringify(messages));
     }
   }, [messages]);
 
@@ -307,7 +307,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
 
   // Clear conversation (local + server-side history)
   const handleClearChat = useCallback(async () => {
-    sessionStorage.removeItem("siet_ai_chat_v2");
+    sessionStorage.removeItem("siet_ai_chat_v3");
     setApiError(null);
     setLastUserMessage("");
 
