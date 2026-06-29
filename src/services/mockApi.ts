@@ -1,4 +1,4 @@
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: ApiError;
@@ -19,7 +19,7 @@ interface ResponseMeta {
   totalPages?: number;
 }
 
-interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> {
   items: T[];
   meta: ResponseMeta;
 }

@@ -25,11 +25,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // If no cookie, allow access - client-side will handle redirect
-  // This is a frontend-first approach with mock services
-  if (!role) {
-    return NextResponse.next();
-  }
+  // If no cookie, role is null, so they will be redirected by the loop below.
 
   for (const [requiredRole, routes] of Object.entries(roleRoutes)) {
     if (routes.some((route) => pathname.startsWith(route))) {

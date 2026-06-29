@@ -16,7 +16,7 @@ import {
   Github, Video, Globe, Plus, Trash2, Send, Download,
   AlertTriangle, Info, X,
   LayoutDashboard, Layers, ChevronDown,
-  BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Cloud, Code2, Brain, Terminal, LogOut, QrCode,
+  BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Code2, LogOut, QrCode,
 } from "lucide-react";
 import { FileAttachment, Participant, Notification, SupportTicket } from "@/types";
 type SupportTicketCategory = SupportTicket["category"];

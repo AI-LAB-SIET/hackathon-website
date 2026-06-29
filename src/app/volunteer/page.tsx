@@ -29,12 +29,6 @@ type TabType = "dashboard" | "tickets" | "profile" | "attendance" | "scanner" | 
 type ProfileTabType = "edit" | "appearance";
 type TicketFilter = "all" | "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
 
-const priorityColors: Record<string, string> = {
-  Low: "bg-blue-100 text-blue-700",
-  Medium: "bg-amber-100 text-amber-700",
-  High: "bg-orange-100 text-orange-700",
-  Critical: "bg-red-100 text-red-700",
-};
 
 const statusColors: Record<string, string> = {
   Open: "bg-blue-100 text-blue-700",
@@ -332,7 +326,7 @@ export default function VolunteerDashboard() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-gray-800 dark:text-gray-100">
-                              {ticket.teamName || getTeamName(ticket.teamId)}
+                              {ticket.teamName || getTeamName(ticket.teamId ?? "")}
                             </span>
 
                             <span
@@ -394,7 +388,7 @@ export default function VolunteerDashboard() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-primary-dark text-sm dark:text-gray-100">
-                              {ticket.teamName || getTeamName(ticket.teamId)}
+                              {ticket.teamName || getTeamName(ticket.teamId ?? "")}
                             </span>
 
                             <span

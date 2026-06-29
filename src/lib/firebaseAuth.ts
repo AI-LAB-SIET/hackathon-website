@@ -23,6 +23,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signInWithPopup,
+  GoogleAuthProvider,
   type User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -112,6 +116,99 @@ export async function signInWithRole(
     return result;
   } catch (err: unknown) {
     if ((err as FirebaseAuthError).code) throw err; // already structured
+    throw mapFirebaseError(err);
+  }
+}
+
+/**
+ * Sign in / Sign up with Google OAuth.
+ * Performs role resolution and first-time participant profile initialization (immutable role lock).
+ */
+export async function signInWithGoogle(): Promise<FirebaseAuthResult> {
+  if (!isConfigured || !auth || !db) {
+    throw buildError('auth/service-unavailable', 'Firebase is not configured.');
+  }
+
+  const provider = new GoogleAuthProvider();
+  try {
+    const credential = await signInWithPopup(auth, provider);
+    const firebaseUser = credential.user;
+
+    const profileRef = doc(db, 'users', firebaseUser.uid);
+    const snap = await getDoc(profileRef);
+
+    let role: AppRole = 'participant';
+    if (!snap.exists()) {
+      // First-time login: role assignment on first login, immutable role lock
+      const newProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email ?? '',
+        displayName: firebaseUser.displayName ?? 'New Participant',
+        role: 'participant' as AppRole,
+        verified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await setDoc(profileRef, newProfile);
+    } else {
+      role = snap.data().role as AppRole;
+    }
+
+    return {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email ?? '',
+      displayName: firebaseUser.displayName ?? 'New Participant',
+      role,
+    };
+  } catch (err: unknown) {
+    throw mapFirebaseError(err);
+  }
+}
+
+/**
+ * Sign up with Email + Password, creating a participant user profile in Firestore.
+ * Sends email verification for secure validation.
+ */
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+  name: string
+): Promise<FirebaseAuthResult> {
+  if (!isConfigured || !auth || !db) {
+    throw buildError('auth/service-unavailable', 'Firebase is not configured.');
+  }
+
+  try {
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = credential.user;
+
+    // Send email verification
+    try {
+      await sendEmailVerification(firebaseUser);
+    } catch (verifErr) {
+      console.warn('Verification email could not be sent:', verifErr);
+    }
+
+    // Create user profile (participant role)
+    const profileRef = doc(db, 'users', firebaseUser.uid);
+    const newProfile = {
+      uid: firebaseUser.uid,
+      email,
+      displayName: name,
+      role: 'participant' as AppRole,
+      verified: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await setDoc(profileRef, newProfile);
+
+    return {
+      uid: firebaseUser.uid,
+      email,
+      displayName: name,
+      role: 'participant',
+    };
+  } catch (err: unknown) {
     throw mapFirebaseError(err);
   }
 }
@@ -216,6 +313,8 @@ function mapFirebaseError(err: unknown): FirebaseAuthError {
     'auth/service-unavailable': 'Authentication service is unavailable.',
     'auth/profile-not-found': 'User profile not found. Contact the admin.',
     'auth/wrong-role': 'Account role mismatch.',
+    'auth/email-already-in-use': 'This email address is already in use.',
+    'auth/weak-password': 'The password is too weak.',
   };
   return buildError(
     code,

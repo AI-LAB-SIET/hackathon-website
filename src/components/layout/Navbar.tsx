@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppState } from "./StateProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LogOut, User, Shield, Bell, QrCode, CheckCircle, Clock, AlertTriangle, Info, Sun, Moon } from "lucide-react";
+import { Menu, X, LogOut, User, Shield, Bell, QrCode, CheckCircle, Clock, AlertTriangle, Info } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { ThemeToggle } from "./ThemeToggle";
 import { useToast } from "../ui/toast";
@@ -18,7 +18,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { session, logout, notifications, markNotificationRead, markAllNotificationsRead } = useAppState();
-  const { theme, toggleTheme, animateToggle } = useTheme();
+  useTheme();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);

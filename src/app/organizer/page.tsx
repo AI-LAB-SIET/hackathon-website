@@ -271,7 +271,7 @@ export default function OrganizerDashboard() {
   const openVolunteerModal = (vol?: Volunteer) => {
     if (vol) {
       setEditingVolunteer(vol);
-      setVolForm({ name: vol.name, phone: vol.phone, email: vol.email, assignedArea: vol.assignedArea, assignedResponsibilities: vol.assignedResponsibilities });
+      setVolForm({ name: vol.name, phone: vol.phone ?? "", email: vol.email, assignedArea: vol.assignedArea ?? "", assignedResponsibilities: vol.assignedResponsibilities ?? "" });
     } else {
       setEditingVolunteer(null);
       setVolForm({ name: "", phone: "", email: "", assignedArea: "", assignedResponsibilities: "" });
@@ -751,12 +751,6 @@ export default function OrganizerDashboard() {
                 <div className="flex flex-col gap-3">
                   {filteredTickets.map((ticket) => {
                     const team = teams.find((t) => t.id === ticket.teamId);
-                    const priorityColors: Record<string, string> = {
-                      Low: "bg-gray-100 text-gray-600",
-                      Medium: "bg-amber-100 text-amber-700",
-                      High: "bg-orange-100 text-orange-700",
-                      Critical: "bg-red-100 text-red-700",
-                    };
                     const statusColors: Record<string, string> = {
                       Open: "bg-blue-100 text-blue-700",
                       Assigned: "bg-purple-100 text-purple-700",

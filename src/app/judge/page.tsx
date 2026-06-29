@@ -19,7 +19,7 @@ import {
 import { Team } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
 
-type TabType = "dashboard" | "queue" | "profile";
+type TabType = "dashboard" | "queue" | "leaderboard" | "profile";
 type ProfileTabType = "edit" | "appearance";
 
 const SCORE_CRITERIA = [
@@ -75,6 +75,21 @@ export default function JudgeDashboard() {
         }, 0) / reviewedTeams.length * 10) / 10
       : 0;
   }, [reviewedTeams, session.email]);
+
+  const leaderboardTeams = useMemo(() => {
+    return [...teams]
+      .filter((t) => t.status === "APPROVED")
+      .map((t) => {
+        const evals = t.evaluations || [];
+        const score = evals.length > 0
+          ? Math.round(evals.reduce((sum, ev) => {
+              return sum + (ev.innovation + ev.feasibility + ev.presentation + (ev.technicalDepth ?? 0) + (ev.aiUsage ?? 0)) / 5;
+            }, 0) / evals.length * 10) / 10
+          : 0;
+        return { ...t, avgScore: score };
+      })
+      .sort((a, b) => b.avgScore - a.avgScore);
+  }, [teams]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -324,6 +339,68 @@ export default function JudgeDashboard() {
                     );
                   })}
                   {filteredQueue.length === 0 && <div className="col-span-2 text-center text-gray-400 py-12 text-sm">No teams match your filters.</div>}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── LEADERBOARD ─── */}
+            {activeTab === "leaderboard" && (
+              <motion.div key="leaderboard" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Live Leaderboard</h2>
+                  <span className="text-xs text-gray-400 font-semibold dark:text-gray-500">Read-Only View</span>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                      <tr>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Rank</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Team</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Track</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Average Score</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Reviews</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboardTeams.map((team, index) => {
+                        const track = HACK_TRACKS.find((tr) => tr.id === team.trackId);
+                        const evals = team.evaluations || [];
+                        return (
+                          <tr key={team.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <td className="px-5 py-3">
+                              <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold ${
+                                index === 0 ? "bg-amber-100 text-amber-700" :
+                                index === 1 ? "bg-gray-100 text-gray-600" :
+                                index === 2 ? "bg-orange-100 text-orange-700" :
+                                "text-gray-500 dark:text-gray-400"
+                              }`}>
+                                {index + 1}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 font-semibold text-primary-dark dark:text-gray-100">
+                              {team.name}
+                            </td>
+                            <td className="px-5 py-3 text-xs text-gray-500 dark:text-gray-400">
+                              {track?.label || "—"}
+                            </td>
+                            <td className="px-5 py-3 font-extrabold text-blue-600 dark:text-blue-400">
+                              {team.avgScore > 0 ? `${team.avgScore} / 10` : "Not evaluated"}
+                            </td>
+                            <td className="px-5 py-3 text-xs text-gray-400 dark:text-gray-500">
+                              {evals.length} review{evals.length !== 1 ? "s" : ""}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {leaderboardTeams.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-5 py-8 text-center text-gray-400 dark:text-gray-500">
+                            No approved teams found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </motion.div>
             )}

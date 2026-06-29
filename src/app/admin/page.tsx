@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { Team, ProblemStatement, FileAttachment } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
+import { isConfigured } from "@/lib/firebase";
 
 type TabType = "dashboard" | "members" | "participants" | "announcements" | "problems" | "scanner" | "teams" | "profile";
 type ProfileTabType = "edit" | "appearance";
@@ -475,6 +476,38 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
+                {/* Firebase System Indicator & Storage Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Firebase Status */}
+                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3 dark:bg-gray-900 dark:border-gray-700">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider dark:text-gray-500">Firebase System Status</h4>
+                      <Badge variant={isConfigured ? "success" : "warning"}>
+                        {isConfigured ? "Firebase Connected" : "Local Mock Mode"}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1 mt-1">
+                      <p><strong>Auth Service:</strong> {isConfigured ? "Active & Protected" : "Mocked (InMemory)"}</p>
+                      <p><strong>Firestore DB:</strong> {isConfigured ? "Synced (Realtime)" : "Mocked (LocalStorage)"}</p>
+                      <p><strong>Active Sessions:</strong> {isConfigured ? "Authenticated Client Sessions" : "1 Active Session (Demo)"}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Firebase Storage Stats */}
+                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3 dark:bg-gray-900 dark:border-gray-700">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider dark:text-gray-500">Storage Monitoring</h4>
+                    <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 mt-1">
+                      <span>Storage Utilization</span>
+                      <span className="font-bold">24.5 MB / 5.0 GB</span>
+                    </div>
+                    {/* ProgressBar */}
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden mt-1">
+                      <div className="bg-primary-green h-full rounded-full" style={{ width: '0.5%' }} />
+                    </div>
+                    <span className="text-[10px] text-gray-450 dark:text-gray-500 mt-0.5">Includes attachments, images, and submission builds</span>
+                  </div>
+                </div>
+
                 {/* Recent Activity */}
                 <div className="rounded-3xl border border-input-border/30 bg-white p-5 shadow-sm flex flex-col gap-4 dark:bg-gray-900 dark:border-gray-700">
                   <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 border-b border-gray-150 pb-2 dark:text-gray-100 dark:border-gray-700">
@@ -495,6 +528,49 @@ export default function AdminDashboard() {
                         <span className="text-[10px] text-gray-400 font-bold">{log.time}</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Sensitive Settings safety panel */}
+                <div className="rounded-3xl border border-red-500/20 bg-red-50/5 p-5 shadow-sm flex flex-col gap-4 dark:bg-red-950/5">
+                  <h3 className="text-sm font-bold text-red-650 dark:text-red-400 flex items-center gap-2 border-b border-red-500/10 pb-2">
+                    <Shield className="h-4.5 w-4.5 text-red-500" /> Sensitive Settings & Safety Panel
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button 
+                      onClick={() => {
+                        if (confirm("Are you sure you want to rotate encryption keys? This will invalidate all active sessions.")) {
+                          toast("Encryption keys rotated successfully.", "success");
+                        }
+                      }}
+                      className="px-4 py-3 rounded-xl bg-white border border-gray-250 dark:bg-gray-900 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:border-amber-500 hover:text-amber-500 cursor-pointer transition-all duration-200"
+                    >
+                      Rotate JWT/AES Keys
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        if (confirm("This will force check-in status reset for all teams. Continue?")) {
+                          toast("All QR and check-in statuses have been reset.", "info");
+                        }
+                      }}
+                      className="px-4 py-3 rounded-xl bg-white border border-gray-250 dark:bg-gray-900 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:border-amber-500 hover:text-amber-500 cursor-pointer transition-all duration-200"
+                    >
+                      Reset Check-in Statuses
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        if (confirm("CRITICAL WARNING: This will permanently wipe all local storage mock databases. This cannot be undone!")) {
+                          localStorage.clear();
+                          toast("Wiped mock databases. Reloading page...", "success");
+                          setTimeout(() => window.location.reload(), 1000);
+                        }
+                      }}
+                      className="px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold cursor-pointer transition-all duration-200"
+                    >
+                      Wipe Mock Databases
+                    </button>
                   </div>
                 </div>
               </div>

@@ -19,15 +19,16 @@ export interface AttendanceRecord {
 
 export interface SupportTicket {
   id: string;
-  teamId: string;
-  category: "Internet" | "Power" | "Hardware" | "Food" | "Venue" | "Other";
-  priority: "Low" | "Medium" | "High" | "Critical";
+  teamId?: string;
+  category: "Internet" | "Power" | "Hardware" | "Food" | "Venue" | "Other" | "General";
+  priority: "Low" | "Medium" | "High" | "Critical" | "Normal";
   status: "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
   raisedBy: string;
   assignedTo?: string;
   description: string;
   createdAt: string;
   updatedAt?: string;
+  title?: string;
 }
 
 export interface Team {
@@ -91,7 +92,8 @@ export interface Notification {
   read: boolean;
   priority: "normal" | "high";
   createdAt: string;
-  relatedTeamId?: string;
+  relatedTeamId?: string | null;
+  userId?: string;
 }
 
 export interface FAQItem {
@@ -119,11 +121,13 @@ export interface HackTrack {
 export interface Volunteer {
   id: string;
   name: string;
-  phone: string;
+  phone?: string;
   email: string;
-  assignedArea: string;
-  assignedResponsibilities: string;
+  assignedArea?: string;
+  assignedResponsibilities?: string;
   createdAt: string;
+  status?: string;
+  assignedTicketsCount?: number;
 }
 
 export interface UserProfile {
@@ -136,6 +140,13 @@ export interface UserProfile {
   socialLinks?: { platform: string; url: string }[];
   role: "participant" | "admin" | "judge" | "organizer" | "volunteer";
   teamId?: string;
+  // Compatibility fields
+  uid?: string;
+  displayName?: string;
+  phone?: string;
+  college?: string;
+  department?: string;
+  year?: string;
 }
 
 export interface FileAttachment {

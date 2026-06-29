@@ -25,6 +25,7 @@ import {
   QrCode,
   CheckCircle,
   ClipboardCheck,
+  Award,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -60,8 +61,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
           { id: "queue", name: "Review Queue", icon: <ListChecks className="h-5 w-5" /> },
+          { id: "leaderboard", name: "Leaderboard", icon: <Award className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
         ];
+
       case "volunteer":
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },

@@ -131,3 +131,125 @@ export const datasets: ResourceCard[] = [
     url: "https://archive.ics.uci.edu",
   },
 ];
+
+export const tools: ResourceCard[] = [
+  {
+    title: "Visual Studio Code",
+    description: "The most popular code editor with rich extensions for Python, TypeScript, Docker, and AI tooling. Fully free.",
+    tags: ["Editor", "Free", "Extensions"],
+    url: "https://code.visualstudio.com",
+    badge: "Recommended",
+    badgeColor: "bg-emerald-100 text-emerald-700",
+  },
+  {
+    title: "GitHub Copilot",
+    description: "AI pair programmer that auto-completes code, writes tests, and explains functions. Free for students.",
+    tags: ["AI", "Code Gen", "Free for Students"],
+    url: "https://github.com/features/copilot",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "LangChain",
+    description: "Framework for building LLM-powered applications with chains, agents, and memory. Supports Python and JavaScript.",
+    tags: ["LLM", "Agents", "RAG"],
+    url: "https://www.langchain.com",
+    badge: "Popular",
+    badgeColor: "bg-amber-100 text-amber-700",
+  },
+  {
+    title: "FastAPI",
+    description: "High-performance Python API framework with automatic OpenAPI docs. Ideal for ML model serving.",
+    tags: ["Python", "API", "REST"],
+    url: "https://fastapi.tiangolo.com",
+    badge: "Recommended",
+    badgeColor: "bg-emerald-100 text-emerald-700",
+  },
+];
+
+export const learning: ResourceCard[] = [
+  {
+    title: "Fast.ai – Practical Deep Learning",
+    description: "Top-down, practical deep learning course by Jeremy Howard. Build real models from day one. Completely free.",
+    tags: ["Deep Learning", "Free", "Beginner-Friendly"],
+    url: "https://course.fast.ai",
+    badge: "Recommended",
+    badgeColor: "bg-emerald-100 text-emerald-700",
+  },
+  {
+    title: "Google ML Crash Course",
+    description: "Free, self-paced ML fundamentals course from Google. Covers TensorFlow, linear models, and neural networks.",
+    tags: ["ML", "Google", "Free"],
+    url: "https://developers.google.com/machine-learning/crash-course",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "DeepLearning.AI Short Courses",
+    description: "1–2 hour free courses on LangChain, RAG, prompt engineering, and fine-tuning by Andrew Ng.",
+    tags: ["LLM", "RAG", "Free"],
+    url: "https://www.deeplearning.ai/short-courses",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+];
+
+export const templates: ResourceCard[] = [
+  {
+    title: "Next.js AI Chatbot Starter",
+    description: "Official Vercel AI SDK starter with streaming chat and multi-model support out of the box.",
+    tags: ["Next.js", "AI", "TypeScript"],
+    url: "https://github.com/vercel/ai-chatbot",
+    badge: "Official",
+    badgeColor: "bg-emerald-100 text-emerald-700",
+  },
+  {
+    title: "FastAPI + React Full-Stack Template",
+    description: "Full-stack template with FastAPI backend, React frontend, PostgreSQL, and Docker Compose. Ready to fork.",
+    tags: ["Full Stack", "FastAPI", "React"],
+    url: "https://github.com/tiangolo/full-stack-fastapi-template",
+    badge: "Popular",
+    badgeColor: "bg-amber-100 text-amber-700",
+  },
+  {
+    title: "LangChain RAG Template",
+    description: "Production-ready RAG template with vector store, ingestion pipeline, and query engine.",
+    tags: ["RAG", "Python", "LangChain"],
+    url: "https://github.com/langchain-ai/rag-app-template",
+  },
+];
+
+export const cloud: ResourceCard[] = [
+  {
+    title: "Google Cloud – \$300 Free Credits",
+    description: "New accounts receive \$300 in free credits valid for 90 days. Access Vertex AI, Cloud Run, and GKE.",
+    tags: ["Cloud", "GPU", "Credits"],
+    url: "https://cloud.google.com/free",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "Microsoft Azure for Students",
+    description: "Free Azure credits for students — no credit card required. Includes VMs, storage, and Azure AI services.",
+    tags: ["Cloud", "Students", "Free"],
+    url: "https://azure.microsoft.com/en-in/free/students",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "Vercel – Frontend Hosting",
+    description: "Deploy Next.js and React frontends instantly from GitHub. Free tier includes custom domains and serverless functions.",
+    tags: ["Frontend", "Free", "Serverless"],
+    url: "https://vercel.com",
+    badge: "Free",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "Railway – Instant Deployments",
+    description: "Deploy backends, APIs, and databases in seconds. \$5 free monthly credits with no cold starts.",
+    tags: ["Deploy", "Backend", "Free"],
+    url: "https://railway.app",
+    badge: "Recommended",
+    badgeColor: "bg-emerald-100 text-emerald-700",
+  },
+];

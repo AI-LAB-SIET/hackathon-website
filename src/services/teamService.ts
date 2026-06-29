@@ -1,6 +1,6 @@
 import { mockDelay, generateId } from './mockApi';
 import type { TeamRegistrationRequest, TeamUpdateRequest, TeamApprovalRequest, TeamFilters, TeamStatus } from '@/types/api/team';
-import type { Team as MockTeam } from '@/types';
+import type { Team as MockTeam, Participant } from '@/types';
 import { INITIAL_TEAMS } from '@/lib/mockData';
 import { notificationService } from './notificationService';
 
@@ -21,15 +21,6 @@ function setStoredTeams(teams: MockTeam[]): void {
   localStorage.setItem('siet_teams_v2', JSON.stringify(teams));
 }
 
-function getStoredSession(): { isLoggedIn: boolean; role: string | null; email: string | null; name: string | null; teamId: string | null } | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const stored = localStorage.getItem('siet_session');
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
 
 export const teamService = {
   async getTeams(filters?: TeamFilters): Promise<{ items: MockTeam[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
@@ -43,7 +34,7 @@ export const teamService = {
       teams = teams.filter(t => t.trackId === filters.trackId);
     }
     if (filters?.department) {
-      teams = teams.filter(t => t.members.some(m => m.department === filters.department));
+      teams = teams.filter(t => t.members.some((m: Participant) => m.department === filters.department));
     }
     if (filters?.size) {
       teams = teams.filter((t: MockTeam) => t.size === filters.size);
@@ -81,16 +72,14 @@ export const teamService = {
   async getTeamByMemberEmail(email: string): Promise<MockTeam | null> {
     await mockDelay();
     const teams = getStoredTeams();
-    return teams.find(t => t.members.some(m => m.email.toLowerCase() === email.toLowerCase())) || null;
+    return teams.find(t => t.members.some((m: Participant) => m.email.toLowerCase() === email.toLowerCase())) || null;
   },
 
   async createTeam(data: TeamRegistrationRequest): Promise<MockTeam> {
     await mockDelay();
     const teams = getStoredTeams();
-    const session = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('siet_session') || '{}') : { email: '', role: 'participant' };
-    
     const teamId = `team_${generateId()}`;
-    const prefix = data.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    const prefix = data.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
     const teamNum = 100 + teams.length + 5;
     const newTeam: MockTeam = {
       id: teamId,
@@ -122,7 +111,7 @@ export const teamService = {
     setStoredTeams(updatedTeams);
     
     // Auto-login the leader
-    const leader = data.members.find(m => m.isLeader) || data.members[0];
+    const leader = data.members.find((m: Participant) => m.isLeader) || data.members[0];
     localStorage.setItem('siet_session', JSON.stringify({
       isLoggedIn: true,
       role: 'participant',
@@ -172,7 +161,7 @@ export const teamService = {
     return updatedTeam;
   },
 
-  async updateTeamMembers(teamId: string, members: import('@/types').Participant[]): Promise<MockTeam> {
+  async updateTeamMembers(teamId: string, members: Participant[]): Promise<MockTeam> {
     await mockDelay();
     return teamService.updateTeam(teamId, { members, size: members.length } as TeamUpdateRequest);
   },

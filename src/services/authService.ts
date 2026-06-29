@@ -3,7 +3,7 @@ import type {
   VerifyEmailRequest, AuthTokens, SessionData, UserRole
 } from '@/types/api/auth';
 import { INITIAL_TEAMS } from '@/lib/mockData';
-import type { Team as MockTeam } from '@/types';
+import type { Team as MockTeam, Participant } from '@/types';
 
 const STORAGE_KEYS = {
   TEAMS: 'siet_teams_v2',
@@ -21,22 +21,17 @@ const STORAGE_KEYS = {
 function getStoredTeams(): MockTeam[] {
   if (typeof window === 'undefined') return INITIAL_TEAMS;
   try {
-    const stored = localStorage.getItem('siet_teams_v2');
+    const stored = localStorage.getItem(STORAGE_KEYS.TEAMS);
     return stored ? JSON.parse(stored) : INITIAL_TEAMS;
   } catch {
     return INITIAL_TEAMS;
   }
 }
 
-function setStoredTeams(teams: MockTeam[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('siet_teams_v2', JSON.stringify(teams));
-}
-
 function getStoredSession(): { isLoggedIn: boolean; role: UserRole | null; email: string | null; name: string | null; teamId: string | null } | null {
   if (typeof window === 'undefined') return null;
   try {
-    const stored = localStorage.getItem('siet_session');
+    const stored = localStorage.getItem(STORAGE_KEYS.SESSION);
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -46,7 +41,7 @@ function getStoredSession(): { isLoggedIn: boolean; role: UserRole | null; email
 function setStoredSession(session: { isLoggedIn: boolean; role: UserRole | null; email: string | null; name: string | null; teamId: string | null }): void {
   if (typeof window === 'undefined') return;
   const sessionData = JSON.stringify(session);
-  localStorage.setItem('siet_session', sessionData);
+  localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
   // Also set cookie for middleware
   const cookieValue = encodeURIComponent(sessionData);
   const maxAge = session.isLoggedIn ? 60 * 60 * 24 * 30 : 0; // 30 days or expire
@@ -56,7 +51,7 @@ function setStoredSession(session: { isLoggedIn: boolean; role: UserRole | null;
 function getStoredCredentials(): Record<string, { password: string; role: UserRole; name: string }> {
   if (typeof window === 'undefined') return {};
   try {
-    const stored = localStorage.getItem('siet_user_credentials');
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_CREDENTIALS);
     return stored ? JSON.parse(stored) : {};
   } catch {
     return {};
@@ -65,7 +60,7 @@ function getStoredCredentials(): Record<string, { password: string; role: UserRo
 
 function setStoredCredentials(creds: Record<string, { password: string; role: UserRole; name: string }>): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('siet_user_credentials', JSON.stringify(creds));
+  localStorage.setItem(STORAGE_KEYS.USER_CREDENTIALS, JSON.stringify(creds));
 }
 
 function generateId(prefix = 'id'): string {
@@ -97,10 +92,10 @@ export const authService = {
     
     if (stored.role === 'participant') {
       const teams = getStoredTeams();
-      const team = teams.find(t => t.members.some(m => m.email.toLowerCase() === request.email.toLowerCase()));
+      const team = teams.find(t => t.members.some((m: Participant) => m.email.toLowerCase() === request.email.toLowerCase()));
       if (team) {
         teamId = team.id;
-        const member = team.members.find(m => m.email.toLowerCase() === request.email.toLowerCase());
+        const member = team.members.find((m: Participant) => m.email.toLowerCase() === request.email.toLowerCase());
         if (member) name = member.name;
       }
     }
@@ -147,13 +142,13 @@ export const authService = {
 
     // Participants are the only self-registering role.
     // Organizer, Judge, Volunteer accounts are created server-side by Admin/Organizer.
-    const allowedSelfRegisterRoles: (typeof request.role)[] = ['participant', undefined, null];
+    const allowedSelfRegisterRoles: (typeof request.role)[] = ['participant', undefined];
     if (!allowedSelfRegisterRoles.includes(request.role)) {
       throw new Error(`Self-registration as ${request.role} is not permitted.`);
     }
 
     creds[email] = { password: request.password, role: request.role || 'participant', name: request.name };
-    localStorage.setItem('siet_user_credentials', JSON.stringify(creds));
+    setStoredCredentials(creds);
 
     
     const tokens: AuthTokens = {

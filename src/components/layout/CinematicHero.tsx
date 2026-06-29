@@ -14,7 +14,7 @@ const VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIX
 export function CinematicHero({ session }: CinematicHeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
+  useState(true); // reserved for future video control
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
 
@@ -35,9 +35,7 @@ export function CinematicHero({ session }: CinematicHeroProps) {
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.play().catch(() => {
-        setIsPlaying(false);
-      });
+      videoRef.current.play().catch(() => {});
     }
   }, []);
 
@@ -148,3 +146,5 @@ export function CinematicHero({ session }: CinematicHeroProps) {
     </section>
   );
 }
+
+

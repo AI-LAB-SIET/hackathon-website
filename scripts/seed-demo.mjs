@@ -9,7 +9,7 @@
  * Usage: `node scripts/seed-demo.mjs`
  */
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { faker } from '@faker-js/faker';
@@ -217,7 +217,7 @@ async function main() {
     if (docInfo.name.endsWith('.pdf')) {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
-      const { width, height } = page.getSize();
+      const { height } = page.getSize();
       const font = await pdfDoc.embedFont(PDFDocument.StandardFonts.Helvetica);
       page.drawText(docInfo.content, { x: 50, y: height - 50, size: 12, font });
       buffer = await pdfDoc.save();
