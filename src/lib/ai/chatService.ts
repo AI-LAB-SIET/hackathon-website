@@ -14,7 +14,6 @@
  * This makes the AI behaviour unit-testable without spinning up the HTTP layer.
  */
 
-import { db } from "../firebaseAdmin";
 import { getNimClient } from "./nimClient";
 import { getSystemPrompt } from "./promptManager";
 import { conversationManager } from "./conversationManager";
@@ -126,6 +125,7 @@ export class ChatService {
 
     // 2. Firestore Log (if db is configured)
     try {
+      const { db } = await import("../firebaseAdmin");
       await db.collection("nim_logs").add({
         sessionId,
         role: role ?? "guest",

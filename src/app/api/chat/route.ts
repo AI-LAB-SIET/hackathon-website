@@ -26,12 +26,9 @@
  *   - NVIDIA_NIM_API_KEY must be set in environment
  */
 
-import { getAuth } from 'firebase-admin/auth';
-import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { vectorStore } from '@/lib/kb/vectorStore';
 import { detectIntent, Intent } from '@/lib/ai/intentDetector';
 import { chatService } from '@/lib/ai/chatService';
-import { db as adminDb } from '@/lib/firebaseAdmin';
 import { UserRole, ChatRequest, ChatError } from '@/lib/ai/types';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -58,6 +55,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const idToken = authHeader.split(' ')[1];
       try {
+        const { getAuth } = await import('firebase-admin/auth');
         const decoded = await getAuth().verifyIdToken(idToken);
         uid = decoded.uid;
       } catch {
@@ -119,20 +117,31 @@ export async function POST(req: NextRequest): Promise<Response> {
       cleanMessage = `${retrievedContext}\n\n${cleanMessage}`;
     } else if (intent === Intent.UserProfile) {
       if (uid) {
-        const userDoc = await adminDb.collection('users').doc(uid).get();
-        if (userDoc.exists) {
-          const profile = userDoc.data();
-          cleanMessage = `User profile: ${JSON.stringify(profile)}\n\n${cleanMessage}`;
+        try {
+          const { db: adminDb } = await import('@/lib/firebaseAdmin');
+          const userDoc = await adminDb.collection('users').doc(uid).get();
+          if (userDoc.exists) {
+            const profile = userDoc.data();
+            cleanMessage = `User profile: ${JSON.stringify(profile)}\n\n${cleanMessage}`;
+          }
+        } catch (err) {
+          console.error("Firestore user profile fetch failed:", err);
         }
       }
     } else if (intent === Intent.TeamInfo) {
       if (uid) {
-        const teamsSnap = await adminDb.collection('teams')
-          .where('memberUids', 'array-contains', uid)
-          .get();
-        const teams = teamsSnap.docs.map((d: QueryDocumentSnapshot) => d.data());
-        if (teams.length) {
-          cleanMessage = `Team info: ${JSON.stringify(teams)}\n\n${cleanMessage}`;
+        try {
+          const { db: adminDb } = await import('@/lib/firebaseAdmin');
+          const teamsSnap = await adminDb.collection('teams')
+            .where('memberUids', 'array-contains', uid)
+            .get();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const teams = teamsSnap.docs.map((d: any) => d.data());
+          if (teams.length) {
+            cleanMessage = `Team info: ${JSON.stringify(teams)}\n\n${cleanMessage}`;
+          }
+        } catch (err) {
+          console.error("Firestore team info fetch failed:", err);
         }
       }
     }
