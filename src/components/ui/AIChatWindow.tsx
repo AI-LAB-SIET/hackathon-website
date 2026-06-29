@@ -12,7 +12,7 @@
  * - Added "Regenerate" button on the last AI message.
  * - Added per-message "Copy" button on AI messages.
  * - Added error state: red banner with a Retry button when the API fails.
- * - Updated status line from "Simulated Service" → "NVIDIA NIM".
+ * - Updated status line from "Simulated Service" → "Online".
  * - On clear conversation, also calls DELETE /api/chat to clear server-side history.
  * - All existing UI (markdown renderer, suggestions, typing indicator, layout) preserved.
  */
@@ -185,7 +185,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
       const welcome: AIMessage = {
         id: "welcome",
         sender: "ai",
-        text: `Welcome, **${session.name || "Guest"}**! 👋 I am your AI Hackathon assistant powered by **NVIDIA NIM**.\n\nHow can I assist you with your hackathon journey today? Ask me about rules, deadlines, check-ins, or submissions!`,
+        text: `Welcome, **${session.name || "Guest"}**! 👋 I am your AI Hackathon assistant.\n\nHow can I assist you with your hackathon journey today? Ask me about rules, deadlines, check-ins, or submissions!`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages([welcome]);
