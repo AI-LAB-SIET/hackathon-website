@@ -555,7 +555,7 @@ export default function ParticipantDashboard() {
             {/* ─── MY TEAM TAB ─── */}
             {activeTab === "team" && (
               <motion.div key="team" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><Users className="h-5 w-5 text-primary-green" /> My Team</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><Users className="h-5 w-5 text-primary-green" /> My Team</h2>
 
                 {/* Registration Section — shown when team needs registration work */}
                 {needsRegistration && (
@@ -778,7 +778,7 @@ export default function ParticipantDashboard() {
             {/* ─── PROJECT TAB ─── */}
             {activeTab === "project" && (
               <motion.div key="project" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><FolderOpen className="h-5 w-5 text-primary-green" /> Project Workspace</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><FolderOpen className="h-5 w-5 text-primary-green" /> Project Workspace</h2>
                 {/* Sub tabs */}
                 <div className="flex gap-2 flex-wrap">
                   {(["overview", "repo", "submission"] as const).map((t) => (
@@ -875,7 +875,7 @@ export default function ParticipantDashboard() {
             {activeTab === "notifications" && (
               <motion.div key="notifications" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <div className="flex items-center justify-between flex-wrap gap-3">
-                  <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><Bell className="h-5 w-5 text-primary-green" /> Notifications</h2>
+                  <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><Bell className="h-5 w-5 text-primary-green" /> Notifications</h2>
                   {unreadCount > 0 && (
                     <button onClick={markAllNotificationsRead} className="text-sm font-semibold text-primary-green hover:underline cursor-pointer">Mark all as read</button>
                   )}
@@ -920,7 +920,7 @@ export default function ParticipantDashboard() {
             {/* ─── RESOURCES TAB ─── */}
             {activeTab === "resources" && (
               <motion.div key="resources" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary-green" /> Resources</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><BookOpen className="h-5 w-5 text-primary-green" /> Resources</h2>
 
                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-4">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -1031,7 +1031,7 @@ export default function ParticipantDashboard() {
             {/* ─── SUPPORT TAB ─── */}
             {activeTab === "support" && (
               <motion.div key="support" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2"><LifeBuoy className="h-5 w-5 text-primary-green" /> Support</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><LifeBuoy className="h-5 w-5 text-primary-green" /> Support</h2>
 
                 {/* Raise Ticket + Track Tickets */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
