@@ -185,7 +185,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
       const welcome: AIMessage = {
         id: "welcome",
         sender: "ai",
-        text: `Welcome, **${session.name || "Guest"}**! 👋 I am your AI Hackathon assistant.\n\nHow can I assist you with your hackathon journey today? Ask me about rules, deadlines, check-ins, or submissions!`,
+        text: `Welcome, **${session.name || "Guest"}**! 👋 I am your AI Hackathon assistant powered by NVIDIA NIM.\n\nHow can I assist you with your hackathon journey today? Ask me about rules, deadlines, check-ins, or submissions!`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages([welcome]);
