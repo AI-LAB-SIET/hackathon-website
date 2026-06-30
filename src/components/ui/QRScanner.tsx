@@ -20,7 +20,6 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
   const { toast } = useToast();
   
   const [permissionStatus, setPermissionStatus] = useState<"prompt" | "granted" | "denied" | "insecure">("prompt");
-  const [scannerReady, setScannerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [showFallback, setShowFallback] = useState(false);
@@ -58,7 +57,7 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
         onClose();
         return;
       }
-    } catch (e) {
+    } catch {
       // Not JSON, continue to string checks
     }
 
@@ -85,20 +84,6 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
     toast("QR code not recognized. Please try again.", "error");
   }, [teams, onSelectTeam, onClose, toast]);
 
-  // Strict role check for scanner access
-  if (session.isLoggedIn && !["admin", "organizer", "judge", "volunteer"].includes(session.role || "")) {
-    return (
-      <Dialog open={open} onClose={onClose} ariaLabel="Unauthorized">
-        <div className="p-8 text-center flex flex-col items-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Access Denied</h2>
-          <p className="text-gray-500 mb-6 text-sm">You do not have the required permissions to use the QR scanner.</p>
-          <button onClick={onClose} className="px-6 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Close</button>
-        </div>
-      </Dialog>
-    );
-  }
-
   const stopScanner = useCallback(async () => {
     if (scannerRef.current) {
       try {
@@ -106,7 +91,6 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
         scannerRef.current.clear();
       } catch { /* ignore */ }
       scannerRef.current = null;
-      setScannerReady(false);
     }
   }, []);
 
@@ -127,7 +111,6 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
         () => {}
       );
 
-      setScannerReady(true);
       setError(null);
     } catch (err: unknown) {
       console.error("Scanner error:", err);
@@ -176,6 +159,20 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
     await stopScanner();
     setFacingMode(prev => prev === "environment" ? "user" : "environment");
   }, [stopScanner]);
+
+  // Strict role check for scanner access (placed AFTER all hooks)
+  if (session.isLoggedIn && !["admin", "organizer", "judge", "volunteer"].includes(session.role || "")) {
+    return (
+      <Dialog open={open} onClose={onClose} ariaLabel="Unauthorized">
+        <div className="p-8 text-center flex flex-col items-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-500 mb-6 text-sm">You do not have the required permissions to use the QR scanner.</p>
+          <button onClick={onClose} className="px-6 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Close</button>
+        </div>
+      </Dialog>
+    );
+  }
 
   const filtered = teams.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase()) ||
