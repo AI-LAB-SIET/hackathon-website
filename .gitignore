@@ -50,3 +50,4 @@ scripts/*.env
 hackathon-website-6f5b9-firebase-adminsdk-fbsvc-cdc69b3c1e.json
 *-firebase-adminsdk-*.json
 -service-account.json
+passwords.md

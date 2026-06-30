@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { X, Camera, SwitchCamera, QrCode, AlertCircle, Search, Users, Gavel, ClipboardCheck, ShieldCheck, ChevronRight } from "lucide-react";
+import { X, Camera, SwitchCamera, QrCode, AlertCircle, Search, Users, Gavel, ClipboardCheck, ShieldCheck, ChevronRight, VideoOff } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
@@ -18,13 +18,27 @@ interface QRScannerProps {
 export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
   const { teams, session } = useAppState();
   const { toast } = useToast();
+  
+  const [permissionStatus, setPermissionStatus] = useState<"prompt" | "granted" | "denied" | "insecure">("prompt");
   const [scannerReady, setScannerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [showFallback, setShowFallback] = useState(false);
   const [search, setSearch] = useState("");
+  
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Check secure context on mount
+  useEffect(() => {
+    if (open) {
+      if (typeof window !== "undefined") {
+        if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+          setPermissionStatus("insecure");
+        }
+      }
+    }
+  }, [open]);
 
   const handleScanResult = useCallback((decodedText: string) => {
     // 1. Try to parse as JSON (Participant personal QR code)
@@ -85,8 +99,19 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
     );
   }
 
+  const stopScanner = useCallback(async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch { /* ignore */ }
+      scannerRef.current = null;
+      setScannerReady(false);
+    }
+  }, []);
+
   const startScanner = useCallback(async () => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || permissionStatus !== "granted") return;
 
     try {
       const scanner = new Html5Qrcode("qr-reader");
@@ -108,29 +133,35 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
       console.error("Scanner error:", err);
       const errMsg = err instanceof Error ? err.message : String(err);
       if (errMsg.includes("Permission") || errMsg.includes("NotAllowedError")) {
-        setError("Camera permission denied. Please allow camera access (or you might be in a restricted browser environment).");
+        setPermissionStatus("denied");
       } else if (errMsg.includes("NotFoundError") || errMsg.includes("Requested device not found")) {
         setError("No camera found. Please connect a camera and try again.");
       } else {
         setError("Failed to start camera. Please try again.");
       }
-      setShowFallback(true);
     }
-  }, [facingMode, handleScanResult]);
+  }, [facingMode, handleScanResult, permissionStatus]);
 
-  const stopScanner = useCallback(async () => {
-    if (scannerRef.current) {
-      try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-      } catch { /* ignore */ }
-      scannerRef.current = null;
-      setScannerReady(false);
+  const requestCameraPermission = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setPermissionStatus("insecure");
+      return;
     }
-  }, []);
+
+    try {
+      // Explicitly ask for permission
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Stop the stream immediately, we just wanted permission
+      stream.getTracks().forEach(track => track.stop());
+      setPermissionStatus("granted");
+    } catch (err) {
+      console.error("Permission request failed", err);
+      setPermissionStatus("denied");
+    }
+  };
 
   useEffect(() => {
-    if (open && !showFallback) {
+    if (open && !showFallback && permissionStatus === "granted") {
       startScanner();
     } else {
       stopScanner();
@@ -139,18 +170,12 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
     return () => {
       stopScanner();
     };
-  }, [open, startScanner, stopScanner, showFallback]);
+  }, [open, startScanner, stopScanner, showFallback, permissionStatus]);
 
   const toggleCamera = useCallback(async () => {
     await stopScanner();
     setFacingMode(prev => prev === "environment" ? "user" : "environment");
   }, [stopScanner]);
-
-  useEffect(() => {
-    if (open && !showFallback && !scannerReady && !error) {
-      startScanner();
-    }
-  }, [facingMode, open, scannerReady, error, startScanner, showFallback]);
 
   const filtered = teams.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -200,39 +225,79 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
           </div>
         </div>
 
-        {/* Camera Scanner */}
+        {/* Camera Scanner or States */}
         {!showFallback && (
-          <div className="relative aspect-square bg-gray-900 overflow-hidden mx-5 rounded-xl">
-            <div id="qr-reader" ref={containerRef} className="w-full h-full" />
+          <div className="relative aspect-square bg-gray-900 overflow-hidden mx-5 rounded-xl flex items-center justify-center">
+            
+            {permissionStatus === "granted" && (
+              <>
+                <div id="qr-reader" ref={containerRef} className="w-full h-full" />
+                {/* Scanner overlay */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute inset-[20%] border-2 border-primary-green/50 rounded-xl" />
+                  <div className="absolute inset-[20%]">
+                    <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary-green rounded-tl-lg" />
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary-green rounded-tr-lg" />
+                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary-green rounded-bl-lg" />
+                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary-green rounded-br-lg" />
+                  </div>
+                </div>
+              </>
+            )}
 
-            {/* Scanner overlay */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-[20%] border-2 border-primary-green/50 rounded-xl" />
-              <div className="absolute inset-[20%]">
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary-green rounded-tl-lg" />
-                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary-green rounded-tr-lg" />
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary-green rounded-bl-lg" />
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary-green rounded-br-lg" />
+            {permissionStatus === "insecure" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 p-6 text-center z-10">
+                <VideoOff className="h-12 w-12 text-amber-500 mb-4" />
+                <h3 className="text-white font-bold text-lg mb-2">Insecure Connection</h3>
+                <p className="text-gray-400 text-sm mb-6">Camera access requires a secure (HTTPS) connection or localhost. Your browser has blocked the camera.</p>
+                <button onClick={() => setShowFallback(true)} className="px-5 py-2.5 bg-primary-green text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors">
+                  Search Instead
+                </button>
               </div>
-            </div>
+            )}
+
+            {permissionStatus === "denied" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 p-6 text-center z-10">
+                <VideoOff className="h-12 w-12 text-red-500 mb-4" />
+                <h3 className="text-white font-bold text-lg mb-2">Camera Blocked</h3>
+                <p className="text-gray-400 text-sm mb-6">Please allow camera access in your browser settings to use the scanner.</p>
+                <div className="flex gap-3">
+                  <button onClick={requestCameraPermission} className="px-5 py-2 bg-gray-800 text-white font-bold rounded-xl border border-gray-700 hover:bg-gray-700 transition-colors">
+                    Retry
+                  </button>
+                  <button onClick={() => setShowFallback(true)} className="px-5 py-2 bg-primary-green text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors">
+                    Search Instead
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {permissionStatus === "prompt" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 p-6 text-center z-10">
+                <Camera className="h-12 w-12 text-emerald-400 mb-4" />
+                <h3 className="text-white font-bold text-lg mb-2">Enable Camera</h3>
+                <p className="text-gray-400 text-sm mb-6">We need access to your camera to scan QR codes.</p>
+                <button onClick={requestCameraPermission} className="px-6 py-2.5 bg-primary-green text-white font-bold rounded-xl hover:bg-emerald-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-primary-green/20">
+                  Allow Camera Access
+                </button>
+              </div>
+            )}
 
             {/* Error overlay */}
-            {error && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90 p-6 text-center">
+            {error && permissionStatus === "granted" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90 p-6 text-center z-20">
                 <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
                 <p className="text-white text-sm font-medium mb-4">{error}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setError(null); startScanner(); }}
-                    aria-label="Try scanning again"
-                    className="px-4 py-2 bg-primary-green text-white rounded-lg text-sm font-medium hover:bg-primary-green/90 transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-primary-green text-white rounded-lg text-sm font-medium hover:bg-primary-green/90 transition-colors"
                   >
                     Try Again
                   </button>
                   <button
                     onClick={() => setShowFallback(true)}
-                    aria-label="Search for team instead"
-                    className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
                   >
                     Search Instead
                   </button>
@@ -243,7 +308,7 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
         )}
 
         {/* Controls */}
-        {!showFallback && (
+        {!showFallback && permissionStatus === "granted" && (
           <div className="flex items-center justify-center gap-4 p-4">
             <button
               onClick={toggleCamera}
