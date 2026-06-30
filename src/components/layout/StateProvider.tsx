@@ -20,7 +20,7 @@ import {
   getDoc,
   writeBatch
 } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 interface StateContextType {
   teams: Team[];
@@ -232,22 +232,35 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       cleanupActiveListeners();
 
       if (firebaseUser && !firebaseFailed) {
+        if (!firebaseUser.emailVerified && firebaseUser.email !== 'admin@hacklab.internal') {
+          try {
+            await signOut(firebaseAuth);
+          } catch (e) {
+            console.error("Sign out failed", e);
+          }
+          setSession({ isLoggedIn: false, role: null, email: null, teamId: null });
+          clearSessionCookie();
+          return;
+        }
+
         try {
           const userDocRef = doc(firestore, "users", firebaseUser.uid);
           const userSnap = await getDoc(userDocRef);
           let role: "participant" | "admin" | "judge" | "organizer" | "volunteer" = "participant";
           let teamId: string | null = null;
           let displayName = firebaseUser.displayName ?? "New User";
+          let teamSetupDone: boolean = true;
 
           if (userSnap.exists()) {
             const userData = userSnap.data();
             role = userData.role ?? "participant";
             teamId = userData.teamId ?? null;
             displayName = userData.displayName ?? displayName;
+            teamSetupDone = userData.teamSetupDone ?? true; // default true for legacy accounts
           }
 
-          setSession({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId });
-          setSessionCookie({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId });
+          setSession({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId, teamSetupDone });
+          setSessionCookie({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId, teamSetupDone });
 
           // Start listeners now that we are logged in
           unsubTeams = onSnapshot(collection(firestore, "teams"), (snap) => {
@@ -528,13 +541,15 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       const batch = writeBatch(db);
       // Create team document
       batch.set(doc(db, "teams", teamId), newTeam);
-      // Link user to the team
-      batch.update(doc(db, "users", auth.currentUser.uid), { teamId });
+      // Link user to the team and mark setup as done
+      batch.update(doc(db, "users", auth.currentUser.uid), { teamId, teamSetupDone: true });
       await batch.commit();
+      // Update local session to reflect team setup completed
+      setSession((prev) => ({ ...prev, teamId, teamSetupDone: true }));
     } else {
       setTeams((prev) => [...prev, newTeam]);
       const leader = teamData.members.find((m) => m.isLeader) || teamData.members[0];
-      const newSession = { isLoggedIn: true, role: "participant" as const, email: leader.email, name: leader.name, teamId };
+      const newSession = { isLoggedIn: true, role: "participant" as const, email: leader.email, name: leader.name, teamId, teamSetupDone: true };
       setSession(newSession);
       setSessionCookie(newSession);
     }

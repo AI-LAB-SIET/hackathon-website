@@ -110,6 +110,7 @@ export interface UserSession {
   name?: string | null;
   teamId?: string | null;
   profilePicture?: string;
+  teamSetupDone?: boolean;
 }
 
 export interface HackTrack {

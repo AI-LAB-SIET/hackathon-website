@@ -121,8 +121,12 @@ export default function ParticipantDashboard() {
     }
   }, [session.email, getProfile]);
   useEffect(() => {
-    if (mounted && (!session.isLoggedIn || session.role !== "participant")) {
-      router.push("/login");
+    if (mounted) {
+      if (!session.isLoggedIn || session.role !== "participant") {
+        router.push("/login");
+      } else if (session.teamSetupDone === false) {
+        router.push("/onboarding");
+      }
     }
   }, [session, router, mounted]);
 

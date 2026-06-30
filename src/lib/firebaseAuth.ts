@@ -25,6 +25,7 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithPopup,
   GoogleAuthProvider,
   type User as FirebaseUser,
@@ -103,6 +104,16 @@ export async function signInWithRole(
 
   try {
     const credential = await signInWithEmailAndPassword(auth, email, password);
+
+    // Verify email verified status
+    if (!credential.user.emailVerified) {
+      await signOut(auth);
+      throw buildError(
+        'auth/email-not-verified',
+        'Please verify your email address before logging in. Check your inbox for the confirmation link.'
+      );
+    }
+
     const result = await resolveUserProfile(credential.user);
 
     if (expectedRole && result.role !== expectedRole) {
@@ -197,10 +208,15 @@ export async function signUpWithEmail(
       displayName: name,
       role: 'participant' as AppRole,
       verified: false,
+      teamSetupDone: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     await setDoc(profileRef, newProfile);
+
+    // Sign out immediately — user must verify their email before logging in.
+    // This prevents auto-login triggered by createUserWithEmailAndPassword.
+    await signOut(auth);
 
     return {
       uid: firebaseUser.uid,
@@ -208,6 +224,50 @@ export async function signUpWithEmail(
       displayName: name,
       role: 'participant',
     };
+  } catch (err: unknown) {
+    throw mapFirebaseError(err);
+  }
+}
+
+/**
+ * Send a "Set your password" email to a newly invited team member.
+ * Uses Firebase's own email infrastructure (same as email verification).
+ * The member receives a password reset link that lets them set their password
+ * and gain access to the platform.
+ */
+export async function sendMemberInviteEmail(memberEmail: string): Promise<void> {
+  if (!isConfigured || !auth) {
+    // Mock mode: just log
+    console.log(`[Mock] Password setup link would be sent to: ${memberEmail}`);
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, memberEmail, {
+      url: `${window.location.origin}/login`,
+    });
+  } catch (err: unknown) {
+    // Non-critical: log warning but don't break the onboarding flow
+    console.warn(`Could not send invite email to ${memberEmail}:`, err);
+  }
+}
+
+/**
+ * Sign in temporarily to resend verification email, then sign out.
+ */
+export async function resendVerificationEmail(
+  email: string,
+  password: string
+): Promise<void> {
+  if (!isConfigured || !auth) {
+    throw buildError('auth/service-unavailable', 'Firebase is not configured.');
+  }
+
+  try {
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    if (!credential.user.emailVerified) {
+      await sendEmailVerification(credential.user);
+    }
+    await signOut(auth);
   } catch (err: unknown) {
     throw mapFirebaseError(err);
   }
@@ -318,6 +378,7 @@ function mapFirebaseError(err: unknown): FirebaseAuthError {
     'auth/weak-password': 'The password is too weak.',
     'auth/operation-not-allowed': 'Email/password sign-in is not enabled. Contact the admin.',
     'auth/api-key-not-valid': 'Firebase API key is not valid. Contact the admin.',
+    'auth/email-not-verified': 'Please verify your email address before logging in. Check your inbox for the confirmation link.',
   };
   const msg = userFriendlyMessages[code] ??
     (code.startsWith('auth/') ? `Authentication failed. (${code})` : 'Authentication service error.');

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { signInWithRole, signInAsAdmin } from "@/lib/firebaseAuth";
+import { signInWithRole, signInAsAdmin, resendVerificationEmail } from "@/lib/firebaseAuth";
 import { isConfigured } from "@/lib/firebase";
 
 type RoleType = "participant" | "admin" | "judge" | "organizer" | "volunteer";
@@ -26,8 +26,10 @@ export default function Login() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [firebaseError, setFirebaseError] = useState("");
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [resending, setResending] = useState(false);
 
-  const redirectByRole = useCallback((role: RoleType) => {
+  const redirectByRole = useCallback((role: RoleType, teamSetupDone?: boolean) => {
     switch (role) {
       case "admin":
         router.push("/admin");
@@ -43,7 +45,12 @@ export default function Login() {
         break;
       case "participant":
       default:
-        router.push("/dashboard");
+        // If participant hasn't completed team setup, send to onboarding
+        if (teamSetupDone === false) {
+          router.push("/onboarding");
+        } else {
+          router.push("/dashboard");
+        }
         break;
     }
   }, [router]);
@@ -51,7 +58,7 @@ export default function Login() {
   // If already logged in, redirect to the correct workspace
   useEffect(() => {
     if (session.isLoggedIn && session.role) {
-      redirectByRole(session.role);
+      redirectByRole(session.role, session.teamSetupDone);
     }
   }, [session, router, redirectByRole]);
 
@@ -115,9 +122,13 @@ export default function Login() {
         return;
       } catch (err: unknown) {
         setSubmitting(false);
+        const code = (err as { code?: string })?.code;
         const msg = (err as { userFriendly?: string })?.userFriendly ?? "Authentication failed.";
         setError(msg);
         toast(msg, "error");
+        if (code === "auth/email-not-verified") {
+          setIsUnverified(true);
+        }
         return; // Do not fall back to mock!
       }
     }
@@ -135,6 +146,24 @@ export default function Login() {
         setError("Account not found. Please check your email/username and password.");
       }
     }, 1200);
+  };
+
+  const handleResendVerification = async () => {
+    if (!email.trim() || !password.trim()) {
+      toast("Please fill in email and password first.", "error");
+      return;
+    }
+    setResending(true);
+    try {
+      await resendVerificationEmail(email.trim(), password);
+      toast("Verification email resent. Please check your inbox.", "success");
+      setIsUnverified(false);
+    } catch (err: unknown) {
+      const msg = (err as { userFriendly?: string })?.userFriendly ?? "Failed to resend verification email.";
+      toast(msg, "error");
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -170,7 +199,7 @@ export default function Login() {
               placeholder="e.g. name@college.edu or Admin2727"
               type="text"
               value={email}
-              onChange={(e) => { setEmail(e.target.value); setFirebaseError(""); }}
+              onChange={(e) => { setEmail(e.target.value); setFirebaseError(""); setError(""); setIsUnverified(false); }}
               error={(error || firebaseError) ? " " : undefined}
             />
 
@@ -179,14 +208,26 @@ export default function Login() {
               placeholder="••••••••"
               type="password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setFirebaseError(""); }}
+              onChange={(e) => { setPassword(e.target.value); setFirebaseError(""); setError(""); setIsUnverified(false); }}
               error={(error || firebaseError) ? " " : undefined}
             />
 
             {(error || firebaseError) && (
-              <span className="text-xs text-red-600 font-semibold leading-relaxed">
-                {firebaseError || error}
-              </span>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs text-red-600 font-semibold leading-relaxed">
+                  {firebaseError || error}
+                </span>
+                {isUnverified && (
+                  <button
+                    type="button"
+                    disabled={resending}
+                    onClick={handleResendVerification}
+                    className="text-xs font-bold text-left text-primary-green hover:underline cursor-pointer disabled:opacity-50"
+                  >
+                    {resending ? "Sending link..." : "Resend Verification Email"}
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Remember Me / Forgot Password */}
