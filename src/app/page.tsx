@@ -17,13 +17,16 @@ import {
   Users,
   Clock,
   ExternalLink,
+  BookOpen,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
-  const { session } = useAppState();
+  const { session, problemStatements } = useAppState();
   const [stats, setStats] = useState({ teams: 0, prize: 0, hours: 0, mentors: 0 });
   const [activeStep, setActiveStep] = useState(0);
+  const publishedPs = problemStatements.filter((ps) => ps.status === "published");
 
   // Stagger stats counting upwards
   useEffect(() => {
@@ -136,6 +139,71 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Problem Statements Preview Section — only shown when PS are published */}
+      {publishedPs.length > 0 && (
+        <section className="py-16 bg-gradient-to-br from-primary-green/5 to-teal-500/5 border-y border-primary-green/10 dark:from-emerald-900/10 dark:to-teal-900/5 dark:border-emerald-800/20">
+          <div className="max-w-[1440px] mx-auto px-6">
+            <div className="text-center flex flex-col items-center gap-3 mb-10">
+              <span className="px-3 py-1.5 rounded-full bg-primary-green/10 border border-primary-green/20 text-primary-green text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
+                <BookOpen className="h-3.5 w-3.5" /> Official Problem Statements
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">
+                Challenges Await You
+              </h2>
+              <p className="max-w-2xl text-xs sm:text-sm text-gray-500 leading-relaxed dark:text-gray-400">
+                The organizing team has published {publishedPs.length} problem statement{publishedPs.length > 1 ? "s" : ""} for this hackathon. Pick your challenge and start building.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+              {publishedPs.slice(0, 3).map((ps, idx) => (
+                <motion.div
+                  key={ps.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.4, delay: idx * 0.1 }}
+                  whileHover={{ y: -4, boxShadow: "0 12px 40px rgba(88,204,2,0.10)" }}
+                  className="bg-white dark:bg-gray-900 rounded-3xl border border-input-border/20 dark:border-gray-700 p-6 flex flex-col gap-4 shadow-sm transition-all duration-300"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary-green/10 flex items-center justify-center shrink-0 border border-primary-green/10">
+                      <BookOpen className="h-5 w-5 text-primary-green" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-extrabold text-primary-dark dark:text-gray-100 text-sm leading-tight mb-1">{ps.title}</h3>
+                      <p className="text-[10px] text-primary-green font-bold uppercase tracking-wide">
+                        PS-{String(idx + 1).padStart(2, "0")}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex-1 line-clamp-3">
+                    {ps.description}
+                  </p>
+                  <Link
+                    href="/hackathon"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-primary-green hover:text-primary-dark transition-colors mt-auto"
+                  >
+                    Read full statement <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            {publishedPs.length > 3 && (
+              <div className="text-center">
+                <Link
+                  href="/hackathon"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-primary-green text-primary-green font-bold text-sm hover:bg-primary-green hover:text-white transition-all duration-200"
+                >
+                  View all {publishedPs.length} problem statements <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Timeline Snapshot Section */}
       <section className="py-16 bg-card-bg/20 border-t border-input-border/10 dark:bg-gray-800/20 dark:border-gray-700">

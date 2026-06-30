@@ -99,6 +99,9 @@ export default function AdminDashboard() {
   const [psCreateOpen, setPsCreateOpen] = useState(false);
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
   const [psAttachments, setPsAttachments] = useState<FileAttachment[]>([]);
+  // Inline quick-add form
+  const [quickPsForm, setQuickPsForm] = useState({ title: "", description: "" });
+  const [quickPsAdding, setQuickPsAdding] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
   const [notifOpen, setNotifOpen] = useState(false);
@@ -395,6 +398,24 @@ export default function AdminDashboard() {
   const handleArchivePs = (id: string) => {
     archiveProblemStatement(id);
     toast("Problem statement archived.", "info");
+  };
+  const handleDeletePs = (id: string) => {
+    if (confirm("Are you sure you want to permanently delete this problem statement? This cannot be undone.")) {
+      archiveProblemStatement(id);
+      toast("Problem statement deleted.", "info");
+      if (expandedPs === id) setExpandedPs(null);
+    }
+  };
+  const handleQuickAddPs = () => {
+    if (!quickPsForm.title.trim() || !quickPsForm.description.trim()) {
+      toast("Title and explanation are required.", "error");
+      return;
+    }
+    setQuickPsAdding(true);
+    addProblemStatement({ title: quickPsForm.title.trim(), description: quickPsForm.description.trim(), trackId: "gen-ai", status: "draft", attachments: [] });
+    toast(`"${quickPsForm.title}" added as draft.`, "success");
+    setQuickPsForm({ title: "", description: "" });
+    setQuickPsAdding(false);
   };
 
   // ─── PROFILE ───
@@ -796,6 +817,76 @@ export default function AdminDashboard() {
             {/* ═══════════════════════════════════════════ PROBLEM STATEMENTS TAB ═══════════════════════════════════════════ */}
             {activeTab === "problems" && (
               <div className="flex flex-col gap-5">
+
+                {/* ── Inline Quick-Add Form ── */}
+                <div className="rounded-3xl border-2 border-dashed border-primary-green/30 bg-emerald-50/30 dark:bg-emerald-950/10 p-5 flex flex-col gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-xl bg-primary-green/10 flex items-center justify-center shrink-0">
+                      <Plus className="h-4 w-4 text-primary-green" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-primary-dark dark:text-gray-100">Quick Add Problem Statement</h3>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">Add one by one — saved as draft. Use the &quot;Create&quot; button above for advanced options.</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <Input
+                      label="Title *"
+                      value={quickPsForm.title}
+                      onChange={(e) => setQuickPsForm((p) => ({ ...p, title: e.target.value }))}
+                      placeholder="e.g. AI-powered Smart Campus Energy Monitor"
+                    />
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Statement Explanation *</label>
+                      <textarea
+                        rows={4}
+                        value={quickPsForm.description}
+                        onChange={(e) => setQuickPsForm((p) => ({ ...p, description: e.target.value }))}
+                        placeholder="Describe the problem, the context, what participants need to build, and any constraints..."
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-colors"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        onClick={handleQuickAddPs}
+                        className="text-xs"
+                        disabled={quickPsAdding || !quickPsForm.title.trim() || !quickPsForm.description.trim()}
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Add as Draft
+                      </Button>
+                      {(quickPsForm.title || quickPsForm.description) && (
+                        <button
+                          onClick={() => setQuickPsForm({ title: "", description: "" })}
+                          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Stats summary bar ── */}
+                {problemStatements.length > 0 && (
+                  <div className="flex items-center gap-3 px-1">
+                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">All Statements ({problemStatements.length})</span>
+                    <div className="flex gap-2">
+                      {(["draft", "published", "archived"] as const).map((s) => {
+                        const count = problemStatements.filter((p) => p.status === s).length;
+                        if (!count) return null;
+                        return (
+                          <span key={s} className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                            s === "published" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" :
+                            s === "archived" ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300" :
+                            "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                          }`}>{count} {s}</span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Problem statements list ── */}
                 {problemStatements.map((ps) => {
                   const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
                   const isExpanded = expandedPs === ps.id;
@@ -803,28 +894,33 @@ export default function AdminDashboard() {
                     <div key={ps.id} className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
                       <button
                         onClick={() => setExpandedPs(isExpanded ? null : ps.id)}
-                        className="w-full p-5 flex items-center justify-between text-left cursor-pointer bg-transparent border-0"
+                        className="w-full p-5 flex items-center justify-between text-left cursor-pointer bg-transparent border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <Badge variant={ps.status === "published" ? "success" : ps.status === "archived" ? "danger" : "warning"}>
                             {ps.status.toUpperCase()}
                           </Badge>
-                          <div>
-                            <h4 className="text-sm font-bold text-primary-dark dark:text-gray-100">{ps.title}</h4>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-primary-dark dark:text-gray-100 truncate">{ps.title}</h4>
                             <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold mt-0.5">
-                              {track?.label || "—"} · Created {new Date(ps.createdAt).toLocaleDateString()}
+                              {track?.label || "General"} · Created {new Date(ps.createdAt).toLocaleDateString()}
+                              {ps.attachments && ps.attachments.length > 0 && ` · ${ps.attachments.length} file${ps.attachments.length > 1 ? "s" : ""}`}
                             </p>
                           </div>
                         </div>
-                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform shrink-0 ml-3 ${isExpanded ? "rotate-180" : ""}`} />
                       </button>
                       {isExpanded && (
-                        <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 pt-4">
-                          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-4">{ps.description}</p>
+                        <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 pt-4 space-y-4">
+                          {/* Description */}
+                          <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-4">
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Statement Explanation</p>
+                            <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{ps.description}</p>
+                          </div>
 
                           {/* Attachments */}
                           {ps.attachments && ps.attachments.length > 0 && (
-                            <div className="mb-4">
+                            <div>
                               <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                 <Paperclip className="h-3 w-3" /> Attachments ({ps.attachments.length})
                               </p>
@@ -852,7 +948,8 @@ export default function AdminDashboard() {
                             </div>
                           )}
 
-                          <div className="flex gap-2">
+                          {/* Action buttons */}
+                          <div className="flex flex-wrap gap-2 pt-1">
                             <button onClick={() => handleEditPs(ps)} className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] font-bold hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center gap-1">
                               <Edit3 className="h-3 w-3" /> Edit
                             </button>
@@ -861,21 +958,25 @@ export default function AdminDashboard() {
                                 <Send className="h-3 w-3" /> Publish
                               </button>
                             )}
-                            {ps.status !== "archived" && (
+                            {ps.status === "published" && (
                               <button onClick={() => handleArchivePs(ps.id)} className="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-[11px] font-bold hover:bg-amber-200 cursor-pointer transition-colors flex items-center gap-1">
                                 <Archive className="h-3 w-3" /> Archive
                               </button>
                             )}
+                            <button onClick={() => handleDeletePs(ps.id)} className="px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 text-[11px] font-bold hover:bg-red-100 dark:hover:bg-red-900/40 cursor-pointer transition-colors flex items-center gap-1 ml-auto">
+                              <Trash2 className="h-3 w-3" /> Delete
+                            </button>
                           </div>
                         </div>
                       )}
                     </div>
                   );
                 })}
+
                 {problemStatements.length === 0 && (
                   <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-10 text-center shadow-sm">
                     <BookOpen className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                    <p className="text-gray-400 dark:text-gray-500 text-sm">No problem statements yet. Click &quot;Create&quot; to add one.</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm">No problem statements yet. Use the quick-add form above or click &quot;Create&quot; for advanced options.</p>
                   </div>
                 )}
               </div>

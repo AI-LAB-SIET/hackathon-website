@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { useAppState } from "@/components/layout/StateProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "@/components/ui/modal";
 
@@ -16,9 +17,14 @@ import {
   Award,
   HelpCircle,
   BookOpen,
+  ChevronDown,
+  Paperclip,
+  FileText,
+  Download,
 } from "lucide-react";
+import { HACK_TRACKS } from "@/lib/mockData";
 
-type TabType = "overview" | "tracks" | "timeline" | "rules" | "faq";
+type TabType = "overview" | "tracks" | "timeline" | "rules" | "faq" | "problems";
 
 const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <Info className="h-4 w-4" /> },
@@ -26,6 +32,7 @@ const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: "timeline", label: "Schedule", icon: <Calendar className="h-4 w-4" /> },
   { id: "rules", label: "Guidelines", icon: <ShieldAlert className="h-4 w-4" /> },
   { id: "faq", label: "FAQ", icon: <HelpCircle className="h-4 w-4" /> },
+  { id: "problems", label: "Problem Statements", icon: <BookOpen className="h-4 w-4" /> },
 ];
 
 const tracks = [
@@ -85,8 +92,27 @@ const statusStyles: Record<string, { dot: string; text: string; border: string }
 export default function HackathonPage() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [selectedTrack, setSelectedTrack] = useState<number | null>(null);
+  const [expandedPs, setExpandedPs] = useState<string | null>(null);
+
+  const { problemStatements } = useAppState();
+  const publishedPs = problemStatements.filter((ps) => ps.status === "published");
 
   const selectedTrackData = selectedTrack !== null ? tracks[selectedTrack] : null;
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const downloadAttachment = (att: { name: string; dataUrl: string }) => {
+    const link = document.createElement("a");
+    link.href = att.dataUrl;
+    link.download = att.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <PageWrapper className="relative bg-white min-h-screen dark:bg-gray-950">
@@ -338,6 +364,117 @@ export default function HackathonPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* PROBLEMS TAB */}
+            {activeTab === "problems" && (
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-10 flex flex-col items-center gap-2">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Problem Statements</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">
+                    Official problem statements published by the organizing team. Expand each card to read the full explanation and download any attached materials.
+                  </p>
+                </div>
+
+                {publishedPs.length === 0 ? (
+                  <div className="bg-white dark:bg-gray-900 rounded-3xl border border-input-border/20 dark:border-gray-700 p-16 text-center shadow-sm">
+                    <BookOpen className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400 font-semibold text-sm">No problem statements published yet.</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Check back closer to the hackathon start date.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {publishedPs.map((ps, idx) => {
+                      const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
+                      const isExpanded = expandedPs === ps.id;
+                      return (
+                        <motion.div
+                          key={ps.id}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: idx * 0.06 }}
+                          className="bg-white dark:bg-gray-900 rounded-3xl border border-input-border/20 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                        >
+                          <button
+                            onClick={() => setExpandedPs(isExpanded ? null : ps.id)}
+                            className="w-full p-6 flex items-center justify-between gap-4 text-left cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-4 min-w-0">
+                              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary-green/20 to-teal-500/20 flex items-center justify-center shrink-0 border border-primary-green/10">
+                                <BookOpen className="h-6 w-6 text-primary-green" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <h3 className="text-sm sm:text-base font-extrabold text-primary-dark dark:text-gray-100">{ps.title}</h3>
+                                  {track && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-green/10 text-primary-green border border-primary-green/20">
+                                      {track.label}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                                  {ps.description}
+                                </p>
+                              </div>
+                            </div>
+                            <ChevronDown className={`h-5 w-5 text-gray-400 shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
+                          </button>
+
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-6 pb-6 border-t border-gray-100 dark:border-gray-700 pt-5 space-y-4">
+                                  {/* Full description */}
+                                  <div className="bg-gradient-to-br from-gray-50 to-emerald-50/30 dark:from-gray-800/60 dark:to-emerald-900/10 rounded-2xl p-5">
+                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Full Problem Statement</p>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{ps.description}</p>
+                                  </div>
+
+                                  {/* Attachments */}
+                                  {ps.attachments && ps.attachments.length > 0 && (
+                                    <div>
+                                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                        <Paperclip className="h-3 w-3" /> Attached Files ({ps.attachments.length})
+                                      </p>
+                                      <div className="flex flex-col gap-2">
+                                        {ps.attachments.map((att) => (
+                                          <div key={att.id} className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                              <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                                                <FileText className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                                              </div>
+                                              <div className="min-w-0">
+                                                <p className="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">{att.name}</p>
+                                                <p className="text-[10px] text-gray-400 dark:text-gray-500">{formatFileSize(att.size)}</p>
+                                              </div>
+                                            </div>
+                                            <button
+                                              onClick={() => downloadAttachment(att)}
+                                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-green text-white text-xs font-bold hover:bg-primary-dark cursor-pointer transition-colors shrink-0"
+                                            >
+                                              <Download className="h-3.5 w-3.5" /> Download
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </motion.div>
