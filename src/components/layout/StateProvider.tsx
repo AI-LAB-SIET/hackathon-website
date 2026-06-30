@@ -60,6 +60,8 @@ interface StateContextType {
   // Profiles
   updateProfile: (email: string, data: Partial<UserProfile>) => void;
   getProfile: (email: string) => UserProfile | undefined;
+  addProfile: (profile: UserProfile) => void;
+  deleteProfile: (id: string) => void;
   // Problem Statements
   addProblemStatement: (ps: Omit<ProblemStatement, "id" | "createdAt">) => void;
   updateProblemStatement: (id: string, data: Partial<ProblemStatement>) => void;
@@ -126,7 +128,19 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       } catch { setVolunteers(INITIAL_VOLUNTEERS); }
       try {
         const storedProfiles = localStorage.getItem("siet_profiles");
-        if (storedProfiles) setUserProfiles(JSON.parse(storedProfiles));
+        if (storedProfiles) {
+          setUserProfiles(JSON.parse(storedProfiles));
+        } else {
+          const defaultProfiles = [
+            { id: "m-1", uid: "m-1", displayName: "System Admin", name: "System Admin", email: "admin@college.edu", role: "admin" },
+            { id: "m-2", uid: "m-2", displayName: "Prof. Suresh Kumar", name: "Prof. Suresh Kumar", email: "organizer@college.edu", role: "organizer" },
+            { id: "m-3", uid: "m-3", displayName: "Dr. A. Rajesh", name: "Dr. A. Rajesh", email: "rajesh@college.edu", role: "organizer" },
+            { id: "m-4", uid: "m-4", displayName: "Dr. Priya Rajan", name: "Dr. Priya Rajan", email: "judge@college.edu", role: "judge" },
+            { id: "m-5", uid: "m-5", displayName: "Riya Verma", name: "Riya Verma", email: "riya@college.edu", role: "volunteer" },
+            { id: "m-6", uid: "m-6", displayName: "Arjun Nair", name: "Arjun Nair", email: "arjun@college.edu", role: "volunteer" },
+          ];
+          setUserProfiles(defaultProfiles as UserProfile[]);
+        }
       } catch { /* skip */ }
       try {
         const storedProblems = localStorage.getItem("siet_problems");
@@ -808,6 +822,22 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     return userProfiles.find((p) => p.email.toLowerCase() === email.toLowerCase());
   }, [userProfiles]);
 
+  const addProfile = useCallback((profile: UserProfile) => {
+    setUserProfiles((prev) => {
+      const idx = prev.findIndex((p) => p.email.toLowerCase() === profile.email.toLowerCase());
+      if (idx > -1) {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], ...profile };
+        return updated;
+      }
+      return [...prev, profile];
+    });
+  }, []);
+
+  const deleteProfile = useCallback((id: string) => {
+    setUserProfiles((prev) => prev.filter((p) => p.id !== id && p.uid !== id));
+  }, []);
+
   const addProblemStatement = useCallback(async (ps: Omit<ProblemStatement, "id" | "createdAt">) => {
     const data = {
       title: ps.title,
@@ -915,7 +945,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     addNotification, markNotificationRead, markAllNotificationsRead,
     raiseTicket, resolveTicket,
     addVolunteer, updateVolunteer, removeVolunteer,
-    updateProfile, getProfile,
+    updateProfile, getProfile, addProfile, deleteProfile,
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
     createTicket, assignTicket, updateTicketStatus,
   }), [teams, session, announcements, notifications, volunteers, userProfiles, problemStatements, tickets,
@@ -923,7 +953,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     updateProjectDetails, evaluateProject, updateMilestoneProgress, checkInTeam,
     addAnnouncement, addNotification, markNotificationRead, markAllNotificationsRead,
     raiseTicket, resolveTicket, addVolunteer, updateVolunteer, removeVolunteer,
-    updateProfile, getProfile, addProblemStatement, updateProblemStatement, archiveProblemStatement,
+    updateProfile, getProfile, addProfile, deleteProfile, addProblemStatement, updateProblemStatement, archiveProblemStatement,
     createTicket, assignTicket, updateTicketStatus]);
 
   return (

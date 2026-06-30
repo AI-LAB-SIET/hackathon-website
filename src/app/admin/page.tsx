@@ -39,8 +39,7 @@ import {
 } from "lucide-react";
 import { Team, ProblemStatement, FileAttachment, Participant } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
-import { isConfigured, db } from "@/lib/firebase";
-import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { isConfigured, db, auth } from "@/lib/firebase";
 
 type TabType = "dashboard" | "members" | "participants" | "attendance" | "announcements" | "problems" | "teams" | "profile";
 
@@ -57,14 +56,14 @@ export default function AdminDashboard() {
     session, teams, announcements, problemStatements, notifications, userProfiles,
     addAnnouncement, removeAnnouncement, addProblemStatement, updateProblemStatement, archiveProblemStatement,
     markNotificationRead, markAllNotificationsRead,
-    updateProfile, getProfile, updateTeamMembers
+    updateProfile, getProfile, updateTeamMembers, addProfile, deleteProfile
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
 
-  // Derive members from Firestore userProfiles
-  const members: Member[] = isConfigured && userProfiles.length > 0
+  // Derive members from Firestore/local userProfiles
+  const members: Member[] = userProfiles.length > 0
     ? userProfiles
       .filter(u => u.role !== "participant")
       .map(u => ({
@@ -83,7 +82,7 @@ export default function AdminDashboard() {
     ];
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-  const [memberForm, setMemberForm] = useState({ name: "", email: "", role: "organizer" as Member["role"] });
+  const [memberForm, setMemberForm] = useState({ name: "", email: "", password: "", role: "organizer" as Member["role"] });
 
   const [annForm, setAnnForm] = useState({ title: "", content: "", type: "info" as "info" | "warning" | "success", scheduleDate: "" });
   const [annEditId, setAnnEditId] = useState<string | null>(null);
@@ -161,49 +160,99 @@ export default function AdminDashboard() {
   // ─── MEMBER HANDLERS ───
   const openAddMember = () => {
     setEditingMember(null);
-    setMemberForm({ name: "", email: "", role: "organizer" });
+    setMemberForm({ name: "", email: "", password: "", role: "organizer" });
     setMemberModalOpen(true);
   };
   const openEditMember = (m: Member) => {
     setEditingMember(m);
-    setMemberForm({ name: m.name, email: m.email, role: m.role });
+    setMemberForm({ name: m.name, email: m.email, password: "", role: m.role });
     setMemberModalOpen(true);
   };
-  const handleSaveMember = () => {
+  const handleSaveMember = async () => {
     if (!memberForm.name || !memberForm.email) {
       toast("Name and email are required.", "error");
       return;
     }
+    if (!editingMember && !memberForm.password) {
+      toast("Password is required for adding a new member.", "error");
+      return;
+    }
 
-    if (isConfigured && db) {
+    if (isConfigured && db && auth) {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        const method = editingMember ? "PUT" : "POST";
+        const payload = editingMember
+          ? { id: editingMember.id, name: memberForm.name, email: memberForm.email, password: memberForm.password || undefined, role: memberForm.role }
+          : { name: memberForm.name, email: memberForm.email, password: memberForm.password, role: memberForm.role };
+
+        const res = await fetch("/api/admin/members", {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to save member.");
+        }
+
+        toast(editingMember ? "Member updated." : "Member added.", "success");
+        setMemberModalOpen(false);
+        setEditingMember(null);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "An error occurred.";
+        toast(msg, "error");
+      }
+    } else {
       const memberId = editingMember ? editingMember.id : `m-${Date.now()}`;
-      setDoc(doc(db, "users", memberId), {
+      const newProfile = {
+        id: memberId,
         uid: memberId,
         email: memberForm.email,
         displayName: memberForm.name,
+        name: memberForm.name,
         role: memberForm.role,
+        password: memberForm.password || undefined,
         createdAt: new Date().toISOString()
-      }, { merge: true }).then(() => {
-        toast(editingMember ? "Member updated." : "Member added.", "success");
-      });
-    } else {
+      };
+      addProfile(newProfile);
       toast(editingMember ? "Member updated (local mock)." : "Member added (local mock).", "success");
-    }
-
-    setMemberModalOpen(false);
-    setEditingMember(null);
-  };
-  const handleRemoveMember = (id: string) => {
-    if (confirm("Are you sure you want to remove this member?")) {
-      if (isConfigured && db) {
-        deleteDoc(doc(db, "users", id)).then(() => {
-          toast("Member removed.", "info");
-        });
-      } else {
-        toast("Member removed (local mock).", "info");
-      }
       setMemberModalOpen(false);
       setEditingMember(null);
+    }
+  };
+  const handleRemoveMember = async (id: string) => {
+    if (confirm("Are you sure you want to remove this member?")) {
+      if (isConfigured && db && auth) {
+        try {
+          const token = await auth.currentUser?.getIdToken();
+          const res = await fetch(`/api/admin/members?id=${id}`, {
+            method: "DELETE",
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || "Failed to remove member.");
+          }
+          toast("Member removed.", "info");
+          setMemberModalOpen(false);
+          setEditingMember(null);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : "An error occurred.";
+          toast(msg, "error");
+        }
+      } else {
+        deleteProfile(id);
+        toast("Member removed (local mock).", "info");
+        setMemberModalOpen(false);
+        setEditingMember(null);
+      }
     }
   };
 
@@ -990,6 +1039,13 @@ export default function AdminDashboard() {
             value={memberForm.email}
             onChange={(e) => setMemberForm((p) => ({ ...p, email: e.target.value }))}
             placeholder="email@college.edu"
+          />
+          <Input
+            label={editingMember ? "Change Password (optional)" : "Password *"}
+            type="password"
+            value={memberForm.password}
+            onChange={(e) => setMemberForm((p) => ({ ...p, password: e.target.value }))}
+            placeholder={editingMember ? "Leave blank to keep unchanged" : "Min 6 characters"}
           />
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Role</label>

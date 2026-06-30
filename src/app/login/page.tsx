@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { signInWithRole } from "@/lib/firebaseAuth";
+import { signInWithRole, signInAsAdmin } from "@/lib/firebaseAuth";
 import { isConfigured } from "@/lib/firebase";
 
 type RoleType = "participant" | "admin" | "judge" | "organizer" | "volunteer";
@@ -72,21 +72,36 @@ export default function Login() {
     const isInternalAdmin = inputEmail.toLowerCase() === "admin2727" || inputEmail.toLowerCase() === "admin@hacklab.internal";
 
     if (isInternalAdmin) {
-      if (password !== "9629371790") {
-        setError("Account not found. Please check your email/username and password.");
-        setSubmitting(false);
+      if (isConfigured) {
+        try {
+          const result = await signInAsAdmin(inputEmail, password);
+          toast(`Welcome back! Logged in as ${result.role.toUpperCase()}.`, "success");
+          // Wait for onAuthStateChanged to update session automatically
+          return;
+        } catch (err: unknown) {
+          setSubmitting(false);
+          const msg = (err as { userFriendly?: string })?.userFriendly ?? "Authentication failed.";
+          setError(msg);
+          toast(msg, "error");
+          return;
+        }
+      } else {
+        if (password !== "9629371790") {
+          setError("Account not found. Please check your email/username and password.");
+          setSubmitting(false);
+          return;
+        }
+        // Bypass Firebase exclusively for admin in mock mode
+        setTimeout(() => {
+          const res = login(inputEmail, "admin");
+          setSubmitting(false);
+          if (res.success && res.role) {
+            toast(`Welcome back! Logged in as ADMIN.`, "success");
+            redirectByRole(res.role);
+          }
+        }, 500);
         return;
       }
-      // Bypass Firebase exclusively for admin
-      setTimeout(() => {
-        const res = login(inputEmail, "admin");
-        setSubmitting(false);
-        if (res.success && res.role) {
-          toast(`Welcome back! Logged in as ADMIN.`, "success");
-          redirectByRole(res.role);
-        }
-      }, 500);
-      return;
     }
 
     if (isConfigured) {
