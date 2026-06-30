@@ -7,8 +7,6 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { QRTeamPass } from "@/components/ui/QRTeamPass";
-import QRCode from "qrcode";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, FolderOpen, Bell, User,
@@ -79,7 +77,6 @@ export default function ParticipantDashboard() {
   const [ticketFaqOpen, setTicketFaqOpen] = useState<string | null>(null);
   const [profileNewSkill, setProfileNewSkill] = useState("");
   const [memberNewSkill, setMemberNewSkill] = useState("");
-  const [participantQrDataUrl, setParticipantQrDataUrl] = useState<string>("");
   const [profileEdit, setProfileEdit] = useState({
     bio: "", skills: [] as string[], socialLinks: [] as { platform: string; url: string }[], profilePicture: "",
   });
@@ -108,17 +105,6 @@ export default function ParticipantDashboard() {
       }
     }
   }, []);
-
-  // Generate individual participant QR code
-  useEffect(() => {
-    if (session.email) {
-      QRCode.toDataURL(JSON.stringify({ type: "participant", email: session.email, name: session.name }), {
-        width: 180,
-        margin: 2,
-        color: { dark: "#064e3b", light: "#ffffff" },
-      }).then(setParticipantQrDataUrl);
-    }
-  }, [session.email, session.name]);
 
   // Sync profile edit data from state
   useEffect(() => {
@@ -320,12 +306,12 @@ export default function ParticipantDashboard() {
     }
   };
 
-  const handleDownloadParticipantQR = () => {
-    if (!participantQrDataUrl) return;
-    const link = document.createElement("a");
-    link.href = participantQrDataUrl;
-    link.download = `${(session.name || session.email || "participant").replace(/\s+/g, "_")}_QR.png`;
-    link.click();
+  const handleAddSocialLink = () => {
+    if (newSocialPlatform && newSocialUrl) {
+      setProfileEdit((p) => ({ ...p, socialLinks: [...p.socialLinks, { platform: newSocialPlatform, url: newSocialUrl }] }));
+      setNewSocialPlatform("");
+      setNewSocialUrl("");
+    }
   };
 
   const needsRegistration = team.status === "PENDING" || !team.trackId;
@@ -596,37 +582,34 @@ export default function ParticipantDashboard() {
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* QR Team Pass */}
+                  {/* Event Schedule Placeholder */}
                   <div className="space-y-4">
-                    <QRTeamPass team={team} />
-
-                    {/* Individual Participant QR */}
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">My Personal QR</div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500">Scan for attendance and identity verification</div>
+                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Important Dates</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">Upcoming milestones</div>
                       </div>
-                      <div className="flex items-center gap-5">
-                        <div className="flex flex-col items-center gap-2">
-                          {participantQrDataUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={participantQrDataUrl} alt="Your QR Code" className="w-32 h-32 rounded-xl border-2 border-gray-100 dark:border-gray-700" />
-                          ) : (
-                            <div className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                              <QrCode className="h-8 w-8 text-gray-300 dark:text-gray-600" />
-                            </div>
-                          )}
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="h-2 w-2 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">Idea Submission</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">July 5, 2026 - 11:59 PM</div>
+                          </div>
                         </div>
-                        <div className="flex-1 flex flex-col gap-2">
-                          <div className="font-semibold text-primary-dark dark:text-gray-100">{currentUser.name}</div>
-                          <div className="text-xs text-gray-400 dark:text-gray-500">{currentUser.email}</div>
-                          <div className="text-xs text-gray-400 dark:text-gray-500">{currentUser.department} · {currentUser.year}</div>
-                          <button
-                            onClick={handleDownloadParticipantQR}
-                            className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer w-fit"
-                          >
-                            <Download className="h-4 w-4" /> Download QR
-                          </button>
+                        <div className="flex items-start gap-3">
+                          <div className="h-2 w-2 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">Shortlist Announcement</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">July 10, 2026 - 10:00 AM</div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="h-2 w-2 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">Hackathon Day</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">July 18, 2026 - 09:00 AM</div>
+                          </div>
                         </div>
                       </div>
                     </div>

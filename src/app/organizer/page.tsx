@@ -8,12 +8,11 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
-import { QRScanner } from "@/components/ui/QRScanner";
 import { AttendancePanel } from "@/components/ui/AttendancePanel";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, ClipboardCheck, Bell,
-  CheckCircle, Clock, XCircle, Search, QrCode,
+  CheckCircle, Clock, XCircle, Search,
   Mail, Phone, ChevronRight, Activity, Ticket,
   Download, UserPlus, Trash2, UserCheck,
   Github, Video, Globe, BookOpen, Upload, FileText, Paperclip,
@@ -46,8 +45,7 @@ export default function OrganizerDashboard() {
   const [search, setSearch] = useState("");
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>("all");
 
-  // QR + Attendance
-  const [scannerOpen, setScannerOpen] = useState(false);
+  // Attendance
   const [attendanceTeam, setAttendanceTeam] = useState<Team | null>(null);
 
   // Announcement form
@@ -314,9 +312,6 @@ export default function OrganizerDashboard() {
           <div className="flex items-center justify-end gap-2 mb-8">
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <button onClick={() => setScannerOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
-              ><QrCode className="h-4 w-4" /> Scan QR</button>
               <button onClick={handleExportCSV}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
               ><Download className="h-4 w-4" /> Export CSV</button>
@@ -477,7 +472,7 @@ export default function OrganizerDashboard() {
                             </td>
                             <td className="px-5 py-3">
                               <button onClick={() => setAttendanceTeam(t)} className="text-xs font-semibold text-amber-600 hover:underline cursor-pointer flex items-center gap-1">
-                                <QrCode className="h-3 w-3" /> Manage
+                                <UserCheck className="h-3 w-3" /> Manage
                               </button>
                             </td>
                           </tr>
@@ -843,7 +838,7 @@ export default function OrganizerDashboard() {
           </AnimatePresence>
 
           {/* QR Scanner */}
-          <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onSelectTeam={(team) => setAttendanceTeam(team)} />
+          
 
           {/* Attendance Panel */}
           {attendanceTeam && (

@@ -13,7 +13,10 @@ import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { faker } from '@faker-js/faker';
-import admin from 'firebase-admin';
+import { getApps, initializeApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import { PDFDocument } from 'pdf-lib';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,13 +32,21 @@ function getServiceAccount() {
   return JSON.parse(readFileSync(localPath, 'utf-8'));
 }
 
-admin.initializeApp({ credential: admin.credential.cert(getServiceAccount()) });
-const auth = admin.auth();
-const db = admin.firestore();
-const storage = admin.storage().bucket();
+if (!getApps().length) {
+  initializeApp({ 
+    credential: cert(getServiceAccount()),
+    storageBucket: 'hackathon-website-6f5b9.firebasestorage.app'
+  });
+}
+const auth = getAuth();
+const db = getFirestore();
+const storage = getStorage().bucket();
 
 // Helper to create a user in Auth and Firestore
 async function createUser({ email, password, displayName, role, extra = {} }) {
+  // Sanitize email to prevent FirebaseAuthError: improperly formatted
+  email = email.replace(/[^a-zA-Z0-9@.-]/g, '').toLowerCase();
+  
   // Check if exists
   let userRecord;
   try {
@@ -64,7 +75,7 @@ async function createUser({ email, password, displayName, role, extra = {} }) {
       phone: faker.phone.number('+1-###-###-####'),
       college: faker.company.name() + ' University',
       department: faker.commerce.department(),
-      year: faker.datatype.number({ min: 1, max: 5 }),
+      year: faker.number.int({ min: 1, max: 5 }),
       photoURL: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -92,7 +103,7 @@ async function main() {
   for (const [role, count] of Object.entries(roles)) {
     for (let i = 0; i < count; i++) {
       const name = faker.person.fullName();
-      const email = `${name.toLowerCase().replace(/\s+/g, '.')}.${role}@demo.com`;
+      const email = `demo.${role}.${i}@demo.com`;
       const password = 'DemoPass123!'; // simple password for all demo users
       const uid = await createUser({ email, password, displayName: name, role });
       uidMap[`${role}-${i}`] = uid;
@@ -102,15 +113,15 @@ async function main() {
   // 2. Teams
   const teamIds = [];
   for (let i = 0; i < 20; i++) {
-    const teamName = `${faker.company.adjective()} ${faker.company.bsBuzz()} Team`;
+    const teamName = `${faker.word.adjective()} ${faker.word.noun()} Team`;
     // pick a random organizer as leader
-    const leaderKey = `organizer-${faker.datatype.number({ min: 0, max: 2 })}`;
+    const leaderKey = `organizer-${faker.number.int({ min: 0, max: 2 })}`;
     const leaderUid = uidMap[leaderKey];
     const memberUids = [];
     // pick 3-5 participants as members
-    const memberCount = faker.datatype.number({ min: 3, max: 5 });
+    const memberCount = faker.number.int({ min: 3, max: 5 });
     for (let m = 0; m < memberCount; m++) {
-      const pKey = `participant-${faker.datatype.number({ min: 0, max: 49 })}`;
+      const pKey = `participant-${faker.number.int({ min: 0, max: 49 })}`;
       memberUids.push(uidMap[pKey]);
     }
     const teamRef = db.collection('teams').doc();
@@ -118,7 +129,7 @@ async function main() {
       name: teamName,
       leaderUid,
       memberUids,
-      projectTitle: faker.company.catchPhrase(),
+      projectTitle: faker.company.name(),
       domain: faker.hacker.noun(),
       status: faker.helpers.arrayElement(['pending', 'active', 'completed']),
       createdAt: new Date().toISOString(),
@@ -133,11 +144,11 @@ async function main() {
   for (let i = 0; i < 20; i++) {
     const projRef = db.collection('projects').doc();
     const teamId = teamIds[i];
-    const title = faker.company.catchPhrase();
+    const title = faker.company.name();
     await projRef.set({
       title,
       description: faker.lorem.paragraphs(2),
-      technologies: faker.helpers.arrayElements(['React', 'Node.js', 'Python', 'TensorFlow', 'Docker', 'Kubernetes'], faker.datatype.number({ min: 2, max: 4 })),
+      technologies: faker.helpers.arrayElements(['React', 'Node.js', 'Python', 'TensorFlow', 'Docker', 'Kubernetes'], faker.number.int({ min: 2, max: 4 })),
       teamId,
       repoLink: `https://github.com/demo/${title.replace(/\s+/g, '-').toLowerCase()}`,
       demoLink: `https://demo.com/${title.replace(/\s+/g, '-').toLowerCase()}`,
@@ -183,7 +194,7 @@ async function main() {
     const type = faker.helpers.arrayElement(resourceTypes);
     const resRef = db.collection('resources').doc();
     await resRef.set({
-      name: `${type} - ${faker.company.bsBuzz()}`,
+      name: `${type} - ${faker.word.noun()}`,
       type,
       description: faker.lorem.sentence(),
       link: faker.internet.url(),

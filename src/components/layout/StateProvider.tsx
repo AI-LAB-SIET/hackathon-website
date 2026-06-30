@@ -45,6 +45,7 @@ interface StateContextType {
   checkInTeam: (teamId: string, byName: string) => void;
   // Announcements
   addAnnouncement: (title: string, content: string, type: "info" | "warning" | "success") => void;
+  removeAnnouncement: (id: string) => void;
   // Notifications
   addNotification: (n: Omit<Notification, "id" | "createdAt" | "read">) => void;
   markNotificationRead: (id: string) => void;
@@ -292,6 +293,50 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Sync data for local Admin who bypassed Firebase Auth
+  useEffect(() => {
+    if (!isConfigured || !db || session.role !== "admin") return;
+    
+    const unsubTeams = onSnapshot(collection(db, "teams"), (snap) => {
+      const list: Team[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Team));
+      setTeams(list);
+    });
+
+    const unsubTickets = onSnapshot(collection(db, "tickets"), (snap) => {
+      const list: Ticket[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Ticket));
+      setTickets(list);
+    });
+
+    const unsubNotifs = onSnapshot(collection(db, "notifications"), (snap) => {
+      const list: Notification[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Notification));
+      setNotifications(list);
+    });
+
+    const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
+      const allProfiles: UserProfile[] = [];
+      const vols: Volunteer[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        allProfiles.push({ id: d.id, ...data, email: data.email || "" } as unknown as UserProfile);
+        if (data.role === "volunteer") {
+          vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
+        }
+      });
+      setUserProfiles(allProfiles);
+      setVolunteers(vols);
+    });
+
+    return () => {
+      unsubTeams();
+      unsubTickets();
+      unsubNotifs();
+      unsubUsers();
+    };
+  }, [session.role]);
+
   // ── 2. Local persistence ──────────────────────────────────────────────────
   useEffect(() => {
     if (!initialized) return;
@@ -336,6 +381,12 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     let resolvedRole: "participant" | "admin" | "judge" | "organizer" | "volunteer" | null = roleInput ?? null;
 
     if (isConfigured) {
+      if (resolvedRole === "admin") {
+        const newSession = { isLoggedIn: true, role: "admin" as const, email: "admin@hacklab.internal", name: "System Admin", teamId: null };
+        setSession(newSession);
+        setSessionCookie(newSession);
+        return { success: true, role: "admin" };
+      }
       return { success: true, role: resolvedRole ?? "participant" };
     }
 
@@ -793,6 +844,14 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const removeAnnouncement = useCallback(async (id: string) => {
+    if (isConfigured && db) {
+      await deleteDoc(doc(db, "announcements", id));
+    } else {
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    }
+  }, []);
+
   const createTicket = useCallback(async (ticket: Omit<Ticket, "id" | "createdAt" | "status">) => {
     const data = {
       title: `${ticket.category} Request`,
@@ -852,6 +911,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     registerTeam, updateTeamMembers, approveTeam, rejectTeam,
     updateProjectDetails, evaluateProject, updateMilestoneProgress, checkInTeam,
     addAnnouncement,
+    removeAnnouncement,
     addNotification, markNotificationRead, markAllNotificationsRead,
     raiseTicket, resolveTicket,
     addVolunteer, updateVolunteer, removeVolunteer,

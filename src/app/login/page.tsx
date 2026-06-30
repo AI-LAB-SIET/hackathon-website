@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { signInAsAdmin, signInWithRole } from "@/lib/firebaseAuth";
+import { signInWithRole } from "@/lib/firebaseAuth";
 import { isConfigured } from "@/lib/firebase";
 
 type RoleType = "participant" | "admin" | "judge" | "organizer" | "volunteer";
@@ -69,16 +69,29 @@ export default function Login() {
     setSubmitting(true);
 
     const inputEmail = email.trim();
-    const isInternalAdmin = inputEmail.toLowerCase() === "admin2727";
+    const isInternalAdmin = inputEmail.toLowerCase() === "admin2727" || inputEmail.toLowerCase() === "admin@hacklab.internal";
+
+    if (isInternalAdmin) {
+      if (password !== "9629371790") {
+        setError("Account not found. Please check your email/username and password.");
+        setSubmitting(false);
+        return;
+      }
+      // Bypass Firebase exclusively for admin
+      setTimeout(() => {
+        const res = login(inputEmail, "admin");
+        setSubmitting(false);
+        if (res.success && res.role) {
+          toast(`Welcome back! Logged in as ADMIN.`, "success");
+          redirectByRole(res.role);
+        }
+      }, 500);
+      return;
+    }
 
     if (isConfigured) {
       try {
-        let result;
-        if (isInternalAdmin) {
-          result = await signInAsAdmin(inputEmail, password);
-        } else {
-          result = await signInWithRole(inputEmail, password);
-        }
+        const result = await signInWithRole(inputEmail, password);
         
         toast(`Welcome back! Logged in as ${result.role.toUpperCase()}.`, "success");
         // Do not setSubmitting(false) or redirect here.

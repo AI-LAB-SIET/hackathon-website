@@ -12,7 +12,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { QRScanner } from "@/components/ui/QRScanner";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -22,7 +22,6 @@ import {
   Shield,
   Megaphone,
   CheckCircle,
-  QrCode,
   ChevronRight,
   ChevronDown,
   BookOpen,
@@ -38,11 +37,12 @@ import {
   X,
   Paperclip,
 } from "lucide-react";
-import { Team, ProblemStatement, FileAttachment } from "@/types";
+import { Team, ProblemStatement, FileAttachment, Participant } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
-import { isConfigured } from "@/lib/firebase";
+import { isConfigured, db } from "@/lib/firebase";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
 
-type TabType = "dashboard" | "members" | "participants" | "announcements" | "problems" | "scanner" | "teams" | "profile";
+type TabType = "dashboard" | "members" | "participants" | "attendance" | "announcements" | "problems" | "teams" | "profile";
 
 interface Member {
   id: string;
@@ -54,32 +54,45 @@ interface Member {
 export default function AdminDashboard() {
   const router = useRouter();
   const {
-    session, teams, announcements, problemStatements, notifications,
-    addAnnouncement, addProblemStatement, updateProblemStatement, archiveProblemStatement,
+    session, teams, announcements, problemStatements, notifications, userProfiles,
+    addAnnouncement, removeAnnouncement, addProblemStatement, updateProblemStatement, archiveProblemStatement,
     markNotificationRead, markAllNotificationsRead,
-    updateProfile, getProfile,
+    updateProfile, getProfile, updateTeamMembers
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
 
-  // Members local state
-  const [members, setMembers] = useState<Member[]>([
-    { id: "m-1", name: "System Admin", email: "admin@college.edu", role: "admin" },
-    { id: "m-2", name: "Prof. Suresh Kumar", email: "organizer@college.edu", role: "organizer" },
-    { id: "m-3", name: "Dr. A. Rajesh", email: "rajesh@college.edu", role: "organizer" },
-    { id: "m-4", name: "Dr. Priya Rajan", email: "judge@college.edu", role: "judge" },
-    { id: "m-5", name: "Riya Verma", email: "riya@college.edu", role: "volunteer" },
-    { id: "m-6", name: "Arjun Nair", email: "arjun@college.edu", role: "volunteer" },
-  ]);
+  // Derive members from Firestore userProfiles
+  const members: Member[] = isConfigured && userProfiles.length > 0
+    ? userProfiles
+      .filter(u => u.role !== "participant")
+      .map(u => ({
+        id: u.id || u.uid || "",
+        name: u.displayName || u.name || "Unknown User",
+        email: u.email,
+        role: u.role as Member["role"]
+      }))
+    : [
+      { id: "m-1", name: "System Admin", email: "admin@college.edu", role: "admin" },
+      { id: "m-2", name: "Prof. Suresh Kumar", email: "organizer@college.edu", role: "organizer" },
+      { id: "m-3", name: "Dr. A. Rajesh", email: "rajesh@college.edu", role: "organizer" },
+      { id: "m-4", name: "Dr. Priya Rajan", email: "judge@college.edu", role: "judge" },
+      { id: "m-5", name: "Riya Verma", email: "riya@college.edu", role: "volunteer" },
+      { id: "m-6", name: "Arjun Nair", email: "arjun@college.edu", role: "volunteer" },
+    ];
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [memberForm, setMemberForm] = useState({ name: "", email: "", role: "organizer" as Member["role"] });
 
-  // Announcement form
   const [annForm, setAnnForm] = useState({ title: "", content: "", type: "info" as "info" | "warning" | "success", scheduleDate: "" });
   const [annEditId, setAnnEditId] = useState<string | null>(null);
   const [annCreateOpen, setAnnCreateOpen] = useState(false);
+
+  // Participant edit form
+  const [participantEditOpen, setParticipantEditOpen] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<(Participant & { teamId: string }) | null>(null);
+  const [participantForm, setParticipantForm] = useState({ name: "", email: "", isLeader: false });
 
   // Problem statement form
   const [psForm, setPsForm] = useState({ title: "", description: "", trackId: "gen-ai", status: "draft" as "draft" | "published" | "archived" });
@@ -89,8 +102,6 @@ export default function AdminDashboard() {
   const [psAttachments, setPsAttachments] = useState<FileAttachment[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
 
-  // QR Scanner
-  const [scannerOpen, setScannerOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
   // Approved team detail modal
@@ -123,7 +134,7 @@ export default function AdminDashboard() {
   }, [profile, session.name]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "admin") {
-      return (
+    return (
       <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500 dark:bg-gray-950 dark:text-gray-400">
         Loading admin portal...
       </div>
@@ -163,22 +174,37 @@ export default function AdminDashboard() {
       toast("Name and email are required.", "error");
       return;
     }
-    if (editingMember) {
-      setMembers((prev) => prev.map((m) => m.id === editingMember.id ? { ...m, ...memberForm } : m));
-      toast("Member updated.", "success");
+
+    if (isConfigured && db) {
+      const memberId = editingMember ? editingMember.id : `m-${Date.now()}`;
+      setDoc(doc(db, "users", memberId), {
+        uid: memberId,
+        email: memberForm.email,
+        displayName: memberForm.name,
+        role: memberForm.role,
+        createdAt: new Date().toISOString()
+      }, { merge: true }).then(() => {
+        toast(editingMember ? "Member updated." : "Member added.", "success");
+      });
     } else {
-      const newMember: Member = { id: `m-${Date.now()}`, ...memberForm };
-      setMembers((prev) => [...prev, newMember]);
-      toast("Member added.", "success");
+      toast(editingMember ? "Member updated (local mock)." : "Member added (local mock).", "success");
     }
+
     setMemberModalOpen(false);
     setEditingMember(null);
   };
   const handleRemoveMember = (id: string) => {
-    setMembers((prev) => prev.filter((m) => m.id !== id));
-    toast("Member removed.", "info");
-    setMemberModalOpen(false);
-    setEditingMember(null);
+    if (confirm("Are you sure you want to remove this member?")) {
+      if (isConfigured && db) {
+        deleteDoc(doc(db, "users", id)).then(() => {
+          toast("Member removed.", "info");
+        });
+      } else {
+        toast("Member removed (local mock).", "info");
+      }
+      setMemberModalOpen(false);
+      setEditingMember(null);
+    }
   };
 
   // ─── ANNOUNCEMENT HANDLERS ───
@@ -202,9 +228,37 @@ export default function AdminDashboard() {
     setAnnForm({ title: ann.title, content: ann.content, type: ann.type, scheduleDate: "" });
     setAnnCreateOpen(true);
   };
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleDeleteAnnouncement = (_id: string) => {
-    toast("Announcement deleted (local).", "info");
+  const handleDeleteAnnouncement = (id: string) => {
+    if (confirm("Are you sure you want to delete this announcement?")) {
+      removeAnnouncement(id);
+      toast("Announcement deleted.", "info");
+    }
+  };
+
+  // ─── PARTICIPANT HANDLERS ───
+  const handleOpenParticipantEdit = (p: Participant & { teamId: string }) => {
+    setEditingParticipant(p);
+    setParticipantForm({ name: p.name, email: p.email, isLeader: p.isLeader || false });
+    setParticipantEditOpen(true);
+  };
+  const handleSaveParticipant = () => {
+    if (!editingParticipant) return;
+    const team = teams.find(t => t.id === editingParticipant.teamId);
+    if (!team) return;
+    const updatedMembers = team.members.map(m => {
+      if (m.email === editingParticipant.email) {
+        return { ...m, name: participantForm.name, email: participantForm.email, isLeader: participantForm.isLeader };
+      }
+      // If we are making this person leader, remove leader from others
+      if (participantForm.isLeader && m.email !== editingParticipant.email) {
+        return { ...m, isLeader: false };
+      }
+      return m;
+    });
+    updateTeamMembers(team.id, updatedMembers);
+    toast("Participant updated.", "success");
+    setParticipantEditOpen(false);
+    setEditingParticipant(null);
   };
 
   // ─── PROBLEM STATEMENT HANDLERS ───
@@ -294,12 +348,6 @@ export default function AdminDashboard() {
     toast("Problem statement archived.", "info");
   };
 
-  // ─── QR SCANNER ───
-  const handleSelectTeam = (team: Team) => {
-    setDetailTeam(team);
-    setTeamDetailOpen(true);
-  };
-
   // ─── PROFILE ───
   const handleSaveProfile = () => {
     if (session.email) {
@@ -318,9 +366,9 @@ export default function AdminDashboard() {
     dashboard: "Dashboard",
     members: "Members & Roles",
     participants: "Participants",
+    attendance: "Attendance Register",
     announcements: "Announcements",
     problems: "Problem Statements",
-    scanner: "QR Scanner",
     teams: "Approved Teams",
     profile: "Profile",
   };
@@ -346,11 +394,10 @@ export default function AdminDashboard() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                activeTab === id
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${activeTab === id
                   ? "bg-primary-green text-white"
                   : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
-              }`}
+                }`}
             >
               {tabLabels[id]}
             </button>
@@ -368,11 +415,6 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {activeTab === "scanner" && (
-              <Button onClick={() => setScannerOpen(true)} className="text-xs">
-                <QrCode className="h-4 w-4 mr-2" /> Open Scanner
-              </Button>
-            )}
             {(activeTab === "announcements" || activeTab === "problems") && (
               <Button
                 onClick={() => {
@@ -490,7 +532,7 @@ export default function AdminDashboard() {
                       <p><strong>Active Sessions:</strong> {isConfigured ? "Authenticated Client Sessions" : "1 Active Session (Demo)"}</p>
                     </div>
                   </div>
-                  
+
                   {/* Firebase Storage Stats */}
                   <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3 dark:bg-gray-900 dark:border-gray-700">
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider dark:text-gray-500">Storage Monitoring</h4>
@@ -515,9 +557,8 @@ export default function AdminDashboard() {
                     {recentActivity.map((log) => (
                       <div key={log.id} className="flex justify-between items-center p-3 rounded-2xl border border-gray-100 bg-white text-xs dark:bg-gray-800 dark:border-gray-700">
                         <div className="flex gap-3 items-center">
-                          <span className={`h-2.5 w-2.5 rounded-full ${
-                            log.type === "warning" ? "bg-amber-500" : log.type === "success" ? "bg-emerald-500" : "bg-blue-500"
-                          }`} />
+                          <span className={`h-2.5 w-2.5 rounded-full ${log.type === "warning" ? "bg-amber-500" : log.type === "success" ? "bg-emerald-500" : "bg-blue-500"
+                            }`} />
                           <div>
                             <p className="font-bold text-gray-800 dark:text-gray-200">{log.action}</p>
                             <p className="text-[9px] text-gray-400 font-semibold dark:text-gray-500">{log.user}</p>
@@ -535,7 +576,7 @@ export default function AdminDashboard() {
                     <Shield className="h-4.5 w-4.5 text-red-500" /> Sensitive Settings & Safety Panel
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <button 
+                    <button
                       onClick={() => {
                         if (confirm("Are you sure you want to rotate encryption keys? This will invalidate all active sessions.")) {
                           toast("Encryption keys rotated successfully.", "success");
@@ -545,11 +586,11 @@ export default function AdminDashboard() {
                     >
                       Rotate JWT/AES Keys
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={() => {
                         if (confirm("This will force check-in status reset for all teams. Continue?")) {
-                          toast("All QR and check-in statuses have been reset.", "info");
+                          toast("All check-in statuses have been reset.", "info");
                         }
                       }}
                       className="px-4 py-3 rounded-xl bg-white border border-gray-250 dark:bg-gray-900 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:border-amber-500 hover:text-amber-500 cursor-pointer transition-all duration-200"
@@ -557,7 +598,7 @@ export default function AdminDashboard() {
                       Reset Check-in Statuses
                     </button>
 
-                    <button 
+                    <button
                       onClick={() => {
                         if (confirm("CRITICAL WARNING: This will permanently wipe all local storage mock databases. This cannot be undone!")) {
                           localStorage.clear();
@@ -648,6 +689,11 @@ export default function AdminDashboard() {
                               {p.isLeader ? "Leader" : "Member"}
                             </Badge>
                           </td>
+                          <td className="py-3 px-3 text-right">
+                            <button onClick={() => handleOpenParticipantEdit(p as unknown as Participant & { teamId: string })} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-primary-dark cursor-pointer transition-colors">
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                       {teams.flatMap((t) => t.members).length === 0 && (
@@ -672,9 +718,8 @@ export default function AdminDashboard() {
                     <div key={ann.id} className="p-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs">
                       <div className="flex justify-between items-start gap-3">
                         <div className="flex gap-3 items-start">
-                          <span className={`mt-0.5 h-2.5 w-2.5 rounded-full shrink-0 ${
-                            ann.type === "warning" ? "bg-amber-500" : ann.type === "success" ? "bg-emerald-500" : "bg-blue-500"
-                          }`} />
+                          <span className={`mt-0.5 h-2.5 w-2.5 rounded-full shrink-0 ${ann.type === "warning" ? "bg-amber-500" : ann.type === "success" ? "bg-emerald-500" : "bg-blue-500"
+                            }`} />
                           <div>
                             <p className="font-bold text-primary-dark dark:text-gray-100">{ann.title}</p>
                             <p className="text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{ann.content}</p>
@@ -787,21 +832,56 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* ═══════════════════════════════════════════ QR SCANNER TAB ═══════════════════════════════════════════ */}
-            {activeTab === "scanner" && (
-              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-8 shadow-sm flex flex-col gap-6 items-center text-center">
-                <div className="h-16 w-16 rounded-2xl bg-primary-green/10 flex items-center justify-center">
-                  <QrCode className="h-8 w-8 text-primary-green" />
+            {/* ═══════════════════════════════════════════ ATTENDANCE TAB ═══════════════════════════════════════════ */}
+            {activeTab === "attendance" && (
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">Team Attendance Register</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Overview of team check-ins.</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 mb-1">Global QR Scanner</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
-                    Scan a team QR code or search by team name to look up any team and navigate to the appropriate workflow.
-                  </p>
+                <div className="overflow-hidden rounded-2xl border border-gray-150 dark:border-gray-800">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
+                        <tr>
+                          <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Team</th>
+                          <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Track</th>
+                          <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Status</th>
+                          <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Checked In By</th>
+                          <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Time</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+                        {teams.filter(t => t.status === "APPROVED").map((t) => (
+                          <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-gray-900 dark:text-gray-100">{t.name}</div>
+                              <div className="text-[10px] text-gray-500">{t.members.length} members</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold">
+                                {t.trackId || "N/A"}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant={t.attendance?.checkedIn ? "success" : "warning"}>
+                                {t.attendance?.checkedIn ? "Checked In" : "Pending"}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-gray-600 dark:text-gray-400 text-xs">
+                              {t.attendance?.checkInBy || "-"}
+                            </td>
+                            <td className="py-3 px-4 text-gray-600 dark:text-gray-400 text-xs">
+                              {t.attendance?.checkInTime ? new Date(t.attendance.checkInTime).toLocaleString() : "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <Button onClick={() => setScannerOpen(true)} className="text-xs">
-                  <QrCode className="h-4 w-4 mr-2" /> Launch Scanner
-                </Button>
               </div>
             )}
 
@@ -937,6 +1017,44 @@ export default function AdminDashboard() {
         </div>
       </Modal>
 
+      {/* Participant Edit Modal */}
+      <Modal isOpen={participantEditOpen} onClose={() => { setParticipantEditOpen(false); setEditingParticipant(null); }} title="Edit Participant">
+        <div className="space-y-4">
+          <Input
+            label="Name *"
+            value={participantForm.name}
+            onChange={(e) => setParticipantForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Participant Name"
+          />
+          <Input
+            label="Email *"
+            type="email"
+            value={participantForm.email}
+            onChange={(e) => setParticipantForm((p) => ({ ...p, email: e.target.value }))}
+            placeholder="email@college.edu"
+          />
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="isLeader"
+              checked={participantForm.isLeader}
+              onChange={(e) => setParticipantForm((p) => ({ ...p, isLeader: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-primary-green focus:ring-primary-green cursor-pointer"
+            />
+            <label htmlFor="isLeader" className="text-sm font-bold text-gray-700 dark:text-gray-200 cursor-pointer">
+              Team Leader
+            </label>
+          </div>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500">Checking this will automatically remove the leader status from the current leader.</p>
+          <div className="pt-2">
+            <Button onClick={handleSaveParticipant} className="w-full text-xs">
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+
       {/* Announcement Create/Edit Modal */}
       <Modal isOpen={annCreateOpen} onClose={() => { setAnnCreateOpen(false); setAnnEditId(null); }} title={annEditId ? "Edit Announcement" : "Create Announcement"}>
         <div className="space-y-4">
@@ -1032,11 +1150,10 @@ export default function AdminDashboard() {
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Attachments (PPT, Dataset, Docs)</label>
             <label
-              className={`flex flex-col items-center justify-center w-full px-4 py-5 rounded-xl border-2 border-dashed transition-colors cursor-pointer ${
-                uploadingFile
+              className={`flex flex-col items-center justify-center w-full px-4 py-5 rounded-xl border-2 border-dashed transition-colors cursor-pointer ${uploadingFile
                   ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
                   : "border-gray-300 dark:border-gray-700 hover:border-primary-green hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10"
-              }`}
+                }`}
             >
               <input
                 type="file"
@@ -1140,9 +1257,6 @@ export default function AdminDashboard() {
           </div>
         )}
       </Modal>
-
-      {/* QR Scanner */}
-      <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onSelectTeam={handleSelectTeam} />
     </PageWrapper>
   );
 }

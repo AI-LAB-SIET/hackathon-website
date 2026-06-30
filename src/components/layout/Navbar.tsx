@@ -10,7 +10,6 @@ import { Menu, X, LogOut, User, Shield, Bell, QrCode, CheckCircle, Clock, AlertT
 import { useTheme } from "./ThemeProvider";
 import { ThemeToggle } from "./ThemeToggle";
 import { useToast } from "../ui/toast";
-import { QRScanner } from "../ui/QRScanner";
 import { AttendancePanel } from "../ui/AttendancePanel";
 import { Team } from "@/types";
 
@@ -22,7 +21,6 @@ export function Navbar() {
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
-  const [scannerOpen, setScannerOpen] = useState(false);
   const [attendanceTeam, setAttendanceTeam] = useState<Team | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -101,8 +99,6 @@ export function Navbar() {
     }
   };
 
-  const showQRScan = session.isLoggedIn && ["judge", "organizer", "admin", "volunteer"].includes(session.role || "");
-
   const isHome = pathname === "/";
   const useTransparent = isHome && !scrolled;
 
@@ -148,17 +144,6 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {session.isLoggedIn ? (
               <>
-                {/* QR Scanner */}
-                {showQRScan && (
-                  <button
-                    onClick={() => setScannerOpen(true)}
-                    aria-label="Open QR scanner"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-full bg-primary-green/10 text-primary-green hover:bg-primary-green/20 transition-colors cursor-pointer"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    Scan QR
-                  </button>
-                )}
 
                  {/* Notification Bell */}
                 <div ref={bellRef} className="relative">
@@ -307,12 +292,6 @@ export function Navbar() {
               <div className="flex flex-col gap-3 mt-auto">
                 {session.isLoggedIn ? (
                   <>
-                    {showQRScan && (
-                      <button onClick={() => { setScannerOpen(true); setMobileMenuOpen(false); }}
-                        aria-label="Open QR scanner"
-                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold text-sm border border-emerald-200 dark:border-emerald-800"
-                      ><QrCode className="h-4 w-4" /> Scan QR</button>
-                    )}
                     <Link href={rolePortalHref} onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-card-bg dark:bg-gray-800 text-primary-dark dark:text-gray-100 font-bold text-sm border border-input-border/30 dark:border-gray-700"
                     >
@@ -339,9 +318,6 @@ export function Navbar() {
           </>
         )}
       </AnimatePresence>
-
-      {/* QR Scanner Modal */}
-      <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onSelectTeam={handleQRSelect} />
 
       {/* Attendance Panel (organizer) */}
       {attendanceTeam && (

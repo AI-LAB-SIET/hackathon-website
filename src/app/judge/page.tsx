@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
-import { QRScanner } from "@/components/ui/QRScanner";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
@@ -52,7 +52,7 @@ export default function JudgeDashboard() {
   const [feedback, setFeedback] = useState("");
 
   // QR Scanner
-  const [scannerOpen, setScannerOpen] = useState(false);
+
 
   // Notification dropdown
   const [notifOpen, setNotifOpen] = useState(false);
@@ -145,12 +145,6 @@ export default function JudgeDashboard() {
           <div className="flex items-center justify-end gap-2 mb-8">
             <div className="flex items-center gap-2">
               <ThemeToggle />
-
-              <button onClick={() => setScannerOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
-              >
-                <GavelIcon className="h-4 w-4" /> Scan QR
-              </button>
 
               {/* Notification Bell */}
               <div className="relative">
@@ -461,7 +455,7 @@ export default function JudgeDashboard() {
           </AnimatePresence>
 
           {/* QR Scanner Modal */}
-          <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onSelectTeam={(team) => { openEvalModal(team); }} />
+          
 
           {/* ─── EVALUATION MODAL ─── */}
           <Modal isOpen={evalModalOpen} onClose={() => setEvalModalOpen(false)} title="Evaluate Team">

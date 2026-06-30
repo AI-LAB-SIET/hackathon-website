@@ -22,7 +22,7 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
-import { QRScanner } from "@/components/ui/QRScanner";
+
 import { SupportTicket, Team } from "@/types";
 
 type TabType = "dashboard" | "tickets" | "profile" | "attendance" | "scanner" | "support" | "approval";
@@ -45,7 +45,7 @@ export default function VolunteerDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>("all");
   const [notifOpen, setNotifOpen] = useState(false);
-  const [scannerOpen, setScannerOpen] = useState(false);
+
 
   // Profile form state
   const [profileName, setProfileName] = useState("");
@@ -570,7 +570,7 @@ export default function VolunteerDashboard() {
                   </h3>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     <p>Attendance records are updated in real-time as teams scan in at stations.</p>
-                    <p className="mt-2">Use the <strong>QR Scanner</strong> tab to scan team QR codes for attendance tracking.</p>
+                    <p className="mt-2">Use the <strong>Attendance</strong> tab to track team attendance.</p>
                   </div>
                 </div>
 
@@ -592,17 +592,16 @@ export default function VolunteerDashboard() {
               <div className="flex flex-col gap-6">
                 <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
                   <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
-                    <QrCode className="h-4.5 w-4.5 text-primary-green" /> QR Scanner
+                    <CheckCircle className="h-4.5 w-4.5 text-primary-green" /> Manual Check-in
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Scan team or participant QR codes to check attendance or access team information.
+                    Use the attendance panel to manually check in teams as they arrive at the venue.
                   </p>
                   <button
-                    onClick={() => setScannerOpen(true)}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-green text-white text-sm font-bold hover:bg-primary-green/90 transition-colors cursor-pointer"
+                    onClick={() => setActiveTab("attendance")}
+                    className="w-full py-2.5 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-sm hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <QrCode className="h-4 w-4" />
-                    Open Scanner
+                    <CheckCircle className="h-4 w-4" /> Go to Attendance
                   </button>
                 </div>
 
@@ -613,15 +612,15 @@ export default function VolunteerDashboard() {
                   <div className="space-y-3 text-xs text-gray-600 dark:text-gray-400">
                     <div className="flex items-start gap-2">
                       <span className="h-5 w-5 rounded-full bg-primary-green/10 flex items-center justify-center text-primary-green font-bold text-[10px] shrink-0 mt-0.5">1</span>
-                      <p>Tap <strong>Open Scanner</strong> to activate your camera.</p>
+                      <p>Navigate to the <strong>Attendance</strong> tab using the button above.</p>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="h-5 w-5 rounded-full bg-primary-green/10 flex items-center justify-center text-primary-green font-bold text-[10px] shrink-0 mt-0.5">2</span>
-                      <p>Point your camera at a team&apos;s QR code or participant badge.</p>
+                      <p>Locate the team in the list based on their registration details.</p>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="h-5 w-5 rounded-full bg-primary-green/10 flex items-center justify-center text-primary-green font-bold text-[10px] shrink-0 mt-0.5">3</span>
-                      <p>The system will automatically recognize the code and route you to the appropriate action.</p>
+                      <p>Confirm the team identity and update their status to Checked-In.</p>
                     </div>
                   </div>
                 </div>
@@ -637,10 +636,8 @@ export default function VolunteerDashboard() {
                   </h3>
                   <div className="space-y-4">
                     {[
-                      { q: "How do I check in a team?", a: "Use the QR Scanner tab to scan the team's QR code. The system will automatically log their attendance." },
-                      { q: "What if a team has lost their QR code?", a: "You can search for the team manually in the QR Scanner fallback mode by team name or member name." },
+                      { q: "How do I check in a team?", a: "Use the Attendance tab to manually find and check in the team. The system will automatically log their attendance." },
                       { q: "How do I handle a support ticket?", a: "Go to the Tickets tab, find tickets assigned to you, and update their status as you work through them." },
-                      { q: "What if I can't access the scanner?", a: "Make sure you've granted camera permissions. You can also use the manual search fallback in the scanner." },
                     ].map((faq, idx) => (
                       <div key={idx} className="p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs">
                         <div className="font-bold text-primary-dark dark:text-gray-100 mb-1">{faq.q}</div>
@@ -678,16 +675,16 @@ export default function VolunteerDashboard() {
                   <ul className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
                     <li className="flex items-start gap-2">
                       <span className="text-amber-500 mt-0.5">•</span>
-                      <p><strong>Team not found:</strong> Verify you&apos;re scanning the correct QR code. Use manual search as backup.</p>
+                      <p><strong>Team not found:</strong> Ensure you are searching by correct team or member name in the Attendance tab.</p>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-amber-500 mt-0.5">•</span>
                       <p><strong>Duplicate check-in:</strong> Inform the team that attendance has already been recorded.</p>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-amber-500 mt-0.5">•</span>
-                      <p><strong>Camera issues:</strong> Switch to manual search or restart the scanner from the QR Scanner tab.</p>
-                    </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 mt-0.5">⚠️</span>
+                        <p><strong>System offline:</strong> Try refreshing your page if the server disconnects.</p>
+                      </li>
                     <li className="flex items-start gap-2">
                       <span className="text-amber-500 mt-0.5">•</span>
                       <p><strong>Urgent problems:</strong> Contact the Event Coordinator immediately using the emergency contacts above.</p>
@@ -778,13 +775,6 @@ export default function VolunteerDashboard() {
         </AnimatePresence>
       </main>
 
-      <QRScanner
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        onSelectTeam={(team: Team) => {
-          toast(`Selected team: ${team.name}`, "success");
-        }}
-      />
     </PageWrapper>
   );
 }
