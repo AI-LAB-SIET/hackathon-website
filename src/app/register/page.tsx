@@ -9,6 +9,8 @@ import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { signUpWithEmail } from "@/lib/firebaseAuth";
+import { isConfigured } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Users, CheckCircle, ArrowRight, ArrowLeft,
@@ -60,14 +62,28 @@ export default function Register() {
     setStep(step + 1);
   };
 
-  const handleSubmit = () => {
-    registerTeam({
-      name: teamName,
-      projectDescription: "",
-      members: [{ name: account.name, email: account.email, registerNumber: "", phone: "", department: "", year: "", skills: [], github: "", isLeader: true }],
-    });
-    toast("Team registered successfully! You can now log in.", "success");
-    router.push("/login");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      if (isConfigured) {
+        await signUpWithEmail(account.email, account.password, account.name);
+      }
+
+      await registerTeam({
+        name: teamName,
+        projectDescription: "",
+        members: [{ name: account.name, email: account.email, registerNumber: "", phone: "", department: "", year: "", skills: [], github: "", isLeader: true }],
+      });
+      
+      toast("Team registered successfully! You can now log in.", "success");
+      router.push("/login");
+    } catch (err: unknown) {
+      setSubmitting(false);
+      const msg = (err as { userFriendly?: string; message?: string })?.userFriendly || (err as { message?: string })?.message || "Registration failed.";
+      toast(msg, "error");
+    }
   };
 
   return (
@@ -212,7 +228,7 @@ export default function Register() {
                   Continue <ArrowRight className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} className="flex-1 flex items-center justify-center gap-2 text-xs">
+                <Button onClick={handleSubmit} isLoading={submitting} className="flex-1 flex items-center justify-center gap-2 text-xs">
                   <Send className="h-4 w-4" /> Submit Registration
                 </Button>
               )}

@@ -17,8 +17,6 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  query,
-  where,
   getDoc,
   writeBatch
 } from "firebase/firestore";
@@ -103,56 +101,60 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   // ── 1. Real-time Firebase listeners ─────────────────────────────────────────
   useEffect(() => {
+    const loadLocalData = () => {
+      if (typeof window === "undefined") return;
+      try {
+        const storedTeams = localStorage.getItem("siet_teams_v2");
+        setTeams(storedTeams ? JSON.parse(storedTeams) : INITIAL_TEAMS);
+      } catch { setTeams(INITIAL_TEAMS); }
+      try {
+        const storedSession = localStorage.getItem("siet_session");
+        if (storedSession) setSession(JSON.parse(storedSession));
+      } catch { /* skip */ }
+      try {
+        const storedAnn = localStorage.getItem("siet_announcements");
+        setAnnouncements(storedAnn ? JSON.parse(storedAnn) : INITIAL_ANNOUNCEMENTS);
+      } catch { setAnnouncements(INITIAL_ANNOUNCEMENTS); }
+      try {
+        const storedNotifs = localStorage.getItem("siet_notifications_v2");
+        setNotifications(storedNotifs ? JSON.parse(storedNotifs) : INITIAL_NOTIFICATIONS);
+      } catch { setNotifications(INITIAL_NOTIFICATIONS); }
+      try {
+        const storedVolunteers = localStorage.getItem("siet_volunteers");
+        setVolunteers(storedVolunteers ? JSON.parse(storedVolunteers) : INITIAL_VOLUNTEERS);
+      } catch { setVolunteers(INITIAL_VOLUNTEERS); }
+      try {
+        const storedProfiles = localStorage.getItem("siet_profiles");
+        if (storedProfiles) setUserProfiles(JSON.parse(storedProfiles));
+      } catch { /* skip */ }
+      try {
+        const storedProblems = localStorage.getItem("siet_problems");
+        if (storedProblems) setProblemStatements(JSON.parse(storedProblems));
+      } catch { /* skip */ }
+      try {
+        const storedTickets = localStorage.getItem("siet_tickets");
+        if (storedTickets) setTickets(JSON.parse(storedTickets));
+      } catch { /* skip */ }
+      setInitialized(true);
+    };
+
     if (!isConfigured || !db || !auth) {
-      // Local fallback initialisation
-      if (typeof window !== "undefined") {
-        try {
-          const storedTeams = localStorage.getItem("siet_teams_v2");
-          setTeams(storedTeams ? JSON.parse(storedTeams) : INITIAL_TEAMS);
-        } catch { setTeams(INITIAL_TEAMS); }
-
-        try {
-          const storedSession = localStorage.getItem("siet_session");
-          if (storedSession) setSession(JSON.parse(storedSession));
-        } catch { /* skip */ }
-
-        try {
-          const storedAnn = localStorage.getItem("siet_announcements");
-          setAnnouncements(storedAnn ? JSON.parse(storedAnn) : INITIAL_ANNOUNCEMENTS);
-        } catch { setAnnouncements(INITIAL_ANNOUNCEMENTS); }
-
-        try {
-          const storedNotifs = localStorage.getItem("siet_notifications_v2");
-          setNotifications(storedNotifs ? JSON.parse(storedNotifs) : INITIAL_NOTIFICATIONS);
-        } catch { setNotifications(INITIAL_NOTIFICATIONS); }
-
-        try {
-          const storedVolunteers = localStorage.getItem("siet_volunteers");
-          setVolunteers(storedVolunteers ? JSON.parse(storedVolunteers) : INITIAL_VOLUNTEERS);
-        } catch { setVolunteers(INITIAL_VOLUNTEERS); }
-
-        try {
-          const storedProfiles = localStorage.getItem("siet_profiles");
-          if (storedProfiles) setUserProfiles(JSON.parse(storedProfiles));
-        } catch { /* skip */ }
-
-        try {
-          const storedProblems = localStorage.getItem("siet_problems");
-          if (storedProblems) setProblemStatements(JSON.parse(storedProblems));
-        } catch { /* skip */ }
-
-        try {
-          const storedTickets = localStorage.getItem("siet_tickets");
-          if (storedTickets) setTickets(JSON.parse(storedTickets));
-        } catch { /* skip */ }
-
-        setInitialized(true);
-      }
+      loadLocalData();
       return;
     }
 
     const firestore = db;
     const firebaseAuth = auth;
+    let firebaseFailed = false;
+
+    const fallbackWithMock = () => {
+      firebaseFailed = true;
+      try { unsubAnn?.(); } catch {}
+      try { unsubProblems?.(); } catch {}
+      try { unsubAuth?.(); } catch {}
+      cleanupActiveListeners();
+      loadLocalData();
+    };
 
     let unsubUsers: (() => void) | null = null;
     let unsubTeams: (() => void) | null = null;
@@ -168,8 +170,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       if (unsubVols) { unsubVols(); unsubVols = null; }
     };
 
-    // Subscribe to global items immediately (Announcements & Problems)
-    const unsubAnn = onSnapshot(collection(firestore, "announcements"), (snap) => {
+    let unsubAnn: (() => void) | null = null;
+    let unsubProblems: (() => void) | null = null;
+    let unsubAuth: (() => void) | null = null;
+
+    unsubAnn = onSnapshot(collection(firestore, "announcements"), (snap) => {
       const list: Announcement[] = [];
       snap.forEach((d) => {
         const data = d.data();
@@ -183,10 +188,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       });
       setAnnouncements(list);
     }, (err) => {
-      console.warn("Firestore announcements listener error:", err.message);
+      console.warn("Firestore announcements error, using mock data:", err.message);
+      fallbackWithMock();
     });
 
-    const unsubProblems = onSnapshot(collection(firestore, "problemStatements"), (snap) => {
+    unsubProblems = onSnapshot(collection(firestore, "problemStatements"), (snap) => {
       const list: ProblemStatement[] = [];
       snap.forEach((d) => {
         const data = d.data();
@@ -202,160 +208,71 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       });
       setProblemStatements(list);
     }, (err) => {
-      console.warn("Firestore problemStatements listener error:", err.message);
+      console.warn("Firestore problemStatements error, using mock data:", err.message);
+      fallbackWithMock();
     });
 
-    // Subscribe to Auth state changes to dynamically load user-specific collections
-    const unsubAuth = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+    // Subscribe to Auth state changes
+    unsubAuth = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
       cleanupActiveListeners();
 
-      if (firebaseUser) {
-        // Resolve profile role and details from Firestore
-        const userDocRef = doc(firestore, "users", firebaseUser.uid);
-        const userSnap = await getDoc(userDocRef);
-        
-        let role: "participant" | "admin" | "judge" | "organizer" | "volunteer" = "participant";
-        let teamId: string | null = null;
-        let displayName = firebaseUser.displayName ?? "New User";
+      if (firebaseUser && !firebaseFailed) {
+        try {
+          const userDocRef = doc(firestore, "users", firebaseUser.uid);
+          const userSnap = await getDoc(userDocRef);
+          let role: "participant" | "admin" | "judge" | "organizer" | "volunteer" = "participant";
+          let teamId: string | null = null;
+          let displayName = firebaseUser.displayName ?? "New User";
 
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          role = userData.role ?? "participant";
-          teamId = userData.teamId ?? null;
-          displayName = userData.displayName ?? displayName;
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            role = userData.role ?? "participant";
+            teamId = userData.teamId ?? null;
+            displayName = userData.displayName ?? displayName;
+          }
+
+          setSession({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId });
+          setSessionCookie({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId });
+
+          // Start listeners now that we are logged in
+          unsubTeams = onSnapshot(collection(firestore, "teams"), (snap) => {
+            const list: Team[] = [];
+            snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Team));
+            setTeams(list);
+          }, (err) => console.warn("Teams sync error:", err));
+
+          unsubTickets = onSnapshot(collection(firestore, "tickets"), (snap) => {
+            const list: Ticket[] = [];
+            snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Ticket));
+            setTickets(list);
+          }, (err) => console.warn("Tickets sync error:", err));
+
+          unsubNotifs = onSnapshot(collection(firestore, "notifications"), (snap) => {
+            const list: Notification[] = [];
+            snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Notification));
+            setNotifications(list);
+          }, (err) => console.warn("Notifications sync error:", err));
+
+          if (role === "admin" || role === "organizer") {
+            unsubUsers = onSnapshot(collection(firestore, "users"), (snap) => {
+              const allProfiles: UserProfile[] = [];
+              const vols: Volunteer[] = [];
+              snap.forEach((d) => {
+                const data = d.data();
+                allProfiles.push({ id: d.id, ...data, email: data.email || "" } as unknown as UserProfile);
+                if (data.role === "volunteer") {
+                  vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
+                }
+              });
+              setUserProfiles(allProfiles);
+              setVolunteers(vols);
+            }, (err) => console.warn("Users sync error:", err));
+          }
+
+        } catch (err) {
+          console.warn("Firestore user profile fetch failed:", err);
         }
-
-        const newSession = {
-          isLoggedIn: true,
-          role,
-          email: firebaseUser.email,
-          name: displayName,
-          teamId
-        };
-
-        setSession(newSession);
-        setSessionCookie(newSession);
-
-        // Load users (profiles)
-        unsubUsers = onSnapshot(collection(firestore, "users"), (snap) => {
-          const list: UserProfile[] = [];
-          snap.forEach((d) => {
-            const data = d.data();
-            list.push({
-              id: d.id,
-              uid: d.id,
-              email: data.email ?? "",
-              name: data.displayName ?? "",
-              displayName: data.displayName ?? "",
-              role: data.role ?? "participant",
-              phone: data.phone,
-              college: data.college,
-              department: data.department,
-              year: data.year
-            });
-          });
-          setUserProfiles(list);
-        }, (err) => {
-          console.warn("Firestore users listener error:", err.message);
-        });
-
-        // Load teams
-        unsubTeams = onSnapshot(collection(firestore, "teams"), (snap) => {
-          const list: Team[] = [];
-          snap.forEach((d) => {
-            const data = d.data();
-            list.push({
-              id: d.id,
-              name: data.name ?? "",
-              size: data.size ?? 0,
-              members: data.members ?? [],
-              status: data.status ?? "PENDING",
-              createdAt: data.createdAt ?? "",
-              projectDescription: data.projectDescription ?? "",
-              qrToken: data.qrToken ?? "",
-              paymentVerified: data.paymentVerified ?? false,
-              facultyApproved: data.facultyApproved ?? false,
-              ideaSubmitted: data.ideaSubmitted ?? false,
-              shortlisted: data.shortlisted ?? false,
-              attendance: data.attendance ?? { teamId: d.id, checkedIn: false },
-              milestonesProgress: data.milestonesProgress ?? [],
-              evaluations: data.evaluations ?? [],
-              supportTickets: data.supportTickets ?? []
-            });
-          });
-          setTeams(list);
-        }, (err) => {
-          console.warn("Firestore teams listener error:", err.message);
-        });
-
-        // Load notifications for the user
-        const qNotifs = query(collection(firestore, "notifications"), where("userId", "==", firebaseUser.email));
-        unsubNotifs = onSnapshot(qNotifs, (snap) => {
-          const list: Notification[] = [];
-          snap.forEach((d) => {
-            const data = d.data();
-            list.push({
-              id: d.id,
-              userId: data.userId ?? "",
-              type: data.type ?? "system",
-              title: data.title ?? "",
-              body: data.body ?? "",
-              read: data.read ?? false,
-              createdAt: data.createdAt ?? "",
-              priority: data.priority ?? "normal",
-              relatedTeamId: data.relatedTeamId
-            });
-          });
-          setNotifications(list);
-        }, (err) => {
-          console.warn("Firestore notifications listener error:", err.message);
-        });
-
-        // Load tickets
-        unsubTickets = onSnapshot(collection(firestore, "tickets"), (snap) => {
-          const list: Ticket[] = [];
-          snap.forEach((d) => {
-            const data = d.data();
-            list.push({
-              id: d.id,
-              title: data.title ?? "",
-              description: data.description ?? "",
-              category: data.category ?? "General",
-              priority: data.priority ?? "Normal",
-              status: data.status ?? "Open",
-              raisedBy: data.raisedBy ?? "",
-              assignedTo: data.assignedTo,
-              createdAt: data.createdAt ?? ""
-            });
-          });
-          setTickets(list);
-        }, (err) => {
-          console.warn("Firestore tickets listener error:", err.message);
-        });
-
-        // Load volunteers
-        const qVols = query(collection(firestore, "users"), where("role", "==", "volunteer"));
-        unsubVols = onSnapshot(qVols, (snap) => {
-          const list: Volunteer[] = [];
-          snap.forEach((d) => {
-            const data = d.data();
-            list.push({
-              id: d.id,
-              name: data.displayName ?? "",
-              email: data.email ?? "",
-              status: data.status ?? "active",
-              assignedTicketsCount: data.assignedTicketsCount ?? 0,
-              createdAt: data.createdAt ?? ""
-            });
-          });
-          setVolunteers(list);
-        }, (err) => {
-          console.warn("Firestore volunteers listener error:", err.message);
-        });
-
-        setInitialized(true);
-      } else {
-        // Logged out
+      } else if (!firebaseUser && !firebaseFailed) {
         cleanupActiveListeners();
         setSession({ isLoggedIn: false, role: null, email: null, teamId: null });
         clearSessionCookie();
@@ -363,8 +280,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
         setNotifications([]);
         setTickets([]);
         setVolunteers([]);
-        setInitialized(true);
       }
+      setInitialized(true);
     });
 
     return () => {
@@ -375,9 +292,9 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // ── 2. Local fallback persistence ──────────────────────────────────────────
+  // ── 2. Local persistence ──────────────────────────────────────────────────
   useEffect(() => {
-    if (isConfigured || !initialized) return;
+    if (!initialized) return;
     const timeout = setTimeout(() => {
       localStorage.setItem("siet_teams_v2", JSON.stringify(teams));
       localStorage.setItem("siet_session", JSON.stringify(session));

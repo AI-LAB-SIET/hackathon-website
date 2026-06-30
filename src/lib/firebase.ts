@@ -12,32 +12,36 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Singleton instances
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
 let storage: FirebaseStorage | undefined;
+let initError: string | null = null;
 
-// Validate that required config exists to avoid initialization errors
 const isConfigured = Boolean(
   firebaseConfig.apiKey &&
   firebaseConfig.authDomain &&
   firebaseConfig.projectId &&
-  firebaseConfig.storageBucket &&
-  firebaseConfig.messagingSenderId &&
-  firebaseConfig.appId
+  firebaseConfig.storageBucket
 );
+
+export function isFirebaseReady(): boolean {
+  return isConfigured && !initError;
+}
 
 if (isConfigured) {
   try {
-    // Use singleton pattern to prevent multiple initializations in development mode
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
   } catch (error) {
-    console.error("Firebase initialization error:", error);
+    initError = error instanceof Error ? error.message : "Unknown initialization error";
+    app = undefined;
+    auth = undefined;
+    db = undefined;
+    storage = undefined;
   }
 }
 
-export { app, auth, db, storage, isConfigured };
+export { app, auth, db, storage, isConfigured, initError };

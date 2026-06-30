@@ -303,10 +303,11 @@ function buildError(code: string, userFriendly: string): FirebaseAuthError {
 function mapFirebaseError(err: unknown): FirebaseAuthError {
   const code = (err as { code?: string })?.code ?? 'auth/unknown';
   const userFriendlyMessages: Record<string, string> = {
-    'auth/invalid-credential': 'Incorrect username or password.',
+    'auth/invalid-credential': 'Incorrect email or password.',
+    'auth/invalid-login-credentials': 'Incorrect email or password.',
     'auth/invalid-email': 'The email address is invalid.',
     'auth/user-disabled': 'This account has been disabled. Contact the admin.',
-    'auth/user-not-found': 'No account found with these credentials.',
+    'auth/user-not-found': 'No account found with this email.',
     'auth/wrong-password': 'Incorrect password.',
     'auth/too-many-requests': 'Too many failed attempts. Please wait and try again.',
     'auth/network-request-failed': 'Network error. Please check your connection.',
@@ -315,10 +316,10 @@ function mapFirebaseError(err: unknown): FirebaseAuthError {
     'auth/wrong-role': 'Account role mismatch.',
     'auth/email-already-in-use': 'This email address is already in use.',
     'auth/weak-password': 'The password is too weak.',
+    'auth/operation-not-allowed': 'Email/password sign-in is not enabled. Contact the admin.',
+    'auth/api-key-not-valid': 'Firebase API key is not valid. Contact the admin.',
   };
-  return buildError(
-    code,
-    userFriendlyMessages[code] ??
-      `Authentication failed. (${code})`
-  );
+  const msg = userFriendlyMessages[code] ??
+    (code.startsWith('auth/') ? `Authentication failed. (${code})` : 'Authentication service error.');
+  return buildError(code, msg);
 }

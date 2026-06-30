@@ -1,27 +1,24 @@
 /**
  * lib/ai/chatService.ts
  *
- * Orchestration layer between the API route and the underlying AI client.
+ * Orchestration layer between the API route and the underlying basic chatbot.
  *
  * Responsibilities:
  * 1. Validate inputs
  * 2. Load conversation history from ConversationManager
- * 3. Prepend the role-appropriate system prompt from PromptManager
- * 4. Call NimClient for streaming or single-shot completions
- * 5. Persist new user + assistant messages back to ConversationManager
+ * 3. Generate a basic response (no AI model used)
+ * 4. Persist new user + assistant messages back to ConversationManager
  *
- * The API route delegates entirely to this service — it has zero AI logic itself.
- * This makes the AI behaviour unit-testable without spinning up the HTTP layer.
+ * This service provides a simple rule-based response for development/testing
+ * when NVIDIA NIM is not available or desired.
  */
 
-import { getNimClient } from "./nimClient";
-import { getSystemPrompt } from "./promptManager";
 import { conversationManager } from "./conversationManager";
-import type { ChatMessage, UserRole } from "./types";
+import type { UserRole } from "./types";
 
 export class ChatService {
   /**
-   * Returns an AsyncIterable<string> of text deltas streamed from NVIDIA NIM.
+   * Returns an AsyncIterable<string> of text deltas from a basic chatbot.
    * Persists the full assistant reply to conversation history after streaming completes.
    */
   async *streamResponse(
@@ -29,66 +26,41 @@ export class ChatService {
     userMessage: string,
     role: UserRole
   ): AsyncIterable<string> {
-    const client = getNimClient();
-    const messages = this.buildMessageContext(sessionId, userMessage, role);
-
     // Persist the user's message immediately
     conversationManager.appendMessage(sessionId, {
       role: "user",
       content: userMessage,
     });
 
-    let fullReply = "";
+    const fullReply = this.generateBasicResponse(userMessage, role);
 
-    try {
-      const stream = await client.streamChat(messages);
-      for await (const delta of stream) {
-        fullReply += delta;
-        yield delta;
-      }
-    } finally {
-      // Always persist the assistant's reply, even on partial completion
-      if (fullReply) {
-        conversationManager.appendMessage(sessionId, {
-          role: "assistant",
-          content: fullReply,
-        });
-
-        // Log the final NIM output asynchronously
-        this.logOutput(sessionId, userMessage, role, fullReply).catch((err) => {
-          console.error("[NVIDIA NIM Log] Logging task failed:", err);
-        });
-      }
+    // Simulate streaming by yielding words one by one with small delays
+    const words = fullReply.split(' ');
+    for (let i = 0; i < words.length; i++) {
+      yield words[i] + (i < words.length - 1 ? ' ' : '');
+      // Small delay to simulate streaming (optional, but makes it feel more realistic)
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
 
   /**
-   * Single-shot (non-streaming) completion. Used as a fallback.
-   * Returns the full assistant text.
+   * Single-shot (non-streaming) completion. Returns the full assistant text.
    */
   async chatOnce(
     sessionId: string,
     userMessage: string,
     role: UserRole
   ): Promise<string> {
-    const client = getNimClient();
-    const messages = this.buildMessageContext(sessionId, userMessage, role);
-
     conversationManager.appendMessage(sessionId, {
       role: "user",
       content: userMessage,
     });
 
-    const reply = await client.chat(messages);
+    const reply = this.generateBasicResponse(userMessage, role);
 
     conversationManager.appendMessage(sessionId, {
       role: "assistant",
       content: reply,
-    });
-
-    // Log the final NIM output asynchronously
-    this.logOutput(sessionId, userMessage, role, reply).catch((err) => {
-      console.error("[NVIDIA NIM Log] Logging task failed:", err);
     });
 
     return reply;
@@ -102,72 +74,70 @@ export class ChatService {
     conversationManager.clearHistory(sessionId);
   }
 
-  // ─── Private ────────────────────────────────────────────────────────────────
+  // ── Private ────────────────────────────────────────────────────────────────
 
-  private async logOutput(
-    sessionId: string,
-    userMessage: string,
-    role: UserRole,
-    fullReply: string
-  ): Promise<void> {
-    const timestamp = new Date().toISOString();
+  /**
+   * Generates a basic response based on the user message and role.
+   * This is a simple rule-based system for demonstration purposes.
+   */
+  private generateBasicResponse(userMessage: string, role: UserRole): string {
+    const lowerMsg = userMessage.toLowerCase().trim();
 
-    // 1. Console Log (stdout, captured by Vercel Logs)
-    console.log(
-      `[NVIDIA NIM Output Log]\n` +
-      `Timestamp: ${timestamp}\n` +
-      `Session ID: ${sessionId}\n` +
-      `User Role: ${role ?? "guest"}\n` +
-      `User Prompt: "${userMessage}"\n` +
-      `NIM Output: "${fullReply}"\n` +
-      `----------------------------------------`
-    );
-
-    // 2. Firestore Log (if db is configured)
-    try {
-      const { db } = await import("../firebaseAdmin");
-      await db.collection("nim_logs").add({
-        sessionId,
-        role: role ?? "guest",
-        prompt: userMessage,
-        response: fullReply,
-        timestamp,
-      });
-    } catch {
-      // Bypassed if firebase admin is not active/configured
+    // Handle empty messages
+    if (!lowerMsg) {
+      return "Hello! How can I assist you today?";
     }
 
-    // 3. Local log file (only if running locally in development)
-    if (process.env.NODE_ENV === "development") {
-      try {
-        const fs = await import("fs");
-        const path = await import("path");
-        const logDir = path.resolve(process.cwd(), "logs");
-        if (!fs.existsSync(logDir)) {
-          fs.mkdirSync(logDir);
-        }
-        const logFile = path.resolve(logDir, "nim_outputs.log");
-        const logLine = `[${timestamp}] [Session: ${sessionId}] [Role: ${role ?? "guest"}] Prompt: "${userMessage}" | Output: "${fullReply}"\n`;
-        fs.appendFileSync(logFile, logLine, "utf-8");
-      } catch (err) {
-        console.error("[NVIDIA NIM Log] Failed to write local log file:", err);
+    // Role-specific responses
+    if (role === 'admin') {
+      if (lowerMsg.includes('team') || lowerMsg.includes('participant')) {
+        return "As an admin, you can manage teams, participants, and announcements from the admin dashboard. What would you like to do?";
+      }
+      if (lowerMsg.includes('announcement')) {
+        return "You can create and manage announcements in the Announcements tab. Would you like to post a new announcement?";
       }
     }
-  }
 
-  private buildMessageContext(
-    sessionId: string,
-    userMessage: string,
-    role: UserRole
-  ): ChatMessage[] {
-    const systemPrompt = getSystemPrompt(role);
-    const history = conversationManager.getHistory(sessionId);
+    if (role === 'judge') {
+      if (lowerMsg.includes('score') || lowerMsg.includes('evaluate')) {
+        return "As a judge, you can evaluate team projects in the Problems tab. You'll find published problem statements there to evaluate.";
+      }
+      if (lowerMsg.includes('feedback')) {
+        return "Remember to provide constructive feedback when evaluating teams. Focus on innovation, feasibility, and presentation.";
+      }
+    }
 
-    return [
-      { role: "system", content: systemPrompt },
-      ...history,
-      { role: "user", content: userMessage },
-    ];
+    if (role === 'participant' || role === 'organizer' || role === 'volunteer') {
+      if (lowerMsg.includes('schedule') || lowerMsg.includes('timeline')) {
+        return "The hackathon schedule is available in the dashboard. Key events: Opening ceremony (9 AM), Workshop sessions (11 AM), Hacking begins (1 PM), Midpoint check-in (5 PM), Final presentations (next day 10 AM).";
+      }
+      if (lowerMsg.includes('team') || lowerMsg.includes('join')) {
+        return "You can join or create a team in the Participants tab. Make sure your team has 2-4 members and selects a problem statement to work on.";
+      }
+      if (lowerMsg.includes('problem') || lowerMsg.includes('challenge')) {
+        return "Check the Problems tab for available problem statements. Select one that interests your team and start working on your solution!";
+      }
+    }
+
+    // General responses
+    if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
+      return "Hello! Welcome to the AI Hack Lab 2026 assistant. How can I help you today?";
+    }
+    if (lowerMsg.includes('help') || lowerMsg.includes('support')) {
+      return "I'm here to help! You can ask about: hackathon schedule, team formation, problem statements, announcements, or general event information.";
+    }
+    if (lowerMsg.includes('thank') || lowerMsg.includes('thanks')) {
+      return "You're welcome! Happy hacking!";
+    }
+    if (lowerMsg.includes('weather')) {
+      return "I don't have access to real-time weather data, but I hope it's a great day for hacking!";
+    }
+    if (lowerMsg.includes('food') || lowerMsg.includes('lunch') || lowerMsg.includes('dinner')) {
+      return "Meals are provided during the event! Check the announcements for meal times and locations.";
+    }
+
+    // Default response
+    return `I received your message: "${userMessage}". I'm a basic chatbot designed to help with common hackathon questions. Try asking about the schedule, teams, problem statements, or announcements!`;
   }
 }
 

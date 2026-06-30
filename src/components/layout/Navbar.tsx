@@ -101,7 +101,7 @@ export function Navbar() {
     }
   };
 
-  const showQRScan = session.isLoggedIn && ["judge", "organizer", "admin"].includes(session.role || "");
+  const showQRScan = session.isLoggedIn && ["judge", "organizer", "admin", "volunteer"].includes(session.role || "");
 
   const isHome = pathname === "/";
   const useTransparent = isHome && !scrolled;

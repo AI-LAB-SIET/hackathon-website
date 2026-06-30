@@ -27,6 +27,28 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleScanResult = useCallback((decodedText: string) => {
+    // 1. Try to parse as JSON (Participant personal QR code)
+    try {
+      const data = JSON.parse(decodedText);
+      if (data.type === "participant" && data.email) {
+        for (const t of teams) {
+          const member = t.members.find(m => m.email === data.email);
+          if (member) {
+            onSelectTeam(t);
+            onClose();
+            toast(`Scanned participant: ${member.name}`, "success");
+            return;
+          }
+        }
+        toast(`Scanned participant: ${data.name || data.email} (No active team)`, "info");
+        onClose();
+        return;
+      }
+    } catch (e) {
+      // Not JSON, continue to string checks
+    }
+
+    // 2. Check if it matches a Team QR token
     const team = teams.find(t => t.qrToken === decodedText);
     if (team) {
       onSelectTeam(team);
@@ -35,6 +57,7 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
       return;
     }
 
+    // 3. Fallback: Check if it matches an email string directly
     for (const t of teams) {
       const member = t.members.find(m => m.email === decodedText);
       if (member) {
@@ -47,6 +70,20 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
 
     toast("QR code not recognized. Please try again.", "error");
   }, [teams, onSelectTeam, onClose, toast]);
+
+  // Strict role check for scanner access
+  if (session.isLoggedIn && !["admin", "organizer", "judge", "volunteer"].includes(session.role || "")) {
+    return (
+      <Dialog open={open} onClose={onClose} ariaLabel="Unauthorized">
+        <div className="p-8 text-center flex flex-col items-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-500 mb-6 text-sm">You do not have the required permissions to use the QR scanner.</p>
+          <button onClick={onClose} className="px-6 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Close</button>
+        </div>
+      </Dialog>
+    );
+  }
 
   const startScanner = useCallback(async () => {
     if (!containerRef.current) return;
@@ -69,14 +106,11 @@ export function QRScanner({ open, onClose, onSelectTeam }: QRScannerProps) {
       setError(null);
     } catch (err: unknown) {
       console.error("Scanner error:", err);
-      if (err instanceof Error) {
-        if (err.message.includes("Permission")) {
-          setError("Camera permission denied. Please allow camera access and try again.");
-        } else if (err.message.includes("NotFoundError")) {
-          setError("No camera found. Please connect a camera and try again.");
-        } else {
-          setError("Failed to start camera. Please try again.");
-        }
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes("Permission") || errMsg.includes("NotAllowedError")) {
+        setError("Camera permission denied. Please allow camera access (or you might be in a restricted browser environment).");
+      } else if (errMsg.includes("NotFoundError") || errMsg.includes("Requested device not found")) {
+        setError("No camera found. Please connect a camera and try again.");
       } else {
         setError("Failed to start camera. Please try again.");
       }

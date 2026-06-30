@@ -69,7 +69,7 @@ export default function Login() {
     setSubmitting(true);
 
     const inputEmail = email.trim();
-    const isInternalAdmin = inputEmail.toLowerCase() === "admin2727" || inputEmail.toLowerCase() === "admin@college.edu";
+    const isInternalAdmin = inputEmail.toLowerCase() === "admin2727";
 
     if (isConfigured) {
       try {
@@ -80,20 +80,21 @@ export default function Login() {
           result = await signInWithRole(inputEmail, password);
         }
         
-        login(result.email, result.role);
         toast(`Welcome back! Logged in as ${result.role.toUpperCase()}.`, "success");
-        redirectByRole(result.role);
+        // Do not setSubmitting(false) or redirect here.
+        // Wait for onAuthStateChanged in StateProvider to update the session.
+        // The useEffect hook will automatically redirect once session.isLoggedIn is true.
+        return;
       } catch (err: unknown) {
-        const msg = (err as { userFriendly?: string })?.userFriendly ?? "Authentication failed.";
-        setFirebaseError(msg);
-        toast(msg, "error");
-      } finally {
         setSubmitting(false);
+        const msg = (err as { userFriendly?: string })?.userFriendly ?? "Authentication failed.";
+        setError(msg);
+        toast(msg, "error");
+        return; // Do not fall back to mock!
       }
-      return;
     }
 
-    // Mock authentication path
+    // Mock authentication path (only used if Firebase is NOT configured)
     setTimeout(() => {
       const res = login(inputEmail);
       setSubmitting(false);
