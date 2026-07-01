@@ -1,3 +1,5 @@
+// ─── Core Participant ─────────────────────────────────────────────────────────
+
 export interface Participant {
   name: string;
   registerNumber: string;
@@ -10,6 +12,27 @@ export interface Participant {
   isLeader?: boolean;
 }
 
+// ─── Hackathon ────────────────────────────────────────────────────────────────
+
+export interface Hackathon {
+  id: string;
+  name: string;               // "AI Lab Hackathon 2026"
+  slug: string;               // "ai-lab-2026" — used in /register?h=slug
+  description: string;
+  venue?: string;
+  startDate: string;          // ISO datetime
+  endDate: string;            // ISO datetime
+  registrationOpen: boolean;
+  maxTeamSize: number;        // default 4
+  minTeamSize: number;        // default 1 (solo allowed)
+  status: "upcoming" | "active" | "completed" | "archived";
+  createdAt: string;
+  createdBy: string;          // admin email
+  registrationLink?: string;  // computed: /register?h=slug
+}
+
+// ─── Team ─────────────────────────────────────────────────────────────────────
+
 export interface AttendanceRecord {
   teamId: string;
   checkedIn: boolean;
@@ -19,6 +42,7 @@ export interface AttendanceRecord {
 
 export interface SupportTicket {
   id: string;
+  hackathonId?: string;       // NEW
   teamId?: string;
   category: "Internet" | "Power" | "Hardware" | "Food" | "Venue" | "Other" | "General";
   priority: "Low" | "Medium" | "High" | "Critical" | "Normal";
@@ -33,6 +57,7 @@ export interface SupportTicket {
 
 export interface Team {
   id: string;
+  hackathonId?: string;       // optional — filled from activeHackathonId on create
   name: string;
   size: number;
   members: Participant[];
@@ -68,6 +93,60 @@ export interface Team {
   shortlisted?: boolean;
 }
 
+// ─── Team Requests (join / invite) ───────────────────────────────────────────
+
+export interface TeamRequest {
+  id: string;
+  hackathonId: string;
+  teamId: string;
+  teamName: string;
+  fromEmail: string;         // who sent it
+  fromName: string;
+  toEmail: string;           // who receives it
+  toName: string;
+  direction: "join" | "invite"; // "join" = user→team, "invite" = team→user
+  status: "pending" | "accepted" | "rejected";
+  message?: string;
+  createdAt: string;
+  respondedAt?: string;
+}
+
+// ─── Food Token System ────────────────────────────────────────────────────────
+
+export interface FoodMeal {
+  id: string;
+  hackathonId: string;
+  name: string;              // "Day 1 — Breakfast"
+  type: "breakfast" | "lunch" | "dinner" | "snacks";
+  scheduledAt: string;       // ISO datetime
+  windowMinutes: number;     // how long the token is valid (e.g. 60)
+  createdAt: string;
+  createdBy: string;
+  totalIssued?: number;      // updated when tokens are bulk-issued
+  totalRedeemed?: number;    // updated on each redemption
+}
+
+export interface FoodToken {
+  id: string;
+  hackathonId: string;
+  mealId: string;
+  mealName: string;
+  mealType: FoodMeal["type"];
+  scheduledAt: string;
+  participantEmail: string;
+  participantName: string;
+  registerNumber: string;
+  teamId?: string;
+  teamName?: string;
+  status: "issued" | "redeemed" | "expired";
+  issuedAt: string;
+  redeemedAt?: string;
+  redeemedBy?: string;       // email of volunteer/organizer who marked it
+  tokenCode: string;         // unique code / QR payload e.g. "FT-abc123"
+}
+
+// ─── Other Core Types ─────────────────────────────────────────────────────────
+
 export interface Milestone {
   id: string;
   title: string;
@@ -78,6 +157,7 @@ export interface Milestone {
 
 export interface Announcement {
   id: string;
+  hackathonId?: string;      // NEW — null/undefined = global
   title: string;
   content: string;
   type: "info" | "warning" | "success";
@@ -86,13 +166,15 @@ export interface Announcement {
 
 export interface Notification {
   id: string;
-  type: "approval" | "deadline" | "judge" | "action" | "system";
+  hackathonId?: string;      // NEW
+  type: "approval" | "deadline" | "judge" | "action" | "system" | "team_request";
   title: string;
   body: string;
   read: boolean;
   priority: "normal" | "high";
   createdAt: string;
   relatedTeamId?: string | null;
+  relatedRequestId?: string | null; // NEW — for team request notifications
   userId?: string;
 }
 
@@ -109,8 +191,9 @@ export interface UserSession {
   email: string | null;
   name?: string | null;
   teamId?: string | null;
-  profilePicture?: string;
   teamSetupDone?: boolean;
+  currentHackathonId?: string | null; // NEW
+  profilePicture?: string;
 }
 
 export interface HackTrack {
@@ -141,6 +224,8 @@ export interface UserProfile {
   socialLinks?: { platform: string; url: string }[];
   role: "participant" | "admin" | "judge" | "organizer" | "volunteer";
   teamId?: string;
+  currentHackathonId?: string;     // NEW — participant's selected hackathon
+  hackathonIds?: string[];         // NEW — staff assignment: which hackathons they manage
   // Compatibility fields
   uid?: string;
   displayName?: string;
@@ -148,19 +233,22 @@ export interface UserProfile {
   college?: string;
   department?: string;
   year?: string;
+  registerNumber?: string;
+  teamSetupDone?: boolean;
 }
 
 export interface FileAttachment {
   id: string;
   name: string;
-  type: string;       // MIME type
-  size: number;       // bytes
-  dataUrl: string;    // base64 data URL for client-side storage
+  type: string;
+  size: number;
+  dataUrl: string;
   uploadedAt: string;
 }
 
 export interface ProblemStatement {
   id: string;
+  hackathonId?: string;            // optional — StateProvider fills from activeHackathonId
   title: string;
   description: string;
   trackId: string;
