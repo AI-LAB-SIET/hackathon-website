@@ -39,6 +39,7 @@ interface StateContextType {
   updateTeamMembers: (teamId: string, members: Participant[]) => void;
   approveTeam: (teamId: string) => void;
   rejectTeam: (teamId: string) => void;
+  deleteTeam: (teamId: string) => Promise<void>;
   updateProjectDetails: (teamId: string, details: Partial<Team>) => void;
   evaluateProject: (teamId: string, evaluation: { innovation: number; feasibility: number; presentation: number; technicalDepth?: number; aiUsage?: number; feedback: string; judgeEmail: string }) => void;
   updateMilestoneProgress: (teamId: string, milestoneId: string, completed: boolean) => void;
@@ -577,19 +578,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     } else {
       setTeams((prev) => prev.map((t) => t.id === teamId ? { ...t, status: "APPROVED" as const } : t));
     }
-
-    const team = teamsRef.current.find((t) => t.id === teamId);
-    if (team) {
-      addNotification({
-        userId: team.members[0]?.email || "",
-        type: "approval",
-        title: "Team Approved!",
-        body: `Team "${team.name}" has been approved by the organizers.`,
-        priority: "high",
-        relatedTeamId: teamId
-      });
-    }
-  }, [addNotification]);
+    // Notification intentionally removed — admin actions should not generate noise
+  }, []);
 
   const rejectTeam = useCallback(async (teamId: string) => {
     if (isConfigured && db) {
@@ -597,19 +587,16 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     } else {
       setTeams((prev) => prev.map((t) => t.id === teamId ? { ...t, status: "REJECTED" as const } : t));
     }
+    // Notification intentionally removed — admin actions should not generate noise
+  }, []);
 
-    const team = teamsRef.current.find((t) => t.id === teamId);
-    if (team) {
-      addNotification({
-        userId: team.members[0]?.email || "",
-        type: "action",
-        title: "Team Registration Rejected",
-        body: `Team "${team.name}" registration was rejected. Contact organizers for details.`,
-        priority: "high",
-        relatedTeamId: teamId
-      });
+  const deleteTeam = useCallback(async (teamId: string) => {
+    if (isConfigured && db) {
+      const { deleteDoc } = await import("firebase/firestore");
+      await deleteDoc(doc(db, "teams", teamId));
     }
-  }, [addNotification]);
+    setTeams((prev) => prev.filter((t) => t.id !== teamId));
+  }, []);
 
   const updateProjectDetails = useCallback(async (teamId: string, details: Partial<Team>) => {
     if (isConfigured && db) {
@@ -953,7 +940,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     teams, session, announcements, notifications,
     volunteers, userProfiles, problemStatements, tickets,
     login, logout,
-    registerTeam, updateTeamMembers, approveTeam, rejectTeam,
+    registerTeam, updateTeamMembers, approveTeam, rejectTeam, deleteTeam,
     updateProjectDetails, evaluateProject, updateMilestoneProgress, checkInTeam,
     addAnnouncement,
     removeAnnouncement,
@@ -964,7 +951,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
     createTicket, assignTicket, updateTicketStatus,
   }), [teams, session, announcements, notifications, volunteers, userProfiles, problemStatements, tickets,
-    login, logout, registerTeam, updateTeamMembers, approveTeam, rejectTeam,
+    login, logout, registerTeam, updateTeamMembers, approveTeam, rejectTeam, deleteTeam,
     updateProjectDetails, evaluateProject, updateMilestoneProgress, checkInTeam,
     addAnnouncement, addNotification, markNotificationRead, markAllNotificationsRead,
     raiseTicket, resolveTicket, addVolunteer, updateVolunteer, removeVolunteer,

@@ -241,14 +241,11 @@ export async function sendMemberInviteEmail(memberEmail: string): Promise<void> 
     console.log(`[Mock] Password setup link would be sent to: ${memberEmail}`);
     return;
   }
-  try {
-    await sendPasswordResetEmail(auth, memberEmail, {
-      url: `${window.location.origin}/login`,
-    });
-  } catch (err: unknown) {
-    // Non-critical: log warning but don't break the onboarding flow
-    console.warn(`Could not send invite email to ${memberEmail}:`, err);
-  }
+  // This will throw auth/user-not-found if the account doesn't exist yet.
+  // We intentionally let it propagate so the caller can handle it.
+  await sendPasswordResetEmail(auth, memberEmail, {
+    url: `${window.location.origin}/login`,
+  });
 }
 
 /**

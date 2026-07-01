@@ -150,9 +150,11 @@ export default function Onboarding() {
         const inviteResults = await Promise.allSettled(
           validExtra.map(async (m) => {
             // 1. Create Firebase Auth account + Firestore profile via API
+            //    This MUST succeed before we can send the password setup email
+            let accountCreated = false;
             if (idToken && resolvedTeamId) {
               try {
-                await fetch("/api/auth/invite-member", {
+                const res = await fetch("/api/auth/invite-member", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -168,10 +170,23 @@ export default function Onboarding() {
                     teamId: resolvedTeamId,
                   }),
                 });
-              } catch { /* API failed, still try to send email */ }
+                accountCreated = res.ok;
+                if (!res.ok) {
+                  const errData = await res.json().catch(() => ({}));
+                  console.warn(`[Invite] Account creation failed for ${m.email}:`, errData);
+                }
+              } catch (e) {
+                console.warn(`[Invite] API call failed for ${m.email}:`, e);
+              }
             }
-            // 2. Send Firebase password setup email (uses Firebase's own email infrastructure)
-            await sendMemberInviteEmail(m.email);
+
+            // 2. Send password setup email only AFTER the Firebase account exists
+            //    sendPasswordResetEmail throws auth/user-not-found if account doesn't exist
+            if (accountCreated || (!resolvedTeamId || !idToken)) {
+              await sendMemberInviteEmail(m.email);
+            } else {
+              throw new Error(`Could not create account for ${m.name}`);
+            }
           })
         );
 

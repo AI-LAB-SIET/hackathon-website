@@ -22,7 +22,6 @@ import {
   Shield,
   Megaphone,
   CheckCircle,
-  ChevronRight,
   ChevronDown,
   BookOpen,
   Archive,
@@ -56,7 +55,8 @@ export default function AdminDashboard() {
     session, teams, announcements, problemStatements, notifications, userProfiles,
     addAnnouncement, removeAnnouncement, addProblemStatement, updateProblemStatement, archiveProblemStatement,
     markNotificationRead, markAllNotificationsRead,
-    updateProfile, getProfile, updateTeamMembers, addProfile, deleteProfile
+    updateProfile, getProfile, updateTeamMembers, addProfile, deleteProfile,
+    approveTeam, rejectTeam, deleteTeam,
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -92,6 +92,13 @@ export default function AdminDashboard() {
   const [participantEditOpen, setParticipantEditOpen] = useState(false);
   const [editingParticipant, setEditingParticipant] = useState<(Participant & { teamId: string }) | null>(null);
   const [participantForm, setParticipantForm] = useState({ name: "", email: "", isLeader: false });
+  const [participantSearch, setParticipantSearch] = useState("");
+
+  // Team management state
+  const [teamSearch, setTeamSearch] = useState("");
+  const [teamStatusFilter, setTeamStatusFilter] = useState<"ALL" | "APPROVED" | "REJECTED" | "PENDING">("ALL");
+  const [teamDetailOpen2, setTeamDetailOpen2] = useState(false);
+  const [managingTeam, setManagingTeam] = useState<(typeof teams)[0] | null>(null);
 
   // Problem statement form
   const [psForm, setPsForm] = useState({ title: "", description: "", trackId: "gen-ai", status: "draft" as "draft" | "published" | "archived" });
@@ -148,7 +155,7 @@ export default function AdminDashboard() {
   const totalParticipants = teams.reduce((acc, t) => acc + t.members.length, 0);
   const activeTeams = teams.filter((t) => t.status === "APPROVED").length;
   const publishedPs = problemStatements.filter((p) => p.status === "published").length;
-  const approvedTeams = teams.filter((t) => t.status === "APPROVED");
+  const approvedTeams = teams.filter((t) => t.status === "APPROVED"); // used in attendance tab
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Recent activity (simplified audit log)
@@ -297,20 +304,28 @@ export default function AdminDashboard() {
     if (!editingParticipant) return;
     const team = teams.find(t => t.id === editingParticipant.teamId);
     if (!team) return;
-    const updatedMembers = team.members.map(m => {
+    const updatedMembers = team.members.map((m) => {
       if (m.email === editingParticipant.email) {
         return { ...m, name: participantForm.name, email: participantForm.email, isLeader: participantForm.isLeader };
       }
-      // If we are making this person leader, remove leader from others
       if (participantForm.isLeader && m.email !== editingParticipant.email) {
         return { ...m, isLeader: false };
       }
       return m;
     });
-    updateTeamMembers(team.id, updatedMembers);
+    updateTeamMembers(editingParticipant.teamId, updatedMembers);
     toast("Participant updated.", "success");
     setParticipantEditOpen(false);
     setEditingParticipant(null);
+  };
+
+  const handleDeleteParticipant = (p: Participant & { teamId: string; teamName: string }) => {
+    if (!confirm(`Remove "${p.name}" from team "${p.teamName}"? This cannot be undone.`)) return;
+    const team = teams.find(t => t.id === p.teamId);
+    if (!team) return;
+    const updatedMembers = team.members.filter(m => m.email !== p.email);
+    updateTeamMembers(p.teamId, updatedMembers);
+    toast(`"${p.name}" removed from ${p.teamName}.`, "success");
   };
 
   // ─── PROBLEM STATEMENT HANDLERS ───
@@ -439,7 +454,7 @@ export default function AdminDashboard() {
     attendance: "Attendance Register",
     announcements: "Announcements",
     problems: "Problem Statements",
-    teams: "Approved Teams",
+    teams: "Team Management",
     profile: "Profile",
   };
 
@@ -717,60 +732,136 @@ export default function AdminDashboard() {
             {/* ═══════════════════════════════════════════ PARTICIPANTS TAB ═══════════════════════════════════════════ */}
             {activeTab === "participants" && (
               <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
-                <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-3">All Participants</h3>
+                <div className="flex items-center justify-between gap-3 border-b border-gray-150 dark:border-gray-700 pb-3">
+                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">
+                    All Participants
+                    {isConfigured && (
+                      <span className="ml-2 text-xs font-normal text-gray-400">(Live from Firebase)</span>
+                    )}
+                  </h3>
+                  <input
+                    type="text"
+                    placeholder="Search by name, email, register no..."
+                    value={participantSearch}
+                    onChange={(e) => setParticipantSearch(e.target.value)}
+                    className="text-xs border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-64 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/40"
+                  />
+                </div>
+
+                {isConfigured && teams.length === 0 && (
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
+                    🔄 Waiting for Firestore data... If this persists, no teams have been registered via onboarding yet.
+                  </div>
+                )}
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-gray-100 dark:border-gray-700">
                         <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Reg No.</th>
                         <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Team</th>
+                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Dept / Year</th>
                         <th className="text-center py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Leader</th>
-                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Role</th>
+                        {isConfigured && <th className="text-center py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Account</th>}
+                        <th className="py-3 px-3"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {teams.flatMap((t) =>
-                        t.members.map((m) => ({
-                          ...m,
-                          teamName: t.name,
-                          teamId: t.id,
-                        }))
-                      ).map((p, idx) => (
-                        <tr key={`${p.teamId}-${p.email}-${idx}`} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                          <td className="py-3 px-3">
-                            <div className="flex items-center gap-2">
-                              <Avatar name={p.name} size="sm" />
-                              <div>
-                                <p className="font-bold text-primary-dark dark:text-gray-100">{p.name}</p>
-                                <p className="text-[10px] text-gray-400 dark:text-gray-500">{p.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-gray-600 dark:text-gray-300">{p.teamName}</td>
-                          <td className="py-3 px-3 text-center">
-                            {p.isLeader ? (
-                              <CheckCircle className="h-4 w-4 text-emerald-500 mx-auto" />
-                            ) : (
-                              <span className="text-gray-300">—</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-3">
-                            <Badge variant={p.isLeader ? "warning" : "info"}>
-                              {p.isLeader ? "Leader" : "Member"}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            <button onClick={() => handleOpenParticipantEdit(p as unknown as Participant & { teamId: string })} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-primary-dark cursor-pointer transition-colors">
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {teams.flatMap((t) => t.members).length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="py-8 text-center text-gray-400 text-sm">No participants yet.</td>
-                        </tr>
-                      )}
+                      {(() => {
+                        // Only show teams from Firestore when configured.
+                        // Exclude the hardcoded mock team IDs (exactly "team-1", "team-2", "team-3") — 
+                        // NOT by startsWith (which would wrongly filter real teams like "team-1751234567890")
+                        const MOCK_TEAM_IDS = new Set(["team-1", "team-2", "team-3"]);
+                        const sourceteams = isConfigured
+                          ? teams.filter(t => !MOCK_TEAM_IDS.has(t.id))
+                          : teams;
+
+                        const allParticipants = sourceteams.flatMap((t) =>
+                          t.members.map((m) => ({ ...m, teamName: t.name, teamId: t.id }))
+                        );
+
+                        const query = participantSearch.toLowerCase().trim();
+                        const filtered = query
+                          ? allParticipants.filter(
+                              (p) =>
+                                p.name.toLowerCase().includes(query) ||
+                                p.email.toLowerCase().includes(query) ||
+                                (p.registerNumber ?? "").toLowerCase().includes(query) ||
+                                (p.department ?? "").toLowerCase().includes(query)
+                            )
+                          : allParticipants;
+
+                        if (filtered.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={isConfigured ? 7 : 6} className="py-8 text-center text-gray-400 text-sm">
+                                {query ? `No participants match "${participantSearch}"` : "No participants yet."}
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        return filtered.map((p, idx) => {
+                          // Cross-reference with Firestore userProfiles to check if they have a Firebase account
+                          const hasAccount = isConfigured
+                            ? userProfiles.some((u) => u.email === p.email)
+                            : true;
+
+                          return (
+                            <tr key={`${p.teamId}-${p.email}-${idx}`} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                              <td className="py-3 px-3">
+                                <div className="flex items-center gap-2">
+                                  <Avatar name={p.name} size="sm" />
+                                  <div>
+                                    <p className="font-bold text-primary-dark dark:text-gray-100">{p.name}</p>
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500">{p.email}</p>
+                                    {p.phone && <p className="text-[10px] text-gray-300 dark:text-gray-600">{p.phone}</p>}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-gray-500 dark:text-gray-400 font-mono text-[10px]">
+                                {p.registerNumber || <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="py-3 px-3 text-gray-600 dark:text-gray-300">{p.teamName}</td>
+                              <td className="py-3 px-3">
+                                <div className="text-gray-600 dark:text-gray-300">{p.department || <span className="text-gray-300">—</span>}</div>
+                                {p.year && <div className="text-[10px] text-gray-400">{p.year}</div>}
+                              </td>
+                              <td className="py-3 px-3 text-center">
+                                {p.isLeader ? (
+                                  <CheckCircle className="h-4 w-4 text-emerald-500 mx-auto" />
+                                ) : (
+                                  <span className="text-gray-300">—</span>
+                                )}
+                              </td>
+                              {isConfigured && (
+                                <td className="py-3 px-3 text-center">
+                                  {hasAccount ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700">
+                                      <CheckCircle className="h-3 w-3" /> Active
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-semibold border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700">
+                                      No Account
+                                    </span>
+                                  )}
+                                </td>
+                              )}
+                              <td className="py-3 px-3 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <button onClick={() => handleOpenParticipantEdit(p as unknown as Participant & { teamId: string })} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-primary-dark cursor-pointer transition-colors" title="Edit">
+                                    <Edit3 className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button onClick={() => handleDeleteParticipant(p as unknown as Participant & { teamId: string; teamName: string })} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 cursor-pointer transition-colors" title="Remove from team">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>
@@ -1035,44 +1126,224 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* ═══════════════════════════════════════════ APPROVED TEAMS TAB ═══════════════════════════════════════════ */}
+            {/* ═══════════════════════════════════════════ TEAMS TAB ═══════════════════════════════════════════ */}
             {activeTab === "teams" && (
               <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
-                <h3 className="text-base font-bold text-primary-dark dark:text-gray-100 border-b border-gray-150 dark:border-gray-700 pb-3">Approved Teams</h3>
-                <div className="flex flex-col gap-3">
-                  {approvedTeams.map((team) => {
-                    const track = HACK_TRACKS.find((t) => t.id === team.trackId);
-                    return (
+
+                {/* Header + filters */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-150 dark:border-gray-700 pb-4">
+                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">
+                    Team Management
+                    {isConfigured && <span className="ml-2 text-xs font-normal text-gray-400">(Live from Firebase)</span>}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Search teams..."
+                      value={teamSearch}
+                      onChange={(e) => setTeamSearch(e.target.value)}
+                      className="text-xs border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-48 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/40"
+                    />
+                    {(["ALL", "APPROVED", "PENDING", "REJECTED"] as const).map((s) => (
                       <button
-                        key={team.id}
-                        onClick={() => { setDetailTeam(team); setTeamDetailOpen(true); }}
-                        className="p-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs cursor-pointer hover:border-primary-green/30 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-all text-left"
+                        key={s}
+                        onClick={() => setTeamStatusFilter(s)}
+                        className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-all ${
+                          teamStatusFilter === s
+                            ? "bg-primary-green text-white border-primary-green"
+                            : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-primary-green/40"
+                        }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                            {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
-                          </div>
-                          <div>
-                            <p className="font-extrabold text-primary-dark dark:text-gray-100">{team.name}</p>
-                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold">{team.size} members · {track?.label || "—"}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold">Created</p>
-                            <p className="font-bold text-gray-600 dark:text-gray-300">{new Date(team.createdAt).toLocaleDateString()}</p>
-                          </div>
-                          <Badge variant={team.attendance?.checkedIn ? "success" : "warning"}>
-                            {team.attendance?.checkedIn ? "Checked In" : "Not Arrived"}
-                          </Badge>
-                          <ChevronRight className="h-4 w-4 text-gray-300" />
-                        </div>
+                        {s === "ALL" ? `All (${teams.length})` : `${s} (${teams.filter(t => t.status === s).length})`}
                       </button>
-                    );
-                  })}
-                  {approvedTeams.length === 0 && (
-                    <p className="text-center text-gray-400 text-sm py-8">No approved teams yet.</p>
-                  )}
+                    ))}
+                  </div>
+                </div>
+
+                {/* Teams list */}
+                <div className="flex flex-col gap-3">
+                  {(() => {
+                    const MOCK_IDS = new Set(["team-1", "team-2", "team-3"]);
+                    const sourceTeams = isConfigured ? teams.filter(t => !MOCK_IDS.has(t.id)) : teams;
+                    const q = teamSearch.toLowerCase().trim();
+                    const filtered = sourceTeams
+                      .filter(t => teamStatusFilter === "ALL" || t.status === teamStatusFilter)
+                      .filter(t => !q || t.name.toLowerCase().includes(q) || t.members.some(m => m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)));
+
+                    if (filtered.length === 0) {
+                      return (
+                        <p className="text-center text-gray-400 text-sm py-8">
+                          {isConfigured && sourceTeams.length === 0
+                            ? "No teams have been registered via onboarding yet."
+                            : q ? `No teams match "${teamSearch}"` : `No ${teamStatusFilter.toLowerCase()} teams.`}
+                        </p>
+                      );
+                    }
+
+                    return filtered.map((team) => {
+                      const leader = team.members.find(m => m.isLeader) || team.members[0];
+                      const statusColor = team.status === "APPROVED"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700"
+                        : team.status === "REJECTED"
+                        ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700"
+                        : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700";
+
+                      return (
+                        <div key={team.id} className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 flex flex-col gap-3">
+                          {/* Team header row */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                                {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-extrabold text-sm text-primary-dark dark:text-gray-100">{team.name}</p>
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                                  {team.members.length} member{team.members.length !== 1 ? "s" : ""}
+                                  {leader && ` · Leader: ${leader.name}`}
+                                </p>
+                                <p className="text-[10px] text-gray-300 dark:text-gray-600">
+                                  Registered: {new Date(team.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${statusColor}`}>
+                                {team.status || "PENDING"}
+                              </span>
+                              <button
+                                onClick={() => { setManagingTeam(team); setTeamDetailOpen2(true); }}
+                                className="text-[10px] font-semibold px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary-green/50 hover:text-primary-green cursor-pointer transition-all"
+                              >
+                                View Details
+                              </button>
+                              {team.status !== "APPROVED" && (
+                                <button
+                                  onClick={() => { approveTeam(team.id); toast(`Team "${team.name}" approved.`, "success"); }}
+                                  className="text-[10px] font-bold px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer transition-colors"
+                                >
+                                  Approve
+                                </button>
+                              )}
+                              {team.status !== "REJECTED" && (
+                                <button
+                                  onClick={() => { rejectTeam(team.id); toast(`Team "${team.name}" rejected.`, "error"); }}
+                                  className="text-[10px] font-bold px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white cursor-pointer transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              )}
+                              <button
+                                onClick={async () => {
+                                  if (!confirm(`Permanently delete team "${team.name}" and all its data? This cannot be undone.`)) return;
+                                  await deleteTeam(team.id);
+                                  toast(`Team "${team.name}" deleted.`, "success");
+                                }}
+                                className="text-[10px] font-bold px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-red-50 dark:bg-gray-700 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 border border-gray-200 dark:border-gray-600 cursor-pointer transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Members mini-list */}
+                          <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-50 dark:border-gray-700/50">
+                            {team.members.map((m, i) => (
+                              <div key={i} className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1">
+                                <Avatar name={m.name} size="sm" />
+                                <div>
+                                  <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-200">{m.name}</p>
+                                  <p className="text-[9px] text-gray-400">{m.email}</p>
+                                </div>
+                                {m.isLeader && (
+                                  <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded dark:bg-emerald-900/30 dark:text-emerald-400">LEAD</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Team Detail Modal */}
+            {teamDetailOpen2 && managingTeam && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setTeamDetailOpen2(false)}>
+                <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-extrabold text-primary-dark dark:text-gray-100">{managingTeam.name}</h3>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{managingTeam.id}</p>
+                    </div>
+                    <button onClick={() => setTeamDetailOpen2(false)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+                      <X className="h-4 w-4 text-gray-400" />
+                    </button>
+                  </div>
+                  <div className="p-6 space-y-5">
+                    {/* Status + Actions */}
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${
+                        managingTeam.status === "APPROVED"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400"
+                          : managingTeam.status === "REJECTED"
+                          ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400"
+                          : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400"
+                      }`}>{managingTeam.status || "PENDING"}</span>
+                      {managingTeam.status !== "APPROVED" && (
+                        <button onClick={() => { approveTeam(managingTeam.id); setManagingTeam({...managingTeam, status: "APPROVED"}); toast("Team approved.", "success"); }}
+                          className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 cursor-pointer">Approve</button>
+                      )}
+                      {managingTeam.status !== "REJECTED" && (
+                        <button onClick={() => { rejectTeam(managingTeam.id); setManagingTeam({...managingTeam, status: "REJECTED"}); toast("Team rejected.", "error"); }}
+                          className="text-xs font-bold px-3 py-1.5 rounded-xl bg-red-500 text-white hover:bg-red-600 cursor-pointer">Reject</button>
+                      )}
+                    </div>
+
+                    {/* Info grid */}
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      {[
+                        { label: "Team Size", val: `${managingTeam.members.length} members` },
+                        { label: "Registered", val: new Date(managingTeam.createdAt).toLocaleString() },
+                        { label: "Payment", val: managingTeam.paymentVerified ? "Verified ✅" : "Not Verified ❌" },
+                        { label: "Check-in", val: managingTeam.attendance?.checkedIn ? "Checked In ✅" : "Not Arrived" },
+                        { label: "Idea Submitted", val: managingTeam.ideaSubmitted ? "Yes ✅" : "No" },
+                        { label: "Faculty Approved", val: managingTeam.facultyApproved ? "Yes ✅" : "No" },
+                      ].map(({label, val}) => (
+                        <div key={label} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+                          <p className="font-semibold text-gray-700 dark:text-gray-200">{val}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Members */}
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Members</p>
+                      <div className="space-y-2">
+                        {managingTeam.members.map((m, i) => (
+                          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-xs">
+                            <Avatar name={m.name} size="sm" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-gray-800 dark:text-gray-100">{m.name} {m.isLeader && <span className="text-emerald-600 text-[9px] font-bold ml-1">LEADER</span>}</p>
+                              <p className="text-gray-400 dark:text-gray-500 truncate">{m.email}</p>
+                              <p className="text-gray-300 dark:text-gray-600">{m.registerNumber && `${m.registerNumber} · `}{m.department}{m.year && ` · ${m.year}`}</p>
+                            </div>
+                            {m.phone && <p className="text-gray-400 shrink-0">{m.phone}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {managingTeam.projectDescription && (
+                      <div>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Project Description</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-xl p-3">{managingTeam.projectDescription}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
