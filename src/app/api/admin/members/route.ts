@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, role, hackathonIds } = body;
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: "Missing required fields (name, email, password, role)." }, { status: 400 });
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       email,
       displayName: name,
       role,
+      hackathonIds: hackathonIds || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -82,7 +83,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, name, email, password, role } = body;
+    const { id, name, email, password, role, hackathonIds } = body;
 
     if (!id || !name || !email || !role) {
       return NextResponse.json({ error: "Missing required fields (id, name, email, role)." }, { status: 400 });
@@ -105,6 +106,7 @@ export async function PUT(req: NextRequest) {
         email,
         displayName: name,
         role,
+        hackathonIds: hackathonIds || [],
         updatedAt: new Date().toISOString(),
       },
       { merge: true }

@@ -33,7 +33,7 @@ export default function OrganizerDashboard() {
     approveTeam, rejectTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead,
     addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus,
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
-    foodMeals, foodTokens, redeemToken, lookupToken
+    foodMeals, foodTokens, redeemToken, lookupToken, activeHackathonId
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -44,6 +44,7 @@ export default function OrganizerDashboard() {
   const [scannedToken, setScannedToken] = useState<FoodToken | null>(null);
   const [lookupError, setLookupError] = useState("");
   const [redeeming, setRedeeming] = useState(false);
+  const [scanModalOpen, setScanModalOpen] = useState(false);
 
   // Filters
   const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>("all");
@@ -492,6 +493,9 @@ export default function OrganizerDashboard() {
                       />
                       <Button type="submit">
                         Look Up
+                      </Button>
+                      <Button type="button" variant="outline" onClick={() => setScanModalOpen(true)}>
+                        Scan Token
                       </Button>
                     </form>
 
@@ -1361,6 +1365,48 @@ export default function OrganizerDashboard() {
                 </button>
               </div>
             )}
+          </Modal>
+
+          <Modal isOpen={scanModalOpen} onClose={() => setScanModalOpen(false)} title="Scan Generated Token">
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              <p className="text-xs text-gray-500">
+                Below is a list of active, unused food tokens generated in this hackathon. Select one to simulate scanning it.
+              </p>
+              
+              <div className="flex flex-col gap-2">
+                {foodTokens
+                  .filter((t) => t.status === "issued" && t.hackathonId === activeHackathonId)
+                  .map((t) => (
+                    <div
+                      key={t.id}
+                      onClick={() => {
+                        setScannedToken(t);
+                        setLookupQuery(t.tokenCode);
+                        setScanModalOpen(false);
+                        toast(`Scanned token ${t.tokenCode} for ${t.participantName}`, "success");
+                      }}
+                      className="p-3 rounded-xl border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary-green hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 cursor-pointer transition-all flex justify-between items-center gap-3 text-xs"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-primary-dark dark:text-gray-150 truncate">
+                          {t.participantName}
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                          Code: {t.tokenCode} | {t.mealName}
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-[9px] font-bold uppercase shrink-0">
+                        {t.mealType}
+                      </span>
+                    </div>
+                  ))}
+                {foodTokens.filter((t) => t.status === "issued" && t.hackathonId === activeHackathonId).length === 0 && (
+                  <div className="text-center py-8 text-xs text-gray-400">
+                    No valid unredeemed tokens found for the active hackathon.
+                  </div>
+                )}
+              </div>
+            </div>
           </Modal>
         </main>
       </div>
