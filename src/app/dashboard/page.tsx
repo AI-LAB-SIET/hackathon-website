@@ -164,7 +164,10 @@ export default function ParticipantDashboard() {
   // Journey status calculation — must be before early returns
   const getStageStatus = useMemo(() => {
     return (stageId: string) => {
-      if (!team) return "locked";
+      if (!team) {
+        if (stageId === "registration") return "current";
+        return "locked";
+      }
       switch (stageId) {
         case "registration": return "completed";
         case "team_created": return team.members.length >= 2 ? "completed" : "current";
@@ -181,13 +184,12 @@ export default function ParticipantDashboard() {
 
   // Registration progress — must be before early returns
   const regChecklist = useMemo(() => {
-    if (!team) return [];
     return [
       { label: "Account Created", done: true },
-      { label: "Team Registered", done: team.status !== "PENDING" },
-      { label: "Members Added (2+)", done: team.members.length >= 2 },
-      { label: "Faculty Approval", done: !!team.facultyApproved },
-      { label: "Idea Submitted", done: !!team.ideaSubmitted },
+      { label: "Team Registered", done: team ? team.status !== "PENDING" : false },
+      { label: "Members Added (2+)", done: team ? team.members.length >= 2 : false },
+      { label: "Faculty Approval", done: team ? !!team.facultyApproved : false },
+      { label: "Idea Submitted", done: team ? !!team.ideaSubmitted : false },
     ];
   }, [team]);
 
@@ -195,22 +197,15 @@ export default function ParticipantDashboard() {
     return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading your workspace...</div>;
   }
 
-  if (!team) {
-    return (
-      <div className="flex h-screen items-center justify-center flex-col gap-4">
-        <div className="text-gray-400 text-sm dark:text-gray-500">No team found. Please register a team first.</div>
-        <button onClick={() => router.push("/register")} className="px-4 py-2 bg-primary-green text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors cursor-pointer">Register Team</button>
-      </div>
-    );
-  }
-
-  const leader = team.members.find((m) => m.isLeader) || team.members[0];
-  const currentUser = team.members.find((m) => m.email === session.email) || leader;
-  const track = HACK_TRACKS.find((t) => t.id === team.trackId);
-  const avgScore = team.evaluations && team.evaluations.length > 0
+  const leader = team ? (team.members.find((m) => m.isLeader) || team.members[0]) : null;
+  const currentUser = team ? (team.members.find((m) => m.email === session.email) || leader) : null;
+  const track = team ? HACK_TRACKS.find((t) => t.id === team.trackId) : null;
+  const avgScore = team && team.evaluations && team.evaluations.length > 0
     ? Math.round(team.evaluations.reduce((acc, e) => acc + (e.innovation + e.feasibility + e.presentation) / 3, 0) / team.evaluations.length)
     : null;
-  const regPercent = Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100);
+  const regPercent = regChecklist.length > 0
+    ? Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100)
+    : 0;
 
   // Notifications
   const filteredNotifs = notifFilter === "all" ? notifications : notifications.filter((n) => n.type === notifFilter);
@@ -517,12 +512,13 @@ export default function ParticipantDashboard() {
                     <div>
                       <div className="text-emerald-200 text-xs font-semibold uppercase tracking-widest mb-1">Mission Control</div>
                       <h1 className="text-2xl font-extrabold mb-1">Welcome back, {session.name?.split(" ")[0] || "Participant"} 👋</h1>
-                      <div className="text-emerald-200 text-sm">{team.name} · {track?.label || "Track not set"}</div>
+                      <div className="text-emerald-200 text-sm">{team ? `${team.name} · ${track?.label || "Track not set"}` : "No Team Setup Yet"}</div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {team.status === "APPROVED" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/30 border border-emerald-400/30 text-xs font-bold text-emerald-100"><CheckCircle className="h-3.5 w-3.5" /> Approved</span>}
-                      {team.status === "PENDING" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/30 text-xs font-bold text-amber-100"><Clock className="h-3.5 w-3.5" /> Pending Approval</span>}
+                      {team && team.status === "APPROVED" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/30 border border-emerald-400/30 text-xs font-bold text-emerald-100"><CheckCircle className="h-3.5 w-3.5" /> Approved</span>}
+                      {team && team.status === "PENDING" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/30 text-xs font-bold text-amber-100"><Clock className="h-3.5 w-3.5" /> Pending Approval</span>}
                       {avgScore !== null && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-xs font-bold text-blue-100">Score: {avgScore}/10</span>}
+                      {!team && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/20 border border-red-400/30 text-xs font-bold text-red-100"><Info className="h-3.5 w-3.5" /> No Team</span>}
                     </div>
                   </div>
                 </div>
@@ -1223,94 +1219,106 @@ export default function ParticipantDashboard() {
             {activeTab === "project" && (
               <motion.div key="project" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><FolderOpen className="h-5 w-5 text-primary-green" /> Project Workspace</h2>
-                {/* Sub tabs */}
-                <div className="flex gap-2 flex-wrap">
-                  {(["overview", "repo", "submission"] as const).map((t) => (
-                    <button key={t} onClick={() => setProjectTab(t)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer capitalize ${projectTab === t ? "bg-primary-green text-white" : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-primary-green/40"}`}
-                    >{t}</button>
-                  ))}
-                </div>
 
-                {projectTab === "overview" && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
-                      <div className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                        {track?.label || "Not set"}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">AI Tool Disclosure</label>
-                      <textarea rows={2} value={projectEdit.aiDisclosure}
-                        onChange={(e) => setProjectEdit((p) => ({ ...p, aiDisclosure: e.target.value }))}
-                        placeholder="List any AI tools used (Copilot, ChatGPT, etc.)..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-                    <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Changes</button>
-
-                    {/* Judge Feedback */}
-                    {(team.evaluations || []).length > 0 && (
-                      <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4">
-                        <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Judge Evaluations</div>
-                        {team.evaluations!.map((ev, i) => {
-                          const avg = Math.round((ev.innovation + ev.feasibility + ev.presentation) / 3);
-                          return (
-                            <div key={i} className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
-                              <div className="flex items-center gap-3 mb-2">
-                                <span className="text-2xl font-extrabold text-blue-700 dark:text-blue-400">{avg}/10</span>
-                                <div className="text-xs text-blue-600 dark:text-blue-300">Innovation: {ev.innovation} · Feasibility: {ev.feasibility} · Presentation: {ev.presentation}</div>
-                              </div>
-                              <p className="text-sm text-blue-800 dark:text-blue-200">{ev.feedback}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                {!team ? (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 dark:bg-gray-900 dark:border-gray-700 text-center space-y-4">
+                    <div className="h-12 w-12 rounded-full bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center text-amber-500 mx-auto text-xl font-bold">!</div>
+                    <h3 className="font-bold text-primary-dark dark:text-gray-100 text-lg">No Team Setup Found</h3>
+                    <p className="text-sm text-gray-500 max-w-md mx-auto">You must join or create a team to access project repositories, submission gates, and track-specific resources.</p>
+                    <button onClick={() => setActiveTab("team")} className="px-5 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark cursor-pointer transition-colors">Go to My Team tab</button>
                   </div>
-                )}
+                ) : (
+                  <>
+                    {/* Sub tabs */}
+                    <div className="flex gap-2 flex-wrap">
+                      {(["overview", "repo", "submission"] as const).map((t) => (
+                        <button key={t} onClick={() => setProjectTab(t)}
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer capitalize ${projectTab === t ? "bg-primary-green text-white" : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-primary-green/40"}`}
+                        >{t}</button>
+                      ))}
+                    </div>
 
-                {projectTab === "repo" && (
-                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
-                    {[
-                      { label: "GitHub Repository URL", field: "githubUrl" as const, icon: <Github className="h-4 w-4" />, placeholder: "https://github.com/your-team/project" },
-                      { label: "Demo Video URL", field: "videoUrl" as const, icon: <Video className="h-4 w-4" />, placeholder: "https://youtube.com/..." },
-                      { label: "Live Demo URL", field: "demoUrl" as const, icon: <Globe className="h-4 w-4" />, placeholder: "https://your-demo.vercel.app" },
-                    ].map(({ label, field, icon, placeholder }) => (
-                      <div key={field}>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
-                        <div className="relative">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">{icon}</div>
-                          <input type="text" value={projectEdit[field]} placeholder={placeholder}
-                            onChange={(e) => setProjectEdit((p) => ({ ...p, [field]: e.target.value }))}
-                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    {projectTab === "overview" && (
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
+                        <div>
+                          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
+                          <div className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                            {track?.label || "Not set"}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">AI Tool Disclosure</label>
+                          <textarea rows={2} value={projectEdit.aiDisclosure}
+                            onChange={(e) => setProjectEdit((p) => ({ ...p, aiDisclosure: e.target.value }))}
+                            placeholder="List any AI tools used (Copilot, ChatGPT, etc.)..."
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                           />
                         </div>
-                      </div>
-                    ))}
-                    <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Links</button>
-                  </div>
-                )}
+                        <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Changes</button>
 
-                {projectTab === "submission" && (
-                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
-                    <div className={`p-4 rounded-xl ${team.ideaSubmitted ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"}`}>
-                      <div className="flex items-center gap-2 font-bold text-sm mb-1">
-                        {team.ideaSubmitted ? <><CheckCircle className="h-4 w-4 text-emerald-600" /><span className="text-emerald-700">Idea Submitted</span></> : <><Clock className="h-4 w-4 text-amber-600" /><span className="text-amber-700">Submission Pending</span></>}
+                        {/* Judge Feedback */}
+                        {(team.evaluations || []).length > 0 && (
+                          <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4">
+                            <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Judge Evaluations</div>
+                            {team.evaluations!.map((ev, i) => {
+                              const avg = Math.round((ev.innovation + ev.feasibility + ev.presentation) / 3);
+                              return (
+                                <div key={i} className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-2xl font-extrabold text-blue-700 dark:text-blue-400">{avg}/10</span>
+                                    <div className="text-xs text-blue-600 dark:text-blue-300">Innovation: {ev.innovation} · Feasibility: {ev.feasibility} · Presentation: {ev.presentation}</div>
+                                  </div>
+                                  <p className="text-sm text-blue-800 dark:text-blue-200">{ev.feedback}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-300">Upload your 2-page idea abstract PDF. Deadline: July 5, 2026 at 11:59 PM.</p>
-                    </div>
-                    <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center">
-                      <div className="text-4xl mb-3">📄</div>
-                      <div className="font-semibold text-gray-600 dark:text-gray-300 mb-1">Drop your PDF here</div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500 mb-4">Maximum 10 MB · PDF format only</div>
-                      <button
-                        onClick={() => { updateProjectDetails(team.id, { ideaSubmitted: true }); toast("Idea abstract submitted!", "success"); }}
-                        className="px-5 py-2 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer"
-                      >Submit Abstract</button>
-                    </div>
-                  </div>
+                    )}
+
+                    {projectTab === "repo" && (
+                      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
+                        {[
+                          { label: "GitHub Repository URL", field: "githubUrl" as const, icon: <Github className="h-4 w-4" />, placeholder: "https://github.com/your-team/project" },
+                          { label: "Demo Video URL", field: "videoUrl" as const, icon: <Video className="h-4 w-4" />, placeholder: "https://youtube.com/..." },
+                          { label: "Live Demo URL", field: "demoUrl" as const, icon: <Globe className="h-4 w-4" />, placeholder: "https://your-demo.vercel.app" },
+                        ].map(({ label, field, icon, placeholder }) => (
+                          <div key={field}>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
+                            <div className="relative">
+                              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">{icon}</div>
+                              <input type="text" value={projectEdit[field]} placeholder={placeholder}
+                                onChange={(e) => setProjectEdit((p) => ({ ...p, [field]: e.target.value }))}
+                                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                        <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Links</button>
+                      </div>
+                    )}
+
+                    {projectTab === "submission" && (
+                      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
+                        <div className={`p-4 rounded-xl ${team.ideaSubmitted ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"}`}>
+                          <div className="flex items-center gap-2 font-bold text-sm mb-1">
+                            {team.ideaSubmitted ? <><CheckCircle className="h-4 w-4 text-emerald-600" /><span className="text-emerald-700">Idea Submitted</span></> : <><Clock className="h-4 w-4 text-amber-600" /><span className="text-amber-700">Submission Pending</span></>}
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Upload your 2-page idea abstract PDF. Deadline: July 5, 2026 at 11:59 PM.</p>
+                        </div>
+                        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center">
+                          <div className="text-4xl mb-3">📄</div>
+                          <div className="font-semibold text-gray-600 dark:text-gray-300 mb-1">Drop your PDF here</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500 mb-4">Maximum 10 MB · PDF format only</div>
+                          <button
+                            onClick={() => { updateProjectDetails(team.id, { ideaSubmitted: true }); toast("Idea abstract submitted!", "success"); }}
+                            className="px-5 py-2 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer"
+                          >Submit Abstract</button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </motion.div>
             )}
@@ -1480,28 +1488,36 @@ export default function ParticipantDashboard() {
                 {/* Raise Ticket + Track Tickets */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Raise Ticket form */}
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
-                    <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Raise a Ticket</div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Category</label>
-                      <select value={ticketCategory} onChange={(e) => setTicketCategory(e.target.value as SupportTicketCategory)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        {(["Internet", "Power", "Mentor Needed", "Hardware", "Food", "Venue", "Other"] as SupportTicketCategory[]).map((c) => <option key={c}>{c}</option>)}
-                      </select>
+                  {!team ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 text-center flex flex-col justify-center items-center gap-3">
+                      <Info className="h-8 w-8 text-amber-500" />
+                      <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Team Support Gated</h4>
+                      <p className="text-xs text-gray-500">You must be in a team to raise support tickets to mentors and venue crew.</p>
                     </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Describe your issue</label>
-                      <textarea rows={3} value={ticketDescription} onChange={(e) => setTicketDescription(e.target.value)}
-                        placeholder="Tell us what's wrong..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                  ) : (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
+                      <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Raise a Ticket</div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Category</label>
+                        <select value={ticketCategory} onChange={(e) => setTicketCategory(e.target.value as SupportTicketCategory)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                          {(["Internet", "Power", "Mentor Needed", "Hardware", "Food", "Venue", "Other"] as SupportTicketCategory[]).map((c) => <option key={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Describe your issue</label>
+                        <textarea rows={3} value={ticketDescription} onChange={(e) => setTicketDescription(e.target.value)}
+                          placeholder="Tell us what's wrong..."
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                      </div>
+                      <button onClick={handleRaiseTicket} className="w-full py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Submit Ticket</button>
                     </div>
-                    <button onClick={handleRaiseTicket} className="w-full py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Submit Ticket</button>
-                  </div>
+                  )}
 
                   {/* Track Tickets */}
                   <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-3">
                     <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">Your Tickets</div>
-                    {(team.supportTickets || []).length === 0 ? (
+                    {(!team || (team.supportTickets || []).length === 0) ? (
                       <div className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">No tickets raised yet.</div>
                     ) : (
                       <div className="flex flex-col gap-2">
@@ -1579,13 +1595,15 @@ export default function ParticipantDashboard() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={profileEdit.profilePicture} alt="Profile" className="h-full w-full rounded-2xl object-cover" />
                       ) : (
-                        currentUser.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+                        (session.name || session.email || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-extrabold text-primary-dark text-lg">{currentUser.name}</div>
-                      <div className="text-gray-400 dark:text-gray-500 text-sm">{currentUser.email}</div>
-                      <div className="text-xs font-semibold text-primary-green mt-0.5">{team.name} · {currentUser.isLeader ? "Team Leader" : "Team Member"}</div>
+                      <div className="font-extrabold text-primary-dark text-lg">{session.name || "Participant"}</div>
+                      <div className="text-gray-400 dark:text-gray-500 text-sm">{session.email}</div>
+                      <div className="text-xs font-semibold text-primary-green mt-0.5">
+                        {team ? `${team.name} · ${currentUser?.isLeader ? "Team Leader" : "Team Member"}` : "No Team Setup Yet"}
+                      </div>
                     </div>
                   </div>
 
