@@ -36,17 +36,18 @@ import {
   X,
   Paperclip,
 } from "lucide-react";
-import { Team, ProblemStatement, FileAttachment, Participant } from "@/types";
+import { Team, ProblemStatement, FileAttachment, Participant, Hackathon, FoodMeal } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
 import { isConfigured, db, auth } from "@/lib/firebase";
 
-type TabType = "dashboard" | "members" | "participants" | "attendance" | "announcements" | "problems" | "teams" | "profile";
+type TabType = "dashboard" | "hackathons" | "members" | "participants" | "attendance" | "announcements" | "problems" | "teams" | "foodTokens" | "profile";
 
 interface Member {
   id: string;
   name: string;
   email: string;
   role: "organizer" | "volunteer" | "judge" | "admin";
+  hackathonIds?: string[];
 }
 
 export default function AdminDashboard() {
@@ -57,6 +58,8 @@ export default function AdminDashboard() {
     markNotificationRead, markAllNotificationsRead,
     updateProfile, getProfile, updateTeamMembers, addProfile, deleteProfile,
     approveTeam, rejectTeam, deleteTeam,
+    hackathons, createHackathon, updateHackathon, deleteHackathon, setActiveHackathon, activeHackathonId,
+    foodMeals, createMeal, updateMeal, deleteMeal, issueMealTokens, foodTokens, revokeToken
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -70,19 +73,47 @@ export default function AdminDashboard() {
         id: u.id || u.uid || "",
         name: u.displayName || u.name || "Unknown User",
         email: u.email,
-        role: u.role as Member["role"]
+        role: u.role as Member["role"],
+        hackathonIds: u.hackathonIds || []
       }))
     : [
-      { id: "m-1", name: "System Admin", email: "admin@college.edu", role: "admin" },
-      { id: "m-2", name: "Prof. Suresh Kumar", email: "organizer@college.edu", role: "organizer" },
-      { id: "m-3", name: "Dr. A. Rajesh", email: "rajesh@college.edu", role: "organizer" },
-      { id: "m-4", name: "Dr. Priya Rajan", email: "judge@college.edu", role: "judge" },
-      { id: "m-5", name: "Riya Verma", email: "riya@college.edu", role: "volunteer" },
-      { id: "m-6", name: "Arjun Nair", email: "arjun@college.edu", role: "volunteer" },
+      { id: "m-1", name: "System Admin", email: "admin@college.edu", role: "admin", hackathonIds: [] },
+      { id: "m-2", name: "Prof. Suresh Kumar", email: "organizer@college.edu", role: "organizer", hackathonIds: [] },
+      { id: "m-3", name: "Dr. A. Rajesh", email: "rajesh@college.edu", role: "organizer", hackathonIds: [] },
+      { id: "m-4", name: "Dr. Priya Rajan", email: "judge@college.edu", role: "judge", hackathonIds: [] },
+      { id: "m-5", name: "Riya Verma", email: "riya@college.edu", role: "volunteer", hackathonIds: [] },
+      { id: "m-6", name: "Arjun Nair", email: "arjun@college.edu", role: "volunteer", hackathonIds: [] },
     ];
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-  const [memberForm, setMemberForm] = useState({ name: "", email: "", password: "", role: "organizer" as Member["role"] });
+  const [memberForm, setMemberForm] = useState({ name: "", email: "", password: "", role: "organizer" as Member["role"], hackathonIds: [] as string[] });
+
+  // Hackathon form states
+  const [hackathonModalOpen, setHackathonModalOpen] = useState(false);
+  const [editingHackathon, setEditingHackathon] = useState<Hackathon | null>(null);
+  const [hackathonForm, setHackathonForm] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    venue: "",
+    startDate: "",
+    endDate: "",
+    registrationOpen: true,
+    minTeamSize: 1,
+    maxTeamSize: 4,
+    status: "upcoming" as Hackathon["status"],
+  });
+
+  // Food Meal form states
+  const [mealModalOpen, setMealModalOpen] = useState(false);
+  const [mealForm, setMealForm] = useState({
+    name: "",
+    type: "lunch" as FoodMeal["type"],
+    scheduledAt: "",
+    windowMinutes: 120,
+  });
+  const [mealSearch, setMealSearch] = useState("");
+  const [tokenSearch, setTokenSearch] = useState("");
 
   const [annForm, setAnnForm] = useState({ title: "", content: "", type: "info" as "info" | "warning" | "success", scheduleDate: "" });
   const [annEditId, setAnnEditId] = useState<string | null>(null);
@@ -170,12 +201,12 @@ export default function AdminDashboard() {
   // ─── MEMBER HANDLERS ───
   const openAddMember = () => {
     setEditingMember(null);
-    setMemberForm({ name: "", email: "", password: "", role: "organizer" });
+    setMemberForm({ name: "", email: "", password: "", role: "organizer", hackathonIds: [] });
     setMemberModalOpen(true);
   };
   const openEditMember = (m: Member) => {
     setEditingMember(m);
-    setMemberForm({ name: m.name, email: m.email, password: "", role: m.role });
+    setMemberForm({ name: m.name, email: m.email, password: "", role: m.role, hackathonIds: m.hackathonIds || [] });
     setMemberModalOpen(true);
   };
   const handleSaveMember = async () => {
@@ -193,8 +224,8 @@ export default function AdminDashboard() {
         const token = await auth.currentUser?.getIdToken();
         const method = editingMember ? "PUT" : "POST";
         const payload = editingMember
-          ? { id: editingMember.id, name: memberForm.name, email: memberForm.email, password: memberForm.password || undefined, role: memberForm.role }
-          : { name: memberForm.name, email: memberForm.email, password: memberForm.password, role: memberForm.role };
+          ? { id: editingMember.id, name: memberForm.name, email: memberForm.email, password: memberForm.password || undefined, role: memberForm.role, hackathonIds: memberForm.hackathonIds }
+          : { name: memberForm.name, email: memberForm.email, password: memberForm.password, role: memberForm.role, hackathonIds: memberForm.hackathonIds };
 
         const res = await fetch("/api/admin/members", {
           method,
@@ -227,6 +258,7 @@ export default function AdminDashboard() {
         name: memberForm.name,
         role: memberForm.role,
         password: memberForm.password || undefined,
+        hackathonIds: memberForm.hackathonIds,
         createdAt: new Date().toISOString()
       };
       addProfile(newProfile);
@@ -266,6 +298,161 @@ export default function AdminDashboard() {
     }
   };
 
+  // ─── HACKATHON HANDLERS ───
+  const openAddHackathon = () => {
+    setEditingHackathon(null);
+    setHackathonForm({
+      name: "",
+      slug: "",
+      description: "",
+      venue: "",
+      startDate: new Date().toISOString().slice(0, 16),
+      endDate: new Date(Date.now() + 24*3600*1000).toISOString().slice(0, 16),
+      registrationOpen: true,
+      minTeamSize: 1,
+      maxTeamSize: 4,
+      status: "upcoming"
+    });
+    setHackathonModalOpen(true);
+  };
+
+  const openEditHackathon = (h: Hackathon) => {
+    setEditingHackathon(h);
+    setHackathonForm({
+      name: h.name,
+      slug: h.slug,
+      description: h.description,
+      venue: h.venue || "",
+      startDate: h.startDate ? new Date(h.startDate).toISOString().slice(0, 16) : "",
+      endDate: h.endDate ? new Date(h.endDate).toISOString().slice(0, 16) : "",
+      registrationOpen: h.registrationOpen,
+      minTeamSize: h.minTeamSize || 1,
+      maxTeamSize: h.maxTeamSize || 4,
+      status: h.status
+    });
+    setHackathonModalOpen(true);
+  };
+
+  const handleSaveHackathon = async () => {
+    if (!hackathonForm.name || !hackathonForm.slug) {
+      toast("Name and URL slug are required.", "error");
+      return;
+    }
+    const slugFormat = /^[a-z0-9-]+$/;
+    if (!slugFormat.test(hackathonForm.slug)) {
+      toast("Slug must contain only lowercase letters, numbers, and dashes.", "error");
+      return;
+    }
+
+    try {
+      const data = {
+        name: hackathonForm.name,
+        slug: hackathonForm.slug,
+        description: hackathonForm.description,
+        venue: hackathonForm.venue,
+        startDate: new Date(hackathonForm.startDate).toISOString(),
+        endDate: new Date(hackathonForm.endDate).toISOString(),
+        registrationOpen: hackathonForm.registrationOpen,
+        minTeamSize: Number(hackathonForm.minTeamSize),
+        maxTeamSize: Number(hackathonForm.maxTeamSize),
+        status: hackathonForm.status,
+        createdBy: session.email || "admin@siet.edu",
+      };
+
+      if (editingHackathon) {
+        await updateHackathon(editingHackathon.id, data);
+        toast("Hackathon updated.", "success");
+      } else {
+        const id = await createHackathon(data);
+        if (!activeHackathonId) {
+          setActiveHackathon(id);
+        }
+        toast("Hackathon created.", "success");
+      }
+      setHackathonModalOpen(false);
+      setEditingHackathon(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An error occurred.";
+      toast(msg, "error");
+    }
+  };
+
+  const handleDeleteHackathon = async (id: string) => {
+    if (confirm("Are you sure you want to delete this hackathon? This will remove all associated teams and data!")) {
+      try {
+        await deleteHackathon(id);
+        toast("Hackathon deleted.", "info");
+        if (activeHackathonId === id) {
+          setActiveHackathon(null);
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "An error occurred.";
+        toast(msg, "error");
+      }
+    }
+  };
+
+  // ─── FOOD TOKEN HANDLERS ───
+  const openAddMeal = () => {
+    setMealForm({
+      name: "",
+      type: "lunch",
+      scheduledAt: new Date().toISOString().slice(0, 16),
+      windowMinutes: 125,
+    });
+    setMealModalOpen(true);
+  };
+
+  const handleSaveMeal = async () => {
+    if (!mealForm.name || !mealForm.scheduledAt) {
+      toast("Name and scheduled time are required.", "error");
+      return;
+    }
+    if (!activeHackathonId) {
+      toast("Please select an active hackathon first.", "error");
+      return;
+    }
+
+    try {
+      const data = {
+        hackathonId: activeHackathonId,
+        name: mealForm.name,
+        type: mealForm.type,
+        scheduledAt: new Date(mealForm.scheduledAt).toISOString(),
+        windowMinutes: Number(mealForm.windowMinutes),
+        createdBy: session.email || "admin@siet.edu",
+      };
+
+      await createMeal(data);
+      toast("Meal scheduled successfully.", "success");
+      setMealModalOpen(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An error occurred.";
+      toast(msg, "error");
+    }
+  };
+
+  const handleDeleteMeal = async (id: string) => {
+    if (confirm("Are you sure you want to delete this meal?")) {
+      try {
+        await deleteMeal(id);
+        toast("Meal deleted.", "info");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "An error occurred.";
+        toast(msg, "error");
+      }
+    }
+  };
+
+  const handleBulkIssueTokens = async (mealId: string) => {
+    try {
+      const result = await issueMealTokens(mealId);
+      toast(`Tokens issued: ${result.issued} created, ${result.skipped} skipped.`, "success");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An error occurred.";
+      toast(msg, "error");
+    }
+  };
   // ─── ANNOUNCEMENT HANDLERS ───
   const handleSaveAnnouncement = () => {
     if (!annForm.title || !annForm.content) {
@@ -449,12 +636,14 @@ export default function AdminDashboard() {
   // ─── TAB LABELS ───
   const tabLabels: Record<TabType, string> = {
     dashboard: "Dashboard",
+    hackathons: "Hackathons",
     members: "Members & Roles",
     participants: "Participants",
     attendance: "Attendance Register",
     announcements: "Announcements",
     problems: "Problem Statements",
     teams: "Team Management",
+    foodTokens: "Food Tokens",
     profile: "Profile",
   };
 
@@ -500,6 +689,26 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Hackathon Switcher */}
+            <div className="flex items-center gap-1.5 mr-1">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 whitespace-nowrap hidden md:inline">
+                Active:
+              </span>
+              <select
+                value={activeHackathonId || ""}
+                onChange={(e) => {
+                  setActiveHackathon(e.target.value || null);
+                }}
+                className="text-xs border border-gray-200 dark:border-gray-700 rounded-xl px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-bold focus:outline-none focus:ring-2 focus:ring-primary-green/40 cursor-pointer"
+              >
+                <option value="">No Active Hackathon</option>
+                {hackathons.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             {(activeTab === "announcements" || activeTab === "problems") && (
               <Button
                 onClick={() => {
@@ -521,6 +730,16 @@ export default function AdminDashboard() {
             {activeTab === "members" && (
               <Button onClick={openAddMember} className="text-xs">
                 <UserPlus className="h-4 w-4 mr-1" /> Add Member
+              </Button>
+            )}
+            {activeTab === "hackathons" && (
+              <Button onClick={openAddHackathon} className="text-xs">
+                <Plus className="h-4 w-4 mr-1" /> Create Hackathon
+              </Button>
+            )}
+            {activeTab === "foodTokens" && (
+              <Button onClick={openAddMeal} className="text-xs">
+                <Plus className="h-4 w-4 mr-1" /> Schedule Meal
               </Button>
             )}
             {/* Theme toggle */}
@@ -700,6 +919,128 @@ export default function AdminDashboard() {
               </div>
             )}
 
+
+            {/* ═══════════════════════════════════════════ HACKATHONS TAB ═══════════════════════════════════════════ */}
+            {activeTab === "hackathons" && (
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-6">
+                <div className="flex justify-between items-center border-b border-gray-150 dark:border-gray-700 pb-3">
+                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">Hackathon Profiles</h3>
+                  <span className="text-xs text-gray-500 font-medium">Total: {hackathons.length}</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {hackathons.map((h) => {
+                    const regLink = typeof window !== "undefined" ? `${window.location.origin}/register?h=${h.slug}` : `/register?h=${h.slug}`;
+                    const isActive = activeHackathonId === h.id;
+                    return (
+                      <div
+                        key={h.id}
+                        className={`p-5 rounded-2xl border transition-all flex flex-col justify-between gap-4 bg-white dark:bg-gray-800 ${isActive ? "border-primary-green ring-2 ring-primary-green/20" : "border-gray-100 dark:border-gray-700 hover:border-gray-250 dark:hover:border-gray-600"}`}
+                      >
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-start gap-2">
+                            <div>
+                              <h4 className="font-extrabold text-sm text-primary-dark dark:text-gray-100 flex items-center gap-1.5">
+                                {h.name}
+                                {isActive && (
+                                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">
+                                    Active
+                                  </span>
+                                )}
+                              </h4>
+                              <span className="text-[10px] text-gray-400 font-mono">ID: {h.id}</span>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${h.status === "active" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400" : h.status === "upcoming" ? "bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400" : "bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-450"}`}>
+                              {h.status}
+                            </span>
+                          </div>
+                          
+                          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{h.description}</p>
+                          
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50 text-[10px] text-gray-400">
+                            <div>
+                              <strong>Dates:</strong> {new Date(h.startDate).toLocaleDateString()} - {new Date(h.endDate).toLocaleDateString()}
+                            </div>
+                            <div>
+                              <strong>Venue:</strong> {h.venue || "TBD"}
+                            </div>
+                            <div>
+                              <strong>Team Limits:</strong> {h.minTeamSize || 1} to {h.maxTeamSize || 4} members
+                            </div>
+                            <div>
+                              <strong>Registration:</strong> {h.registrationOpen ? "Open" : "Closed"}
+                            </div>
+                          </div>
+
+                          <div className="mt-3 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700 flex flex-col gap-1.5">
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Registration Link:</span>
+                            <div className="flex gap-2 items-center">
+                              <input
+                                readOnly
+                                value={regLink}
+                                className="flex-1 text-[10px] font-mono bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded focus:outline-none"
+                              />
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-6 px-2 text-[9px]"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(regLink);
+                                  toast("Copied registration link!", "success");
+                                }}
+                              >
+                                Copy
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-3 border-t border-gray-50 dark:border-gray-700/50 justify-between items-center">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setActiveHackathon(h.id);
+                              toast(`Switched active hackathon to "${h.name}"`, "success");
+                            }}
+                            className={`h-7 text-[10px] font-bold ${isActive ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 cursor-default hover:bg-emerald-50 dark:hover:bg-emerald-950/20" : ""}`}
+                            disabled={isActive}
+                          >
+                            {isActive ? "Currently Active" : "Set Active"}
+                          </Button>
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => openEditHackathon(h)}
+                              className="h-7 text-[10px]"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleDeleteHackathon(h.id)}
+                              className="h-7 text-[10px] text-red-500 hover:bg-red-50"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {hackathons.length === 0 && (
+                    <div className="col-span-2 py-12 text-center text-xs text-gray-400">
+                      No hackathons registered. Click &quot;Create Hackathon&quot; in the header to get started.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* ═══════════════════════════════════════════ MEMBERS TAB ═══════════════════════════════════════════ */}
             {activeTab === "members" && (
               <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
@@ -712,6 +1053,18 @@ export default function AdminDashboard() {
                         <div>
                           <p className="font-extrabold text-primary-dark dark:text-gray-100">{m.name}</p>
                           <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{m.email}</p>
+                          {m.hackathonIds && m.hackathonIds.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {m.hackathonIds.map((hId) => {
+                                const hack = hackathons.find((h) => h.id === hId);
+                                return (
+                                  <span key={hId} className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-[8px] font-bold uppercase">
+                                    {hack?.name || hId}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1126,6 +1479,168 @@ export default function AdminDashboard() {
               </div>
             )}
 
+
+            {/* ═══════════════════════════════════════════ FOOD TOKENS TAB ═══════════════════════════════════════════ */}
+            {activeTab === "foodTokens" && (
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-6">
+                <div className="flex justify-between items-center border-b border-gray-150 dark:border-gray-700 pb-3">
+                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">Food Meals & Tokens</h3>
+                  <span className="text-xs text-gray-500 font-medium">Scheduled: {foodMeals.length}</span>
+                </div>
+
+                {!activeHackathonId ? (
+                  <div className="py-12 text-center text-xs text-gray-400">
+                    Please select an active hackathon in the header to manage meals and issue tokens.
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Meals List */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">Scheduled Meals</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {foodMeals.map((m) => {
+                          const isPast = new Date(m.scheduledAt).getTime() + m.windowMinutes * 60000 < Date.now();
+                          const countTokens = foodTokens.filter((t) => t.mealId === m.id).length;
+                          const countRedeemed = foodTokens.filter((t) => t.mealId === m.id && t.status === "redeemed").length;
+
+                          return (
+                            <div key={m.id} className="p-5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 space-y-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h5 className="font-extrabold text-sm text-primary-dark dark:text-gray-150">{m.name}</h5>
+                                  <span className="text-[10px] text-gray-400 capitalize">{m.type}</span>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${isPast ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>
+                                  {isPast ? "Expired" : "Active"}
+                                </span>
+                              </div>
+
+                              <div className="text-[11px] text-gray-400 space-y-1">
+                                <p><strong>Scheduled:</strong> {new Date(m.scheduledAt).toLocaleString()}</p>
+                                <p><strong>Window:</strong> {m.windowMinutes} minutes</p>
+                                <p><strong>Issued Tokens:</strong> {countTokens}</p>
+                                <p><strong>Redeemed:</strong> {countRedeemed} / {countTokens} ({countTokens > 0 ? Math.round((countRedeemed/countTokens)*100) : 0}%)</p>
+                              </div>
+
+                              <div className="flex gap-2 pt-2 justify-between items-center border-t border-gray-100 dark:border-gray-700/50">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleBulkIssueTokens(m.id)}
+                                  className="h-7 text-[10px]"
+                                >
+                                  Bulk Issue Tokens
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => handleDeleteMeal(m.id)}
+                                  className="h-7 text-[10px] text-red-500 hover:bg-red-50"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {foodMeals.length === 0 && (
+                          <div className="col-span-2 py-8 text-center text-xs text-gray-400">
+                            No meals scheduled. Click &quot;Schedule Meal&quot; in the header.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tokens List / Audit Log */}
+                    <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700/80">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">Issued Tokens & Redemption Log</h4>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Search by name/email/code..."
+                            value={tokenSearch}
+                            onChange={(e) => setTokenSearch(e.target.value)}
+                            className="text-xs px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-150 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-gray-50 dark:bg-gray-800/80 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <tr>
+                              <th className="px-4 py-3">Participant</th>
+                              <th className="px-4 py-3">Meal</th>
+                              <th className="px-4 py-3">Token Code</th>
+                              <th className="px-4 py-3">Status</th>
+                              <th className="px-4 py-3">Redeemed At</th>
+                              <th className="px-4 py-3 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                            {foodTokens
+                              .filter((t) => {
+                                if (!tokenSearch) return true;
+                                const queryStr = tokenSearch.toLowerCase();
+                                return (
+                                  t.participantName.toLowerCase().includes(queryStr) ||
+                                  t.participantEmail.toLowerCase().includes(queryStr) ||
+                                  t.tokenCode.toLowerCase().includes(queryStr) ||
+                                  (t.registerNumber && t.registerNumber.toLowerCase().includes(queryStr))
+                                );
+                              })
+                              .slice(0, 50)
+                              .map((t) => (
+                                <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
+                                  <td className="px-4 py-3">
+                                    <div className="font-semibold text-primary-dark dark:text-gray-150">{t.participantName}</div>
+                                    <div className="text-[10px] text-gray-400">{t.participantEmail}</div>
+                                  </td>
+                                  <td className="px-4 py-3">{t.mealName}</td>
+                                  <td className="px-4 py-3 font-mono text-[10px] font-bold">{t.tokenCode}</td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${t.status === "redeemed" ? "bg-emerald-100 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400" : "bg-blue-100 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400"}`}>
+                                      {t.status.toUpperCase()}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-[10px] text-gray-400">
+                                    {t.redeemedAt ? new Date(t.redeemedAt).toLocaleString() : "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => {
+                                        if (confirm("Revoke this token?")) {
+                                          revokeToken(t.id);
+                                          toast("Token revoked.", "info");
+                                        }
+                                      }}
+                                      className="h-6 text-[9px] text-red-500 hover:bg-red-50"
+                                    >
+                                      Revoke
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+
+                            {foodTokens.length === 0 && (
+                              <tr>
+                                <td colSpan={6} className="text-center py-6 text-gray-400">
+                                  No tokens issued yet.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ═══════════════════════════════════════════ TEAMS TAB ═══════════════════════════════════════════ */}
             {activeTab === "teams" && (
               <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
@@ -1432,6 +1947,33 @@ export default function AdminDashboard() {
               <option value="volunteer">Volunteer</option>
             </select>
           </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Assigned Hackathons</label>
+            <div className="space-y-2 max-h-32 overflow-y-auto p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              {hackathons.map((h) => {
+                const checked = memberForm.hackathonIds?.includes(h.id) ?? false;
+                return (
+                  <label key={h.id} className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 font-semibold cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const newIds = e.target.checked
+                          ? [...(memberForm.hackathonIds || []), h.id]
+                          : (memberForm.hackathonIds || []).filter((id) => id !== h.id);
+                        setMemberForm((prev) => ({ ...prev, hackathonIds: newIds }));
+                      }}
+                      className="rounded border-gray-350 text-primary-green focus:ring-primary-green/30"
+                    />
+                    {h.name}
+                  </label>
+                );
+              })}
+              {hackathons.length === 0 && (
+                <div className="text-[10px] text-gray-400">No hackathons available.</div>
+              )}
+            </div>
+          </div>
           <div className="flex gap-3 pt-2">
             <Button onClick={handleSaveMember} className="flex-1 text-xs">
               {editingMember ? "Update" : "Add Member"}
@@ -1441,6 +1983,159 @@ export default function AdminDashboard() {
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Hackathon Modal */}
+      <Modal
+        isOpen={hackathonModalOpen}
+        onClose={() => {
+          setHackathonModalOpen(false);
+          setEditingHackathon(null);
+        }}
+        title={editingHackathon ? "Edit Hackathon" : "Create Hackathon"}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Hackathon Name *"
+            value={hackathonForm.name}
+            onChange={(e) => setHackathonForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="e.g. HackMIT 2026"
+          />
+          <Input
+            label="URL Slug (lowercase, no spaces) *"
+            value={hackathonForm.slug}
+            onChange={(e) => setHackathonForm((p) => ({ ...p, slug: e.target.value.toLowerCase() }))}
+            placeholder="e.g. hackmit-2026"
+          />
+          <div>
+            <label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide block mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={hackathonForm.description}
+              onChange={(e) => setHackathonForm((p) => ({ ...p, description: e.target.value }))}
+              placeholder="Provide a brief summary of the hackathon..."
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+              rows={3}
+            />
+          </div>
+          <Input
+            label="Venue"
+            value={hackathonForm.venue}
+            onChange={(e) => setHackathonForm((p) => ({ ...p, venue: e.target.value }))}
+            placeholder="e.g. Main Seminar Hall"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Start Date *"
+              type="datetime-local"
+              value={hackathonForm.startDate}
+              onChange={(e) => setHackathonForm((p) => ({ ...p, startDate: e.target.value }))}
+            />
+            <Input
+              label="End Date *"
+              type="datetime-local"
+              value={hackathonForm.endDate}
+              onChange={(e) => setHackathonForm((p) => ({ ...p, endDate: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Min Team Size"
+              type="number"
+              value={hackathonForm.minTeamSize}
+              onChange={(e) => setHackathonForm((p) => ({ ...p, minTeamSize: Number(e.target.value) }))}
+            />
+            <Input
+              label="Max Team Size"
+              type="number"
+              value={hackathonForm.maxTeamSize}
+              onChange={(e) => setHackathonForm((p) => ({ ...p, maxTeamSize: Number(e.target.value) }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide block mb-1.5">
+                Status
+              </label>
+              <select
+                value={hackathonForm.status}
+                onChange={(e) => setHackathonForm((p) => ({ ...p, status: e.target.value as Hackathon["status"] }))}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+              >
+                <option value="upcoming">Upcoming</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div className="flex items-center pt-6">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-600 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hackathonForm.registrationOpen}
+                  onChange={(e) => setHackathonForm((p) => ({ ...p, registrationOpen: e.target.checked }))}
+                  className="rounded border-gray-300 text-primary-green focus:ring-primary-green/30"
+                />
+                Registration Open
+              </label>
+            </div>
+          </div>
+          <div className="pt-2">
+            <Button onClick={handleSaveHackathon} className="w-full text-xs py-3">
+              {editingHackathon ? "Update Hackathon" : "Create Hackathon"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Meal Modal */}
+      <Modal
+        isOpen={mealModalOpen}
+        onClose={() => setMealModalOpen(false)}
+        title="Schedule Meal"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Meal Name *"
+            value={mealForm.name}
+            onChange={(e) => setMealForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="e.g. Day 1 Lunch"
+          />
+          <div>
+            <label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide block mb-1.5">
+              Meal Type
+            </label>
+            <select
+              value={mealForm.type}
+              onChange={(e) => setMealForm((p) => ({ ...p, type: e.target.value as FoodMeal["type"] }))}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+            >
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snack/Refreshments</option>
+            </select>
+          </div>
+          <Input
+            label="Scheduled Date & Time *"
+            type="datetime-local"
+            value={mealForm.scheduledAt}
+            onChange={(e) => setMealForm((p) => ({ ...p, scheduledAt: e.target.value }))}
+          />
+          <Input
+            label="Validity Window (Minutes)"
+            type="number"
+            value={mealForm.windowMinutes}
+            onChange={(e) => setMealForm((p) => ({ ...p, windowMinutes: Number(e.target.value) }))}
+            placeholder="e.g. 120"
+          />
+          <div className="pt-2">
+            <Button onClick={handleSaveMeal} className="w-full text-xs py-3">
+              Schedule Meal
+            </Button>
           </div>
         </div>
       </Modal>

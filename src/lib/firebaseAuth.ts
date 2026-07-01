@@ -183,7 +183,8 @@ export async function signInWithGoogle(): Promise<FirebaseAuthResult> {
 export async function signUpWithEmail(
   email: string,
   password: string,
-  name: string
+  name: string,
+  currentHackathonId?: string
 ): Promise<FirebaseAuthResult> {
   if (!isConfigured || !auth || !db) {
     throw buildError('auth/service-unavailable', 'Firebase is not configured.');
@@ -209,6 +210,8 @@ export async function signUpWithEmail(
       role: 'participant' as AppRole,
       verified: false,
       teamSetupDone: false,
+      onboarded: false,
+      currentHackathonId: currentHackathonId || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

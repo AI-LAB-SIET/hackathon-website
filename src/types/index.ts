@@ -157,7 +157,7 @@ export interface Milestone {
 
 export interface Announcement {
   id: string;
-  hackathonId?: string;      // NEW — null/undefined = global
+  hackathonId?: string | null;      // NEW — null/undefined = global
   title: string;
   content: string;
   type: "info" | "warning" | "success";
@@ -166,7 +166,7 @@ export interface Announcement {
 
 export interface Notification {
   id: string;
-  hackathonId?: string;      // NEW
+  hackathonId?: string | null;      // NEW
   type: "approval" | "deadline" | "judge" | "action" | "system" | "team_request";
   title: string;
   body: string;
@@ -194,6 +194,7 @@ export interface UserSession {
   teamSetupDone?: boolean;
   currentHackathonId?: string | null; // NEW
   profilePicture?: string;
+  onboarded?: boolean;               // NEW
 }
 
 export interface HackTrack {
@@ -226,6 +227,7 @@ export interface UserProfile {
   teamId?: string;
   currentHackathonId?: string;     // NEW — participant's selected hackathon
   hackathonIds?: string[];         // NEW — staff assignment: which hackathons they manage
+  onboarded?: boolean;             // NEW
   // Compatibility fields
   uid?: string;
   displayName?: string;

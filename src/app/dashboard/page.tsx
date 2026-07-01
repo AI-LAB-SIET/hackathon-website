@@ -39,7 +39,7 @@ const JOURNEY_STAGES = [
   { id: "results", label: "Results", desc: "Winners announced and certificates issued.", icon: "🏆" },
 ];
 
-type TabType = "home" | "team" | "project" | "notifications" | "resources" | "support" | "profile";
+type TabType = "home" | "team" | "foodWallet" | "project" | "notifications" | "resources" | "support" | "profile";
 
 const DEPT_OPTIONS = [
   "Computer Science & Engineering",
@@ -61,6 +61,8 @@ export default function ParticipantDashboard() {
     updateProjectDetails, updateTeamMembers,
     markNotificationRead, markAllNotificationsRead,
     logout, raiseTicket, getProfile, updateProfile,
+    registerTeam, deleteTeam, leaveTeam, sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest, teamRequests, activeHackathonId,
+    foodTokens, foodMeals
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -82,6 +84,10 @@ export default function ParticipantDashboard() {
   });
   const [newSocialPlatform, setNewSocialPlatform] = useState("");
   const [newSocialUrl, setNewSocialUrl] = useState("");
+  const [createTeamName, setCreateTeamName] = useState("");
+  const [createTeamDescription, setCreateTeamDescription] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
   const [newMember, setNewMember] = useState<Participant>({
     name: "", registerNumber: "", email: "", phone: "",
     department: DEPT_OPTIONS[0], year: YEAR_OPTIONS[2],
@@ -124,7 +130,7 @@ export default function ParticipantDashboard() {
     if (mounted) {
       if (!session.isLoggedIn || session.role !== "participant") {
         router.push("/login");
-      } else if (session.teamSetupDone === false) {
+      } else if (session.onboarded === false) {
         router.push("/onboarding");
       }
     }
@@ -248,6 +254,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleRaiseTicket = () => {
+    if (!team) return;
     if (!ticketDescription.trim()) {
       toast("Please describe your issue.", "error");
       return;
@@ -266,6 +273,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleAddMember = () => {
+    if (!team) return;
     if (!newMember.name || !newMember.email || !newMember.registerNumber) {
       toast("Please fill in Name, Email, and Register Number.", "error");
       return;
@@ -281,12 +289,14 @@ export default function ParticipantDashboard() {
   };
 
   const handleRemoveMember = (email: string) => {
+    if (!team) return;
     if (team.members.length <= 2) { toast("Team must have at least 2 members.", "error"); return; }
     updateTeamMembers(team.id, team.members.filter((m) => m.email !== email));
     toast("Member removed.", "info");
   };
 
   const handleSaveProject = () => {
+    if (!team) return;
     updateProjectDetails(team.id, {
       projectDescription: projectEdit.projectDescription || team.projectDescription,
       githubUrl: projectEdit.githubUrl || team.githubUrl,
@@ -318,9 +328,10 @@ export default function ParticipantDashboard() {
     }
   };
 
-  const needsRegistration = team.status === "PENDING" || !team.trackId;
+  const needsRegistration = team ? (team.status === "PENDING" || !team.trackId) : false;
 
   const handleSaveRegistration = () => {
+    if (!team) return;
     if (!regTeamName.trim()) { toast("Please enter a team name.", "error"); return; }
     if (!regTrackId) { toast("Please select a track.", "error"); return; }
     updateProjectDetails(team.id, {
@@ -329,6 +340,100 @@ export default function ParticipantDashboard() {
       projectDescription: regProjectBrief.trim(),
     });
     toast("Registration details saved.", "success");
+  };
+
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createTeamName.trim()) {
+      toast("Please enter a team name.", "error");
+      return;
+    }
+    const profile = getProfile(session.email || "");
+    const leader: Participant = {
+      name: session.name || "Leader",
+      email: session.email || "",
+      registerNumber: profile?.registerNumber || "",
+      phone: profile?.phone || "",
+      department: profile?.department || "",
+      year: profile?.year || "",
+      skills: profile?.skills || [],
+      isLeader: true,
+    };
+    const hackathonId = session.currentHackathonId || activeHackathonId || "";
+    if (!hackathonId) {
+      toast("No active hackathon selected for team registration.", "error");
+      return;
+    }
+
+    try {
+      await registerTeam({
+        name: createTeamName.trim(),
+        projectDescription: createTeamDescription.trim(),
+        members: [leader],
+        hackathonId,
+      });
+      toast("Team created successfully!", "success");
+      setCreateTeamName("");
+      setCreateTeamDescription("");
+    } catch (err: unknown) {
+      toast("Failed to create team.", "error");
+    }
+  };
+
+  const handleLeaveTeam = async () => {
+    if (!team) return;
+    if (confirm("Are you sure you want to leave this team?")) {
+      try {
+        await leaveTeam(team.id, session.email || "");
+        toast("You have left the team.", "info");
+      } catch (err: unknown) {
+        toast("Failed to leave team.", "error");
+      }
+    }
+  };
+
+  const handleSendInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!team) return;
+    if (!inviteEmail.trim() || !inviteName.trim()) {
+      toast("Name and email are required.", "error");
+      return;
+    }
+    try {
+      await sendTeamInvite(inviteEmail.trim(), inviteName.trim(), team.id, "Please join my team!");
+      toast(`Invite sent to ${inviteName}`, "success");
+      setInviteEmail("");
+      setInviteName("");
+    } catch (err: unknown) {
+      toast("Failed to send invite.", "error");
+    }
+  };
+
+  const handleJoinRequest = async (teamId: string) => {
+    try {
+      await sendJoinRequest(teamId, "I'd love to join your team!");
+      toast("Join request sent successfully!", "success");
+    } catch (err: unknown) {
+      toast("Failed to send join request.", "error");
+    }
+  };
+
+  const handleCancelRequest = async (reqId: string) => {
+    try {
+      await cancelRequest(reqId);
+      toast("Request cancelled.", "info");
+    } catch (err: unknown) {
+      toast("Failed to cancel request.", "error");
+    }
+  };
+
+  const handleRespondInvite = async (reqId: string, accept: boolean) => {
+    try {
+      await respondToRequest(reqId, accept);
+      toast(accept ? "Accepted team invitation!" : "Declined team invitation.", accept ? "success" : "info");
+    } catch (err: unknown) {
+      toast("Failed to respond to invitation.", "error");
+    }
   };
 
   return (
@@ -536,220 +641,579 @@ export default function ParticipantDashboard() {
             )}
 
             {/* ─── MY TEAM TAB ─── */}
+            {/* ─── MY TEAM TAB ─── */}
             {activeTab === "team" && (
               <motion.div key="team" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><Users className="h-5 w-5 text-primary-green" /> My Team</h2>
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><Users className="h-5 w-5 text-primary-green" /> My Team Workspace</h2>
 
-                {/* Registration Section — shown when team needs registration work */}
-                {needsRegistration && (
-                  <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm p-6 space-y-5 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                        <CheckCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-primary-dark text-lg dark:text-gray-100">Complete Your Registration</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Finish setting up your team to get approved by organizers.</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Team Name</label>
-                        <input type="text" value={regTeamName} onChange={(e) => setRegTeamName(e.target.value)}
-                          placeholder="e.g. Neural Knights"
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
-                        <select value={regTrackId} onChange={(e) => setRegTrackId(e.target.value)}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                          <option value="">Select a track...</option>
-                          {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Project Brief</label>
-                      <textarea rows={3} value={regProjectBrief}
-                        onChange={(e) => setRegProjectBrief(e.target.value)}
-                        placeholder="Briefly describe your AI project idea..."
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-                    </div>
-
-                    <button onClick={handleSaveRegistration}
-                      className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">
-                      Save Registration Details
-                    </button>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Event Schedule Placeholder */}
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Important Dates</div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500">Upcoming milestones</div>
-                      </div>
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="h-2 w-2 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                {team ? (
+                  /* TEAMED VIEW */
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Column: Team Profile & Milestones */}
+                    <div className="lg:col-span-2 space-y-6">
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                        <div className="flex justify-between items-start">
                           <div>
-                            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">Idea Submission</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">July 5, 2026 - 11:59 PM</div>
+                            <span className="px-2.5 py-1 rounded-md bg-emerald-550 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                              {HACK_TRACKS.find(t => t.id === team.trackId)?.label || "No Track Assigned"}
+                            </span>
+                            <h3 className="font-extrabold text-primary-dark text-2xl dark:text-gray-100 mt-2">{team.name}</h3>
                           </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${team.status === "APPROVED" ? "bg-emerald-105 text-emerald-700 bg-emerald-50" : "bg-amber-100 text-amber-700"}`}>
+                            {team.status}
+                          </span>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <div className="h-2 w-2 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                          <div>
-                            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">Shortlist Announcement</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">July 10, 2026 - 10:00 AM</div>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className="h-2 w-2 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                          <div>
-                            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">Hackathon Day</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">July 18, 2026 - 09:00 AM</div>
-                          </div>
+
+                        <p className="text-sm text-gray-650 dark:text-gray-400">{team.projectDescription || "No project description provided yet."}</p>
+
+                        <div className="border-t border-gray-100 dark:border-gray-800 pt-4 flex justify-between items-center text-xs text-gray-450">
+                          <span>Team Size: {team.members.length}/4 Members</span>
+                          <span>Created: {new Date(team.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Registration Progress */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Registration Progress</div>
-                        <div className="text-2xl font-extrabold text-primary-green">{regPercent}%</div>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mb-4">
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${regPercent}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-2 rounded-full bg-linear-to-r from-primary-green to-teal-400" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        {regChecklist.map((item) => (
-                          <div key={item.label} className="flex items-center gap-2">
-                            {item.done ? <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" /> : <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />}
-                            <span className={`text-sm ${item.done ? "text-gray-700 dark:text-gray-300" : "text-amber-600 dark:text-amber-400 font-medium"}`}>{item.label}</span>
+                      {/* Registration Section — shown when team needs registration work */}
+                      {needsRegistration && (
+                        <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm p-6 space-y-5 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800 animate-pulse-subtle">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                              <CheckCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div>
+                              <h3 className="font-extrabold text-primary-dark text-lg dark:text-gray-100">Complete Your Registration</h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Finish setting up your team to get approved by organizers.</p>
+                            </div>
                           </div>
-                        ))}
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Team Name</label>
+                              <input type="text" value={regTeamName} onChange={(e) => setRegTeamName(e.target.value)}
+                                placeholder="e.g. Neural Knights"
+                                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
+                              <select value={regTrackId} onChange={(e) => setRegTrackId(e.target.value)}
+                                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                <option value="">Select a track...</option>
+                                {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Project Brief</label>
+                            <textarea rows={3} value={regProjectBrief}
+                              onChange={(e) => setRegProjectBrief(e.target.value)}
+                              placeholder="Briefly describe your AI project idea..."
+                              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                          </div>
+
+                          <button onClick={handleSaveRegistration}
+                            className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">
+                            Save Registration Details
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Milestone Progress */}
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Milestone Progress</h4>
+                          <span className="text-xl font-extrabold text-primary-green">{regPercent}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${regPercent}%` }} transition={{ duration: 0.8 }} className="h-2 rounded-full bg-linear-to-r from-primary-green to-teal-400" />
+                        </div>
+                        <div className="flex flex-col gap-2.5">
+                          {regChecklist.map((item) => (
+                            <div key={item.label} className="flex items-center gap-2">
+                              {item.done ? <CheckCircle className="h-4.5 w-4.5 text-emerald-500 shrink-0" /> : <AlertTriangle className="h-4.5 w-4.5 text-amber-400 shrink-0" />}
+                              <span className={`text-xs ${item.done ? "text-gray-700 dark:text-gray-300" : "text-amber-600 dark:text-amber-400 font-medium"}`}>{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Members */}
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Members ({team.members.length}/4)</div>
-                        {team.members.length < 4 && (
-                          <button onClick={() => setShowAddMember(!showAddMember)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer">
-                            <Plus className="h-3.5 w-3.5" /> Add Member
+                    {/* Right Column: Members & Actions */}
+                    <div className="space-y-6">
+                      {/* Members list */}
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                        <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Team Members ({team.members.length}/4)</h4>
+                        <div className="flex flex-col gap-3">
+                          {team.members.map((m) => {
+                            const isLeaderMember = m.isLeader;
+                            return (
+                              <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750">
+                                <div className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                                  {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                                </div>
+                                <div className="flex-1 min-w-0 text-xs">
+                                  <div className="font-bold text-primary-dark dark:text-gray-100 flex items-center gap-1.5 truncate">
+                                    {m.name}
+                                    {isLeaderMember && <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-1 rounded-full shrink-0">Leader</span>}
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{m.email}</div>
+                                </div>
+                                {!isLeaderMember && team.members.find(memb => memb.email === session.email)?.isLeader && (
+                                  <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Invite form (only for leaders) */}
+                      {team.members.find(m => m.email === session.email)?.isLeader && team.members.length < 4 && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
+                          <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Invite Teammate</h4>
+                          <form onSubmit={handleSendInvite} className="space-y-3">
+                            <input
+                              type="text"
+                              placeholder="Name"
+                              value={inviteName}
+                              onChange={(e) => setInviteName(e.target.value)}
+                              className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                            />
+                            <input
+                              type="email"
+                              placeholder="Email Address"
+                              value={inviteEmail}
+                              onChange={(e) => setInviteEmail(e.target.value)}
+                              className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                            />
+                            <button
+                              type="submit"
+                              className="w-full py-2 bg-primary-green text-white font-bold text-xs rounded-lg hover:bg-primary-dark transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <Send className="h-3 w-3" /> Send Invitation
+                            </button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* Manage incoming requests for leaders */}
+                      {team.members.find(m => m.email === session.email)?.isLeader && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
+                          <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Join Requests</h4>
+                          <div className="space-y-2">
+                            {teamRequests
+                              .filter(r => r.direction === "join" && r.teamId === team.id && r.status === "pending")
+                              .map((r) => (
+                                <div key={r.id} className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-150 dark:border-gray-700 rounded-xl space-y-2">
+                                  <div className="text-xs">
+                                    <span className="font-bold">{r.fromName}</span> wants to join.
+                                    <span className="text-[10px] text-gray-400 block font-mono">{r.fromEmail}</span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleRespondInvite(r.id, true)}
+                                      className="flex-1 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer"
+                                    >
+                                      Accept
+                                    </button>
+                                    <button
+                                      onClick={() => handleRespondInvite(r.id, false)}
+                                      className="flex-1 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-700 text-[10px] font-bold rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+                                    >
+                                      Decline
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            {teamRequests.filter(r => r.direction === "join" && r.teamId === team.id && r.status === "pending").length === 0 && (
+                              <p className="text-[10px] text-gray-400 text-center py-2">No pending join requests.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Dangerous Actions */}
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
+                        <h4 className="font-bold text-sm text-red-650">Actions</h4>
+                        {team.members.find(m => m.email === session.email)?.isLeader ? (
+                          <button
+                            onClick={() => {
+                              if (confirm("Are you sure you want to disband the team? This action is permanent!")) {
+                                deleteTeam(team.id);
+                                toast("Team disbanded successfully.", "info");
+                              }
+                            }}
+                            className="w-full py-2.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Disband Team
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleLeaveTeam}
+                            className="w-full py-2.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <LogOut className="h-3.5 w-3.5" /> Leave Team
                           </button>
                         )}
                       </div>
-                      <div className="flex flex-col gap-3">
-                        {team.members.map((m) => (
-                          <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-                            <div className="h-10 w-10 rounded-xl bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                              {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-primary-dark text-sm flex items-center gap-2 dark:text-gray-100">
-                                {m.name}
-                                {m.isLeader && <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-1.5 rounded-full">Leader</span>}
-                              </div>
-                              <div className="text-xs text-gray-400 dark:text-gray-500">{m.department} · {m.year}</div>
-                              <div className="text-xs text-gray-400 dark:text-gray-500">{m.email}</div>
-                            </div>
-                            {!m.isLeader && (
-                              <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
+                    </div>
+                  </div>
+                ) : (
+                  /* TEAMLESS VIEW */
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Create Team Form */}
+                    <div className="space-y-6">
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                        <h3 className="font-extrabold text-primary-dark text-lg dark:text-gray-100 flex items-center gap-1.5">
+                          <Plus className="h-5 w-5 text-primary-green" /> Create a New Team
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Create a team to begin participating. You will automatically become the Team Leader.
+                        </p>
+
+                        <form onSubmit={handleCreateTeam} className="space-y-4">
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Team Name</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Cyber Ninjas"
+                              value={createTeamName}
+                              onChange={(e) => setCreateTeamName(e.target.value)}
+                              className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                            />
                           </div>
-                        ))}
+
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Project Idea Description</label>
+                            <textarea
+                              rows={3}
+                              placeholder="Describe your solution brief..."
+                              value={createTeamDescription}
+                              onChange={(e) => setCreateTeamDescription(e.target.value)}
+                              className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 resize-none"
+                            />
+                          </div>
+
+                          <button
+                            type="submit"
+                            className="w-full py-2.5 bg-primary-green text-white font-bold text-xs rounded-xl hover:bg-primary-dark transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            Create Team
+                          </button>
+                        </form>
+                      </div>
+
+                      {/* Requests Status */}
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                        <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Pending Invitations ({
+                          teamRequests.filter(r => r.direction === "invite" && r.toEmail === session.email && r.status === "pending").length
+                        })</h4>
+                        <div className="space-y-2.5">
+                          {teamRequests
+                            .filter(r => r.direction === "invite" && r.toEmail === session.email && r.status === "pending")
+                            .map((r) => (
+                              <div key={r.id} className="p-3.5 bg-gray-550 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl space-y-3">
+                                <div className="text-xs text-gray-700 dark:text-gray-300">
+                                  You are invited to join <strong>{r.teamName}</strong>.
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleRespondInvite(r.id, true)}
+                                    className="flex-1 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer"
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => handleRespondInvite(r.id, false)}
+                                    className="flex-1 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-655 dark:text-gray-300 text-[10px] font-bold rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
+                                  >
+                                    Ignore
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          {teamRequests.filter(r => r.direction === "invite" && r.toEmail === session.email && r.status === "pending").length === 0 && (
+                            <p className="text-xs text-gray-405 text-center py-2">No pending invitations.</p>
+                          )}
+                        </div>
+
+                        <hr className="border-gray-100 dark:border-gray-800" />
+
+                        <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Sent Requests ({
+                          teamRequests.filter(r => r.direction === "join" && r.fromEmail === session.email && r.status === "pending").length
+                        })</h4>
+                        <div className="space-y-2">
+                          {teamRequests
+                            .filter(r => r.direction === "join" && r.fromEmail === session.email && r.status === "pending")
+                            .map((r) => (
+                              <div key={r.id} className="flex justify-between items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs">
+                                <div className="truncate">
+                                  Request to join <strong>{r.teamName}</strong>
+                                </div>
+                                <button
+                                  onClick={() => handleCancelRequest(r.id)}
+                                  className="text-[10px] text-red-500 font-semibold hover:underline cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ))}
+                          {teamRequests.filter(r => r.direction === "join" && r.fromEmail === session.email && r.status === "pending").length === 0 && (
+                            <p className="text-xs text-gray-405 text-center py-1">No sent requests.</p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Add Member Form */}
-                    <AnimatePresence>
-                      {showAddMember && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                          <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 space-y-4 dark:bg-gray-900 dark:border-emerald-800">
-                            <div className="flex items-center justify-between">
-                              <div className="font-bold text-primary-dark text-sm dark:text-gray-100">Register New Member</div>
-                              <button onClick={() => setShowAddMember(false)} className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 cursor-pointer"><X className="h-4 w-4" /></button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              {[
-                                { label: "Full Name*", field: "name" as const, placeholder: "Ravi Kumar" },
-                                { label: "Register Number*", field: "registerNumber" as const, placeholder: "2022CSE0101" },
-                                { label: "College Email*", field: "email" as const, placeholder: "ravi@college.edu" },
-                                { label: "Phone", field: "phone" as const, placeholder: "98765..." },
-                              ].map(({ label, field, placeholder }) => (
-                                <div key={field}>
-                                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">{label}</label>
-                                  <input
-                                    type="text"
-                                    placeholder={placeholder}
-                                    value={newMember[field]}
-                                    onChange={(e) => setNewMember((p) => ({ ...p, [field]: e.target.value }))}
-                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                  />
+                    {/* Browse Teams List */}
+                    <div className="lg:col-span-2 space-y-6">
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-extrabold text-primary-dark text-lg dark:text-gray-100">Browse Teams</h3>
+                          <span className="text-xs text-gray-405">Join a team to hack together</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {teams
+                            .filter(t => t.hackathonId === (session.currentHackathonId || activeHackathonId) && t.size < 4)
+                            .map((t) => {
+                              const alreadyRequested = teamRequests.some(r => r.direction === "join" && r.teamId === t.id && r.fromEmail === session.email && r.status === "pending");
+                              const isMember = t.members.some(m => m.email === session.email);
+                              const trackLabel = HACK_TRACKS.find(tr => tr.id === t.trackId)?.label || "General";
+
+                              return (
+                                <div key={t.id} className="p-4 rounded-2xl border border-gray-100 dark:border-gray-750 bg-gray-50/50 dark:bg-gray-800/40 hover:border-primary-green/30 transition-all flex flex-col justify-between gap-4">
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-start gap-2">
+                                      <h4 className="font-extrabold text-sm text-primary-dark dark:text-gray-100 truncate">{t.name}</h4>
+                                      <span className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-505 px-2 py-0.5 rounded-full shrink-0">
+                                        {t.size}/4 members
+                                      </span>
+                                    </div>
+                                    <span className="text-[9px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wide block w-fit rounded px-1.5 py-0.5">
+                                      {trackLabel}
+                                    </span>
+                                    <p className="text-xs text-gray-655 dark:text-gray-400 line-clamp-2">{t.projectDescription || "No brief solution provided yet."}</p>
+                                  </div>
+
+                                  <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-750 pt-3">
+                                    <div className="flex -space-x-2">
+                                      {t.members.map((m) => (
+                                        <div
+                                          key={m.email}
+                                          className="h-6 w-6 rounded-full bg-linear-to-br from-emerald-400 to-teal-500 border-2 border-white dark:border-gray-900 flex items-center justify-center text-white font-extrabold text-[8px] cursor-help"
+                                          title={`${m.name} (${m.email})`}
+                                        >
+                                          {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {isMember ? (
+                                      <span className="text-[10px] text-emerald-600 font-bold">Joined</span>
+                                    ) : alreadyRequested ? (
+                                      <span className="text-[10px] text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-md">Pending Approval</span>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleJoinRequest(t.id)}
+                                        className="px-3.5 py-1.5 bg-primary-green hover:bg-primary-dark text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                                      >
+                                        Request to Join
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Department</label>
-                                <select value={newMember.department} onChange={(e) => setNewMember((p) => ({ ...p, department: e.target.value }))}
-                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                                  {DEPT_OPTIONS.map((d) => <option key={d}>{d}</option>)}
-                                </select>
+                              );
+                            })}
+                          {teams.filter(t => t.hackathonId === (session.currentHackathonId || activeHackathonId) && t.size < 4).length === 0 && (
+                            <p className="text-xs text-gray-405 text-center col-span-2 py-8">No other teams with open slots found in this hackathon.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ─── FOOD TOKEN WALLET TAB ─── */}
+            {activeTab === "foodWallet" && (
+              <motion.div key="foodWallet" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl flex items-center gap-2 dark:text-gray-100"><QrCode className="h-5 w-5 text-primary-green" /> My Food Wallet</h2>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Active / Unused Food Tokens */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-bold text-sm text-primary-dark dark:text-gray-150">Available Meal Tokens</h3>
+                        <span className="text-xs text-gray-400">Scan at the food counter to redeem</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {foodTokens
+                          .filter((t) => t.participantEmail === session.email && t.status === "issued")
+                          .map((t) => {
+                            const meal = foodMeals.find(m => m.id === t.mealId);
+                            const isPast = meal ? new Date(meal.scheduledAt).getTime() + meal.windowMinutes * 60000 < Date.now() : false;
+                            const isFuture = meal ? new Date(meal.scheduledAt).getTime() > Date.now() : false;
+                            const isServing = !isPast && !isFuture;
+
+                            return (
+                              <div
+                                key={t.id}
+                                className={`p-5 rounded-2xl border flex flex-col justify-between gap-4 transition-all ${
+                                  isServing
+                                    ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/10 dark:border-emerald-900 hover:shadow-md"
+                                    : "bg-white border-gray-150 dark:bg-gray-800 dark:border-gray-700 hover:shadow-sm"
+                                }`}
+                              >
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/30 px-2 py-0.5 rounded">
+                                      {t.mealType}
+                                    </span>
+                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isServing ? "bg-emerald-550 text-white animate-pulse" : "bg-gray-150 text-gray-500"}`}>
+                                      {isServing ? "Serving Now" : isFuture ? "Upcoming" : "Expired"}
+                                    </span>
+                                  </div>
+                                  <h4 className="font-extrabold text-base text-primary-dark dark:text-gray-100">{t.mealName}</h4>
+                                  {meal && (
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                      Serving: {new Date(meal.scheduledAt).toLocaleTimeString()} ({meal.windowMinutes} mins)
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-750">
+                                  <div className="h-14 w-14 rounded-lg border border-gray-200 dark:border-gray-700 bg-white p-1 flex items-center justify-center relative overflow-hidden group shrink-0">
+                                    {/* Mock SVG QR Code representation */}
+                                    <svg className="h-12 w-12 text-gray-800 dark:text-gray-900" viewBox="0 0 100 100">
+                                      <rect x="5" y="5" width="25" height="25" fill="currentColor" />
+                                      <rect x="10" y="10" width="15" height="15" fill="white" />
+                                      <rect x="70" y="5" width="25" height="25" fill="currentColor" />
+                                      <rect x="75" y="10" width="15" height="15" fill="white" />
+                                      <rect x="5" y="70" width="25" height="25" fill="currentColor" />
+                                      <rect x="10" y="75" width="15" height="15" fill="white" />
+                                      {/* Random matrix blocks */}
+                                      <rect x="40" y="5" width="10" height="15" fill="currentColor" />
+                                      <rect x="50" y="20" width="15" height="10" fill="currentColor" />
+                                      <rect x="40" y="40" width="20" height="20" fill="currentColor" />
+                                      <rect x="5" y="45" width="15" height="10" fill="currentColor" />
+                                      <rect x="70" y="45" width="15" height="15" fill="currentColor" />
+                                      <rect x="45" y="75" width="15" height="20" fill="currentColor" />
+                                      <rect x="75" y="75" width="10" height="10" fill="currentColor" />
+                                    </svg>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-[10px] text-gray-400 block font-semibold">Token Code</span>
+                                    <span className="text-xs font-mono font-extrabold text-primary-dark dark:text-gray-150 truncate block">{t.tokenCode}</span>
+                                  </div>
+                                </div>
                               </div>
-                              <div>
-                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Year</label>
-                                <select value={newMember.year} onChange={(e) => setNewMember((p) => ({ ...p, year: e.target.value }))}
-                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                                  {YEAR_OPTIONS.map((y) => <option key={y}>{y}</option>)}
-                                </select>
-                              </div>
-                            </div>
-                            <div>
-                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Skills (press Enter to add)</label>
-                              <div className="flex flex-wrap gap-1.5 mb-2">
-                                {newMember.skills.map((s) => (
-                                  <span key={s} className="inline-flex items-center gap-1 text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-                                    {s}
-                                    <button onClick={() => setNewMember((p) => ({ ...p, skills: p.skills.filter((sk) => sk !== s) }))} className="cursor-pointer"><X className="h-3 w-3" /></button>
-                                  </span>
-                                ))}
-                              </div>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  placeholder="Add skill..."
-                                  value={memberNewSkill}
-                                  onChange={(e) => setMemberNewSkill(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" && memberNewSkill.trim()) {
-                                      setNewMember((p) => ({ ...p, skills: [...p.skills, memberNewSkill.trim()] }));
-                                      setMemberNewSkill("");
-                                    }
-                                  }}
-                                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                />
-                              </div>
-                            </div>
-                            <button onClick={handleAddMember} className="w-full py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">
-                              Add Member to Team
-                            </button>
+                            );
+                          })}
+                        {foodTokens.filter((t) => t.participantEmail === session.email && t.status === "issued").length === 0 && (
+                          <div className="text-center py-12 text-sm text-gray-450 col-span-2">
+                            <Info className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                            No active meal tokens in your wallet.
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Redemption History */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                      <h3 className="font-bold text-sm text-primary-dark dark:text-gray-150">Redemption History</h3>
+                      <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-750">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-gray-50 dark:bg-gray-800 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <tr>
+                              <th className="px-4 py-2.5">Meal</th>
+                              <th className="px-4 py-2.5">Token Code</th>
+                              <th className="px-4 py-2.5">Redeemed At</th>
+                              <th className="px-4 py-2.5">Redeemed By</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                            {foodTokens
+                              .filter((t) => t.participantEmail === session.email && t.status === "redeemed")
+                              .map((t) => (
+                                <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/10">
+                                  <td className="px-4 py-3 font-semibold text-primary-dark dark:text-gray-200">{t.mealName}</td>
+                                  <td className="px-4 py-3 font-mono">{t.tokenCode}</td>
+                                  <td className="px-4 py-3 text-gray-400">
+                                    {t.redeemedAt ? new Date(t.redeemedAt).toLocaleString() : "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-400">{t.redeemedBy || "Self-check"}</td>
+                                </tr>
+                              ))}
+                            {foodTokens.filter((t) => t.participantEmail === session.email && t.status === "redeemed").length === 0 && (
+                              <tr>
+                                <td colSpan={4} className="text-center py-6 text-gray-405 text-center text-gray-400 text-[10px]">
+                                  No redemption history yet.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Food Schedule / Instructions */}
+                  <div className="space-y-6">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                      <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Active Meal Menu</h4>
+                      <div className="space-y-3">
+                        {foodMeals.map((m) => {
+                          const isPast = new Date(m.scheduledAt).getTime() + m.windowMinutes * 60000 < Date.now();
+                          const isFuture = new Date(m.scheduledAt).getTime() > Date.now();
+                          const isServing = !isPast && !isFuture;
+
+                          return (
+                            <div
+                              key={m.id}
+                              className={`p-3.5 rounded-xl border flex flex-col gap-1.5 ${
+                                isServing
+                                  ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/10 dark:border-emerald-900"
+                                  : "bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700"
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="font-extrabold text-xs text-primary-dark dark:text-gray-150">{m.name}</span>
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${isServing ? "bg-emerald-100 text-emerald-805 bg-emerald-50/50" : "bg-gray-100 text-gray-500"}`}>
+                                  {isServing ? "Serving Now" : isFuture ? "Upcoming" : "Ended"}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-gray-400">
+                                Time: {new Date(m.scheduledAt).toLocaleTimeString()} ({m.windowMinutes}m validity)
+                              </span>
+                            </div>
+                          );
+                        })}
+                        {foodMeals.length === 0 && (
+                          <div className="text-center py-4 text-xs text-gray-400">No meals scheduled yet.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3 text-xs text-gray-600 dark:text-gray-400">
+                      <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Redemption Rules</h4>
+                      <div className="flex items-start gap-2">
+                        <span className="h-5 w-5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
+                        <p>Tokens are active only during the meal window shown.</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="h-5 w-5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
+                        <p>Present the QR code at the counter for scanning.</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="h-5 w-5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
+                        <p>Each token can be scanned and redeemed exactly once.</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>

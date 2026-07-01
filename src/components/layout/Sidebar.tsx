@@ -52,6 +52,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         return [
           { id: "home", name: "Home", icon: <LayoutDashboard className="h-5 w-5" /> },
           { id: "team", name: "My Team", icon: <Users className="h-5 w-5" /> },
+          { id: "foodWallet", name: "Food Wallet", icon: <QrCode className="h-5 w-5" /> },
           { id: "project", name: "Project", icon: <FolderCode className="h-5 w-5" /> },
           { id: "resources", name: "Resources", icon: <BookOpen className="h-5 w-5" /> },
           { id: "support", name: "Support", icon: <LifeBuoy className="h-5 w-5" /> },
@@ -68,9 +69,9 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       case "volunteer":
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+          { id: "scanner", name: "Redemption Scanner", icon: <QrCode className="h-5 w-5" /> },
           { id: "tickets", name: "Tickets", icon: <LifeBuoy className="h-5 w-5" /> },
           { id: "attendance", name: "Attendance", icon: <CheckCircle className="h-5 w-5" /> },
-          
           { id: "support", name: "Support", icon: <LifeBuoy className="h-5 w-5" /> },
           { id: "approval", name: "Approval View", icon: <ClipboardCheck className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
@@ -78,6 +79,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       case "organizer":
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+          { id: "scanner", name: "Redemption Scanner", icon: <QrCode className="h-5 w-5" /> },
           { id: "teams", name: "Teams Directory", icon: <Users className="h-5 w-5" /> },
           { id: "approval", name: "Approval Queue", icon: <UserCheck className="h-5 w-5" /> },
           { id: "problems", name: "On-Spot Materials", icon: <BookOpen className="h-5 w-5" /> },
@@ -88,12 +90,14 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       case "admin":
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+          { id: "hackathons", name: "Hackathons", icon: <Award className="h-5 w-5" /> },
           { id: "members", name: "Members & Roles", icon: <Users className="h-5 w-5" /> },
           { id: "participants", name: "Participants", icon: <UserCheck className="h-5 w-5" /> },
           { id: "attendance", name: "Attendance Register", icon: <ClipboardCheck className="h-5 w-5" /> },
           { id: "announcements", name: "Announcements", icon: <Megaphone className="h-5 w-5" /> },
           { id: "problems", name: "Problems", icon: <BookOpen className="h-5 w-5" /> },
           { id: "teams", name: "Approved Teams", icon: <Shield className="h-5 w-5" /> },
+          { id: "foodTokens", name: "Food Tokens", icon: <QrCode className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
         ];
       default:

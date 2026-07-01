@@ -7,6 +7,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { AttendancePanel } from "@/components/ui/AttendancePanel";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,12 +17,12 @@ import {
   Mail, Phone, ChevronRight, Activity, Ticket,
   Download, UserPlus, Trash2, UserCheck,
   Github, Video, Globe, BookOpen, Upload, FileText, Paperclip,
-  Archive, Send, Edit3, X
+  Archive, Send, Edit3, X, QrCode, Info
 } from "lucide-react";
-import { FileAttachment, ProblemStatement, Team, Volunteer, SupportTicket } from "@/types";
+import { FileAttachment, ProblemStatement, Team, Volunteer, SupportTicket, FoodToken } from "@/types";
 import { HACK_TRACKS } from "@/lib/mockData";
 
-type TabType = "dashboard" | "teams" | "approval" | "problems" | "volunteers" | "tickets" | "profile";
+type TabType = "dashboard" | "scanner" | "teams" | "approval" | "problems" | "volunteers" | "tickets" | "profile";
 type ApprovalFilter = "all" | "pending" | "approved" | "rejected";
 type TicketFilter = "all" | "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
 
@@ -32,10 +33,17 @@ export default function OrganizerDashboard() {
     approveTeam, rejectTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead,
     addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus,
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
+    foodMeals, foodTokens, redeemToken, lookupToken
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+
+  // Food token lookup states
+  const [lookupQuery, setLookupQuery] = useState("");
+  const [scannedToken, setScannedToken] = useState<FoodToken | null>(null);
+  const [lookupError, setLookupError] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
 
   // Filters
   const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>("all");
@@ -132,6 +140,41 @@ export default function OrganizerDashboard() {
     toast(`${teamName} rejected.`, "error");
     setSelectedTeam(null);
     setRejectReason("");
+  };
+
+  const handleLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lookupQuery.trim()) return;
+    setLookupError("");
+    setScannedToken(null);
+    try {
+      const token = await lookupToken(lookupQuery.trim());
+      if (token) {
+        setScannedToken(token);
+      } else {
+        setLookupError("No valid token found for this code or registration number.");
+      }
+    } catch (err: unknown) {
+      setLookupError("Failed to lookup token.");
+    }
+  };
+
+  const handleRedeem = async () => {
+    if (!scannedToken) return;
+    if (scannedToken.status !== "issued") {
+      toast("This token has already been redeemed or is invalid.", "error");
+      return;
+    }
+    setRedeeming(true);
+    try {
+      await redeemToken(scannedToken.id);
+      toast("Food token redeemed successfully!", "success");
+      setScannedToken({ ...scannedToken, status: "redeemed" });
+    } catch (err: unknown) {
+      toast("Failed to redeem token.", "error");
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   const handleSendAnnouncement = () => {
@@ -423,6 +466,176 @@ export default function OrganizerDashboard() {
                   <button onClick={handleSendAnnouncement} className="px-5 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 cursor-pointer">Send to All</button>
                 </div>
               </motion.div>
+            )}
+
+
+            {/* ==================== SCANNER TAB (Food Token Redemption) ==================== */}
+            {activeTab === "scanner" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Lookup & Redemption Panel */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                      <QrCode className="h-4.5 w-4.5 text-primary-green" /> Scan or Lookup Token
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Enter the token code (e.g., FT-ABCD-1234) or the student&apos;s registration number to verify food tokens.
+                    </p>
+
+                    <form onSubmit={handleLookup} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Token Code or Register Number"
+                        value={lookupQuery}
+                        onChange={(e) => setLookupQuery(e.target.value)}
+                        className="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                      />
+                      <Button type="submit">
+                        Look Up
+                      </Button>
+                    </form>
+
+                    {lookupError && (
+                      <p className="text-xs text-red-500 font-bold">{lookupError}</p>
+                    )}
+
+                    {/* Scanned Token Card */}
+                    <AnimatePresence mode="wait">
+                      {scannedToken && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="p-5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 space-y-4"
+                        >
+                          <div className="flex justify-between items-start border-b border-gray-100 dark:border-gray-700/50 pb-3">
+                            <div>
+                              <h4 className="font-extrabold text-sm text-primary-dark dark:text-gray-100">
+                                {scannedToken.participantName}
+                              </h4>
+                              <span className="text-[10px] text-gray-400 font-mono">Reg No: {scannedToken.registerNumber || "N/A"}</span>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${scannedToken.status === "redeemed" ? "bg-red-50 text-red-650" : "bg-emerald-50 text-emerald-700"}`}>
+                              {scannedToken.status === "redeemed" ? "Redeemed" : "Valid"}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Meal</span>
+                              <span className="font-bold text-primary-dark dark:text-gray-150">{scannedToken.mealName}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Type</span>
+                              <span className="font-bold text-primary-dark dark:text-gray-150 capitalize">{scannedToken.mealType}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Email Address</span>
+                              <span className="font-semibold text-gray-650 dark:text-gray-300">{scannedToken.participantEmail}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Token Code</span>
+                              <span className="font-mono text-gray-650 dark:text-gray-300 font-bold">{scannedToken.tokenCode}</span>
+                            </div>
+                          </div>
+
+                          {scannedToken.status === "issued" ? (
+                            <Button
+                              onClick={handleRedeem}
+                              isLoading={redeeming}
+                              className="w-full py-3 mt-2"
+                            >
+                              Confirm &amp; Redeem Token
+                            </Button>
+                          ) : (
+                            <div className="p-3 text-center rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-400 font-bold">
+                              Token already redeemed at {scannedToken.redeemedAt ? new Date(scannedToken.redeemedAt).toLocaleString() : "an earlier time"}.
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Redemptions Log */}
+                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                      <Clock className="h-4.5 w-4.5 text-primary-green" /> Your Redemption Log
+                    </h3>
+                    <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-750">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-gray-50 dark:bg-gray-800 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                          <tr>
+                            <th className="px-3 py-2">Participant</th>
+                            <th className="px-3 py-2">Meal</th>
+                            <th className="px-3 py-2">Code</th>
+                            <th className="px-3 py-2">Time</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                          {foodTokens
+                            .filter((t) => t.status === "redeemed" && t.redeemedBy === session.email)
+                            .slice(0, 10)
+                            .map((t) => (
+                              <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/10">
+                                <td className="px-3 py-2">
+                                  <div className="font-semibold">{t.participantName}</div>
+                                  <div className="text-[9px] text-gray-400">{t.registerNumber}</div>
+                                </td>
+                                <td className="px-3 py-2">{t.mealName}</td>
+                                <td className="px-3 py-2 font-mono text-[10px]">{t.tokenCode}</td>
+                                <td className="px-3 py-2 text-[10px] text-gray-400">
+                                  {t.redeemedAt ? new Date(t.redeemedAt).toLocaleTimeString() : "-"}
+                                </td>
+                              </tr>
+                            ))}
+                          {foodTokens.filter((t) => t.status === "redeemed" && t.redeemedBy === session.email).length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="text-center py-4 text-gray-400 text-[10px]">
+                                No redemptions logged at this station yet.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Serving Station Info */}
+                <div className="space-y-6">
+                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                      <Info className="h-4.5 w-4.5 text-primary-green" /> Active Meals
+                    </h3>
+                    <div className="space-y-3">
+                      {foodMeals.map((m) => {
+                        const isPast = new Date(m.scheduledAt).getTime() + m.windowMinutes * 60000 < Date.now();
+                        const isFuture = new Date(m.scheduledAt).getTime() > Date.now();
+                        const isServing = !isPast && !isFuture;
+
+                        return (
+                          <div
+                            key={m.id}
+                            className={`p-3.5 rounded-xl border flex flex-col gap-1.5 ${isServing ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/10 dark:border-emerald-900" : "bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700"}`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="font-extrabold text-xs text-primary-dark dark:text-gray-150">{m.name}</span>
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${isServing ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-500"}`}>
+                                {isServing ? "Serving Now" : isFuture ? "Upcoming" : "Ended"}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-gray-400">Scheduled: {new Date(m.scheduledAt).toLocaleTimeString()} ({m.windowMinutes}m validity)</span>
+                          </div>
+                        );
+                      })}
+                      {foodMeals.length === 0 && (
+                        <div className="text-center py-4 text-xs text-gray-400">No scheduled meals found.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* ─── TEAMS ─── */}

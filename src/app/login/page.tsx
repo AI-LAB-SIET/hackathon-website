@@ -17,7 +17,7 @@ type RoleType = "participant" | "admin" | "judge" | "organizer" | "volunteer";
 
 export default function Login() {
   const router = useRouter();
-  const { session, login } = useAppState();
+  const { session, login, getProfile } = useAppState();
   const { toast } = useToast();
 
   const [email, setEmail] = useState("");
@@ -29,7 +29,7 @@ export default function Login() {
   const [isUnverified, setIsUnverified] = useState(false);
   const [resending, setResending] = useState(false);
 
-  const redirectByRole = useCallback((role: RoleType, teamSetupDone?: boolean) => {
+  const redirectByRole = useCallback((role: RoleType, onboarded?: boolean) => {
     switch (role) {
       case "admin":
         router.push("/admin");
@@ -45,8 +45,8 @@ export default function Login() {
         break;
       case "participant":
       default:
-        // If participant hasn't completed team setup, send to onboarding
-        if (teamSetupDone === false) {
+        // If participant hasn't completed onboarding, send to onboarding
+        if (onboarded === false) {
           router.push("/onboarding");
         } else {
           router.push("/dashboard");
@@ -58,7 +58,7 @@ export default function Login() {
   // If already logged in, redirect to the correct workspace
   useEffect(() => {
     if (session.isLoggedIn && session.role) {
-      redirectByRole(session.role, session.teamSetupDone);
+      redirectByRole(session.role, session.onboarded);
     }
   }, [session, router, redirectByRole]);
 
@@ -104,7 +104,7 @@ export default function Login() {
           setSubmitting(false);
           if (res.success && res.role) {
             toast(`Welcome back! Logged in as ADMIN.`, "success");
-            redirectByRole(res.role);
+            redirectByRole(res.role, true);
           }
         }, 500);
         return;
@@ -140,7 +140,8 @@ export default function Login() {
 
       if (res.success && res.role) {
         toast(`Welcome back! Logged in as ${res.role.toUpperCase()}.`, "success");
-        redirectByRole(res.role);
+        const profile = getProfile(inputEmail);
+        redirectByRole(res.role, profile?.onboarded ?? false);
       } else {
         toast("Invalid credentials or account not found.", "error");
         setError("Account not found. Please check your email/username and password.");

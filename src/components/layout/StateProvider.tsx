@@ -54,6 +54,7 @@ interface StateContextType {
   approveTeam: (teamId: string) => void;
   rejectTeam: (teamId: string) => void;
   deleteTeam: (teamId: string) => Promise<void>;
+  leaveTeam: (teamId: string, email: string) => Promise<void>;
   updateProjectDetails: (teamId: string, details: Partial<Team>) => void;
   evaluateProject: (teamId: string, evaluation: { innovation: number; feasibility: number; presentation: number; technicalDepth?: number; aiUsage?: number; feedback: string; judgeEmail: string }) => void;
   updateMilestoneProgress: (teamId: string, milestoneId: string, completed: boolean) => void;
@@ -99,6 +100,7 @@ interface StateContextType {
   redeemTokenByCode: (tokenCode: string) => Promise<FoodToken | null>;
   getMyTokens: (email: string) => FoodToken[];
   revokeToken: (tokenId: string) => Promise<void>;
+  lookupToken: (codeOrRegister: string) => Promise<FoodToken | null>;
 }
 
 const StateContext = createContext<StateContextType | undefined>(undefined);
@@ -138,7 +140,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { teamsRef.current = teams; }, [teams]);
   useEffect(() => { userProfilesRef.current = userProfiles; }, [userProfiles]);
 
-  // ── 1. Real-time Firebase listeners ─────────────────────────────────────────
+  // ── 1. Global Auth & Metadata listeners ─────────────────────────────────────
   useEffect(() => {
     const loadLocalData = () => {
       if (typeof window === "undefined") return;
@@ -148,7 +150,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       } catch { setTeams(INITIAL_TEAMS); }
       try {
         const storedSession = localStorage.getItem("siet_session");
-        if (storedSession) setSession(JSON.parse(storedSession));
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession);
+          setSession(parsed);
+          if (parsed.currentHackathonId) setActiveHackathonIdState(parsed.currentHackathonId);
+        }
       } catch { /* skip */ }
       try {
         const storedAnn = localStorage.getItem("siet_announcements");
@@ -168,12 +174,12 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
           setUserProfiles(JSON.parse(storedProfiles));
         } else {
           const defaultProfiles = [
-            { id: "m-1", uid: "m-1", displayName: "System Admin", name: "System Admin", email: "admin@college.edu", role: "admin" },
-            { id: "m-2", uid: "m-2", displayName: "Prof. Suresh Kumar", name: "Prof. Suresh Kumar", email: "organizer@college.edu", role: "organizer" },
-            { id: "m-3", uid: "m-3", displayName: "Dr. A. Rajesh", name: "Dr. A. Rajesh", email: "rajesh@college.edu", role: "organizer" },
-            { id: "m-4", uid: "m-4", displayName: "Dr. Priya Rajan", name: "Dr. Priya Rajan", email: "judge@college.edu", role: "judge" },
-            { id: "m-5", uid: "m-5", displayName: "Riya Verma", name: "Riya Verma", email: "riya@college.edu", role: "volunteer" },
-            { id: "m-6", uid: "m-6", displayName: "Arjun Nair", name: "Arjun Nair", email: "arjun@college.edu", role: "volunteer" },
+            { id: "m-1", uid: "m-1", displayName: "System Admin", name: "System Admin", email: "admin@college.edu", role: "admin", onboarded: true },
+            { id: "m-2", uid: "m-2", displayName: "Prof. Suresh Kumar", name: "Prof. Suresh Kumar", email: "organizer@college.edu", role: "organizer", onboarded: true },
+            { id: "m-3", uid: "m-3", displayName: "Dr. A. Rajesh", name: "Dr. A. Rajesh", email: "rajesh@college.edu", role: "organizer", onboarded: true },
+            { id: "m-4", uid: "m-4", displayName: "Dr. Priya Rajan", name: "Dr. Priya Rajan", email: "judge@college.edu", role: "judge", onboarded: true },
+            { id: "m-5", uid: "m-5", displayName: "Riya Verma", name: "Riya Verma", email: "riya@college.edu", role: "volunteer", onboarded: true },
+            { id: "m-6", uid: "m-6", displayName: "Arjun Nair", name: "Arjun Nair", email: "arjun@college.edu", role: "volunteer", onboarded: true },
           ];
           setUserProfiles(defaultProfiles as UserProfile[]);
         }
@@ -200,79 +206,17 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
     const firestore = db;
     const firebaseAuth = auth;
-    let firebaseFailed = false;
 
-    const fallbackWithMock = () => {
-      firebaseFailed = true;
-      try { unsubAnn?.(); } catch {}
-      try { unsubProblems?.(); } catch {}
-      try { unsubHackathons?.(); } catch {}
-      try { unsubAuth?.(); } catch {}
-      cleanupActiveListeners();
-      loadLocalData();
-    };
-
-    let unsubUsers: (() => void) | null = null;
-    let unsubTeams: (() => void) | null = null;
-    let unsubNotifs: (() => void) | null = null;
-    let unsubTickets: (() => void) | null = null;
-    let unsubVols: (() => void) | null = null;
-    let unsubTeamRequests: (() => void) | null = null;
-    let unsubFoodMeals: (() => void) | null = null;
-    let unsubFoodTokens: (() => void) | null = null;
-
-    const cleanupActiveListeners = () => {
-      if (unsubUsers) { unsubUsers(); unsubUsers = null; }
-      if (unsubTeams) { unsubTeams(); unsubTeams = null; }
-      if (unsubNotifs) { unsubNotifs(); unsubNotifs = null; }
-      if (unsubTickets) { unsubTickets(); unsubTickets = null; }
-      if (unsubVols) { unsubVols(); unsubVols = null; }
-      if (unsubTeamRequests) { unsubTeamRequests(); unsubTeamRequests = null; }
-      if (unsubFoodMeals) { unsubFoodMeals(); unsubFoodMeals = null; }
-      if (unsubFoodTokens) { unsubFoodTokens(); unsubFoodTokens = null; }
-    };
-
-    let unsubAnn: (() => void) | null = null;
-    let unsubProblems: (() => void) | null = null;
-    let unsubHackathons: (() => void) | null = null;
-    let unsubAuth: (() => void) | null = null;
-
-    // Global listeners (no auth required)
-    unsubAnn = onSnapshot(collection(firestore, "announcements"), (snap) => {
-      const list: Announcement[] = [];
-      snap.forEach((d) => {
-        const data = d.data();
-        list.push({ id: d.id, title: data.title ?? "", content: data.content ?? "", type: data.type ?? "info", date: data.date ?? "Just now", hackathonId: data.hackathonId });
-      });
-      setAnnouncements(list);
-    }, (err) => {
-      console.warn("Firestore announcements error, using mock data:", err.message);
-      fallbackWithMock();
-    });
-
-    unsubProblems = onSnapshot(collection(firestore, "problemStatements"), (snap) => {
-      const list: ProblemStatement[] = [];
-      snap.forEach((d) => {
-        const data = d.data();
-        list.push({ id: d.id, title: data.title ?? "", description: data.description ?? "", trackId: data.trackId ?? "", status: data.status ?? "draft", createdAt: data.createdAt ?? new Date().toISOString(), attachments: data.attachments ?? [], hackathonId: data.hackathonId ?? "" });
-      });
-      setProblemStatements(list);
-    }, (err) => {
-      console.warn("Firestore problemStatements error:", err.message);
-      fallbackWithMock();
-    });
-
-    unsubHackathons = onSnapshot(collection(firestore, "hackathons"), (snap) => {
+    // Listen to hackathons globally
+    const unsubHackathons = onSnapshot(collection(firestore, "hackathons"), (snap) => {
       const list: Hackathon[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Hackathon));
       setHackathons(list);
     }, (err) => console.warn("Hackathons sync error:", err));
 
-    // Auth-gated listeners
-    unsubAuth = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
-      cleanupActiveListeners();
-
-      if (firebaseUser && !firebaseFailed) {
+    // Auth-gated listener (updates session & activeHackathonIdState)
+    const unsubAuth = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+      if (firebaseUser) {
         if (!firebaseUser.emailVerified && firebaseUser.email !== 'admin@hacklab.internal') {
           try { await signOut(firebaseAuth); } catch (e) { console.error("Sign out failed", e); }
           setSession({ isLoggedIn: false, role: null, email: null, teamId: null });
@@ -289,6 +233,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
           let teamSetupDone: boolean = true;
           let currentHackathonId: string | null = null;
           let hackathonIds: string[] = [];
+          let onboarded = false;
 
           if (userSnap.exists()) {
             const userData = userSnap.data();
@@ -298,165 +243,164 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
             teamSetupDone = userData.teamSetupDone ?? true;
             currentHackathonId = userData.currentHackathonId ?? null;
             hackathonIds = userData.hackathonIds ?? [];
+            onboarded = userData.onboarded ?? false;
           }
 
-          setSession({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId, teamSetupDone, currentHackathonId });
-          setSessionCookie({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId, teamSetupDone, currentHackathonId });
+          setSession({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId, teamSetupDone, currentHackathonId, onboarded });
+          setSessionCookie({ isLoggedIn: true, role, email: firebaseUser.email, name: displayName, teamId, teamSetupDone, currentHackathonId, onboarded });
 
           // Set active hackathon from user data
           if (currentHackathonId) setActiveHackathonIdState(currentHackathonId);
           else if (hackathonIds.length > 0) setActiveHackathonIdState(hackathonIds[0]);
 
-          // Shared listeners
-          unsubTeams = onSnapshot(collection(firestore, "teams"), (snap) => {
-            const list: Team[] = [];
-            snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Team));
-            setTeams(list);
-          }, (err) => console.warn("Teams sync error:", err));
-
-          unsubTickets = onSnapshot(collection(firestore, "tickets"), (snap) => {
-            const list: Ticket[] = [];
-            snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Ticket));
-            setTickets(list);
-          }, (err) => console.warn("Tickets sync error:", err));
-
-          unsubNotifs = onSnapshot(collection(firestore, "notifications"), (snap) => {
-            const list: Notification[] = [];
-            snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Notification));
-            setNotifications(list);
-          }, (err) => console.warn("Notifications sync error:", err));
-
-          // Team requests for this user (both directions)
-          unsubTeamRequests = onSnapshot(collection(firestore, "teamRequests"), (snap) => {
-            const list: TeamRequest[] = [];
-            snap.forEach((d) => list.push({ id: d.id, ...d.data() } as TeamRequest));
-            setTeamRequests(list);
-          }, (err) => console.warn("TeamRequests sync error:", err));
-
-          // Food meals (all roles can see)
-          unsubFoodMeals = onSnapshot(collection(firestore, "foodMeals"), (snap) => {
-            const list: FoodMeal[] = [];
-            snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FoodMeal));
-            setFoodMeals(list);
-          }, (err) => console.warn("FoodMeals sync error:", err));
-
-          // Food tokens — participants see their own; staff see all
-          if (role === "admin" || role === "organizer" || role === "volunteer") {
-            unsubFoodTokens = onSnapshot(collection(firestore, "foodTokens"), (snap) => {
-              const list: FoodToken[] = [];
-              snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FoodToken));
-              setFoodTokens(list);
-            }, (err) => console.warn("FoodTokens sync error:", err));
-          } else if (firebaseUser.email) {
-            const tokenQ = query(collection(firestore, "foodTokens"), where("participantEmail", "==", firebaseUser.email));
-            unsubFoodTokens = onSnapshot(tokenQ, (snap) => {
-              const list: FoodToken[] = [];
-              snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FoodToken));
-              setFoodTokens(list);
-            }, (err) => console.warn("FoodTokens (participant) sync error:", err));
-          }
-
-          if (role === "admin" || role === "organizer") {
-            unsubUsers = onSnapshot(collection(firestore, "users"), (snap) => {
-              const allProfiles: UserProfile[] = [];
-              const vols: Volunteer[] = [];
-              snap.forEach((d) => {
-                const data = d.data();
-                allProfiles.push({ id: d.id, ...data, email: data.email || "" } as unknown as UserProfile);
-                if (data.role === "volunteer") {
-                  vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
-                }
-              });
-              setUserProfiles(allProfiles);
-              setVolunteers(vols);
-            }, (err) => console.warn("Users sync error:", err));
-          }
-
         } catch (err) {
           console.warn("Firestore user profile fetch failed:", err);
         }
-      } else if (!firebaseUser && !firebaseFailed) {
-        cleanupActiveListeners();
+      } else {
         setSession({ isLoggedIn: false, role: null, email: null, teamId: null });
         clearSessionCookie();
-        setTeams([]);
-        setNotifications([]);
-        setTickets([]);
-        setVolunteers([]);
-        setTeamRequests([]);
-        setFoodTokens([]);
         setActiveHackathonIdState(null);
       }
       setInitialized(true);
     });
 
     return () => {
-      unsubAnn?.();
-      unsubProblems?.();
-      unsubHackathons?.();
-      unsubAuth?.();
-      cleanupActiveListeners();
+      unsubHackathons();
+      unsubAuth();
     };
   }, []);
 
-  // Sync data for local Admin who bypassed Firebase Auth
+  // ── 1.1 Hackathon-scoped Firestore listeners ───────────────────────────────
   useEffect(() => {
-    if (!isConfigured || !db || session.role !== "admin") return;
+    if (!isConfigured || !db || !auth) return;
+    if (!session.isLoggedIn) {
+      setTeams([]);
+      setNotifications([]);
+      setTickets([]);
+      setVolunteers([]);
+      setTeamRequests([]);
+      setFoodMeals([]);
+      setFoodTokens([]);
+      setAnnouncements([]);
+      setProblemStatements([]);
+      return;
+    }
 
-    const unsubTeams = onSnapshot(collection(db, "teams"), (snap) => {
+    const firestore = db;
+    const targetHackathonId = activeHackathonId || "none";
+
+    // Set up scoped query listeners
+    const teamsQ = query(collection(firestore, "teams"), where("hackathonId", "==", targetHackathonId));
+    const unsubTeams = onSnapshot(teamsQ, (snap) => {
       const list: Team[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Team));
       setTeams(list);
-    });
-    const unsubTickets = onSnapshot(collection(db, "tickets"), (snap) => {
+    }, (err) => console.warn("Teams sync error:", err));
+
+    const ticketsQ = query(collection(firestore, "tickets"), where("hackathonId", "==", targetHackathonId));
+    const unsubTickets = onSnapshot(ticketsQ, (snap) => {
       const list: Ticket[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Ticket));
       setTickets(list);
-    });
-    const unsubNotifs = onSnapshot(collection(db, "notifications"), (snap) => {
+    }, (err) => console.warn("Tickets sync error:", err));
+
+    // Announcements listener (fetch all, we filter in JS/useMemo)
+    const unsubAnn = onSnapshot(collection(firestore, "announcements"), (snap) => {
+      const list: Announcement[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({ id: d.id, title: data.title ?? "", content: data.content ?? "", type: data.type ?? "info", date: data.date ?? "Just now", hackathonId: data.hackathonId });
+      });
+      setAnnouncements(list);
+    }, (err) => console.warn("Announcements sync error:", err));
+
+    // Problem statements scoped listener
+    const problemsQ = query(collection(firestore, "problemStatements"), where("hackathonId", "==", targetHackathonId));
+    const unsubProblems = onSnapshot(problemsQ, (snap) => {
+      const list: ProblemStatement[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({ id: d.id, title: data.title ?? "", description: data.description ?? "", trackId: data.trackId ?? "", status: data.status ?? "draft", createdAt: data.createdAt ?? new Date().toISOString(), attachments: data.attachments ?? [], hackathonId: data.hackathonId ?? "" });
+      });
+      setProblemStatements(list);
+    }, (err) => console.warn("Problems sync error:", err));
+
+    // Notifications scoped listener
+    const notificationsQ = query(collection(firestore, "notifications"), where("hackathonId", "==", targetHackathonId));
+    const unsubNotifs = onSnapshot(notificationsQ, (snap) => {
       const list: Notification[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Notification));
       setNotifications(list);
-    });
-    const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
-      const allProfiles: UserProfile[] = [];
-      const vols: Volunteer[] = [];
-      snap.forEach((d) => {
-        const data = d.data();
-        allProfiles.push({ id: d.id, ...data, email: data.email || "" } as unknown as UserProfile);
-        if (data.role === "volunteer") {
-          vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
-        }
-      });
-      setUserProfiles(allProfiles);
-      setVolunteers(vols);
-    });
-    const unsubTeamReqs = onSnapshot(collection(db, "teamRequests"), (snap) => {
+    }, (err) => console.warn("Notifications sync error:", err));
+
+    // Team requests scoped listener
+    const teamRequestsQ = query(collection(firestore, "teamRequests"), where("hackathonId", "==", targetHackathonId));
+    const unsubTeamRequests = onSnapshot(teamRequestsQ, (snap) => {
       const list: TeamRequest[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as TeamRequest));
       setTeamRequests(list);
-    });
-    const unsubFoodMeals = onSnapshot(collection(db, "foodMeals"), (snap) => {
+    }, (err) => console.warn("TeamRequests sync error:", err));
+
+    // Food meals scoped listener
+    const foodMealsQ = query(collection(firestore, "foodMeals"), where("hackathonId", "==", targetHackathonId));
+    const unsubFoodMeals = onSnapshot(foodMealsQ, (snap) => {
       const list: FoodMeal[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FoodMeal));
       setFoodMeals(list);
-    });
-    const unsubFoodTokens = onSnapshot(collection(db, "foodTokens"), (snap) => {
-      const list: FoodToken[] = [];
-      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FoodToken));
-      setFoodTokens(list);
-    });
+    }, (err) => console.warn("FoodMeals sync error:", err));
+
+    // Food tokens scoped listener
+    let unsubFoodTokens = () => {};
+    if (session.role === "admin" || session.role === "organizer" || session.role === "volunteer") {
+      const foodTokensQ = query(collection(firestore, "foodTokens"), where("hackathonId", "==", targetHackathonId));
+      unsubFoodTokens = onSnapshot(foodTokensQ, (snap) => {
+        const list: FoodToken[] = [];
+        snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FoodToken));
+        setFoodTokens(list);
+      }, (err) => console.warn("FoodTokens sync error:", err));
+    } else if (session.email) {
+      const foodTokensQ = query(
+        collection(firestore, "foodTokens"),
+        where("hackathonId", "==", targetHackathonId),
+        where("participantEmail", "==", session.email)
+      );
+      unsubFoodTokens = onSnapshot(foodTokensQ, (snap) => {
+        const list: FoodToken[] = [];
+        snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FoodToken));
+        setFoodTokens(list);
+      }, (err) => console.warn("FoodTokens sync error:", err));
+    }
+
+    // Users listener (only for admin / organizer)
+    let unsubUsers = () => {};
+    if (session.role === "admin" || session.role === "organizer") {
+      unsubUsers = onSnapshot(collection(firestore, "users"), (snap) => {
+        const allProfiles: UserProfile[] = [];
+        const vols: Volunteer[] = [];
+        snap.forEach((d) => {
+          const data = d.data();
+          allProfiles.push({ id: d.id, ...data, email: data.email || "" } as unknown as UserProfile);
+          if (data.role === "volunteer") {
+            vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
+          }
+        });
+        setUserProfiles(allProfiles);
+        setVolunteers(vols);
+      }, (err) => console.warn("Users sync error:", err));
+    }
 
     return () => {
       unsubTeams();
       unsubTickets();
+      unsubAnn();
+      unsubProblems();
       unsubNotifs();
-      unsubUsers();
-      unsubTeamReqs();
+      unsubTeamRequests();
       unsubFoodMeals();
       unsubFoodTokens();
+      unsubUsers();
     };
-  }, [session.role]);
+  }, [session.isLoggedIn, session.role, session.email, activeHackathonId]);
 
   // ── 2. Local persistence ──────────────────────────────────────────────────
   useEffect(() => {
@@ -477,9 +421,25 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   // ── 3. Actions & Operations ──────────────────────────────────────────────────
 
-  const setActiveHackathon = useCallback((id: string | null) => {
+  const setActiveHackathon = useCallback(async (id: string | null) => {
     setActiveHackathonIdState(id);
-  }, []);
+    if (session.isLoggedIn && session.email) {
+      if (isConfigured && db && auth?.currentUser) {
+        await updateDoc(doc(db, "users", auth.currentUser.uid), { currentHackathonId: id || null });
+      } else {
+        setUserProfiles((prev) => {
+          const idx = prev.findIndex((p) => p.email.toLowerCase() === session.email!.toLowerCase());
+          if (idx > -1) {
+            const updated = [...prev];
+            updated[idx] = { ...updated[idx], currentHackathonId: id || undefined };
+            return updated;
+          }
+          return prev;
+        });
+      }
+      setSession((prev) => ({ ...prev, currentHackathonId: id }));
+    }
+  }, [session.isLoggedIn, session.email]);
 
   const addNotification = useCallback(async (n: Omit<Notification, "id" | "createdAt" | "read">) => {
     const newNotif = {
@@ -702,11 +662,33 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTeam = useCallback(async (teamId: string) => {
     if (isConfigured && db) {
+      if (auth?.currentUser) {
+        await updateDoc(doc(db, "users", auth.currentUser.uid), { teamId: null, teamSetupDone: false });
+      }
       await deleteDoc(doc(db, "teams", teamId));
     }
     setTeams((prev) => prev.filter((t) => t.id !== teamId));
+    setSession((prev) => {
+      if (prev.teamId === teamId) {
+        return { ...prev, teamId: null, teamSetupDone: false };
+      }
+      return prev;
+    });
   }, []);
-
+  const leaveTeam = useCallback(async (teamId: string, email: string) => {
+    const team = teamsRef.current.find((t) => t.id === teamId);
+    if (!team) return;
+    const updatedMembers = team.members.filter((m) => m.email !== email);
+    if (isConfigured && db) {
+      if (auth?.currentUser) {
+        await updateDoc(doc(db, "users", auth.currentUser.uid), { teamId: null, teamSetupDone: false });
+      }
+      await updateDoc(doc(db, "teams", teamId), { members: updatedMembers, size: updatedMembers.length });
+    } else {
+      setTeams((prev) => prev.map((t) => t.id === teamId ? { ...t, members: updatedMembers, size: updatedMembers.length } : t));
+    }
+    setSession((prev) => ({ ...prev, teamId: null, teamSetupDone: false }));
+  }, []);
   const updateProjectDetails = useCallback(async (teamId: string, details: Partial<Team>) => {
     if (isConfigured && db) {
       await updateDoc(doc(db, "teams", teamId), details);
@@ -837,19 +819,35 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     if (accept) {
       // Add user to team
       const team = teamsRef.current.find((t) => t.id === request.teamId);
+      const newEmail = request.direction === "join" ? request.fromEmail : request.toEmail;
+      const newName = request.direction === "join" ? request.fromName : request.toName;
+
       if (team) {
-        const newEmail = request.direction === "join" ? request.fromEmail : request.toEmail;
-        const newName = request.direction === "join" ? request.fromName : request.toName;
         if (!team.members.some((m) => m.email === newEmail)) {
           const newMember: Participant = { name: newName, email: newEmail, registerNumber: "", phone: "", department: "", year: "", skills: [], isLeader: false };
           const updatedMembers = [...team.members, newMember];
           await updateTeamMembers(request.teamId, updatedMembers);
         }
       }
+
+      // Sync the user's database record with the teamId
+      if (isConfigured && db) {
+        const q = query(collection(db, "users"), where("email", "==", newEmail));
+        const querySnap = await getDocs(q);
+        if (!querySnap.empty) {
+          await updateDoc(doc(db, "users", querySnap.docs[0].id), { teamId: request.teamId, teamSetupDone: true });
+        }
+      }
+
+      // If the accepted user is the current user, update local session
+      if (newEmail === session.email) {
+        setSession((prev) => ({ ...prev, teamId: request.teamId, teamSetupDone: true }));
+      }
+
       const notifyEmail = request.direction === "join" ? request.fromEmail : request.toEmail;
       addNotification({ userId: notifyEmail, type: "team_request", title: "Request Accepted", body: `You have been added to team "${request.teamName}".`, priority: "high", relatedTeamId: request.teamId, relatedRequestId: requestId });
     }
-  }, [teamRequests, updateTeamMembers, addNotification]);
+  }, [teamRequests, updateTeamMembers, addNotification, session.email, isConfigured]);
 
   const cancelRequest = useCallback(async (requestId: string) => {
     if (isConfigured && db) {
@@ -956,6 +954,12 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
         return prev;
       });
     }
+    setSession((prev) => {
+      if (prev.email && prev.email.toLowerCase() === email.toLowerCase()) {
+        return { ...prev, ...data } as UserSession;
+      }
+      return prev;
+    });
   }, []);
 
   const getProfile = useCallback((email: string): UserProfile | undefined => {
@@ -970,7 +974,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const deleteProfile = useCallback((id: string) => {
+  const deleteProfile = useCallback(async (id: string) => {
+    if (isConfigured && db) {
+      await deleteDoc(doc(db, "users", id));
+    }
     setUserProfiles((prev) => prev.filter((p) => p.id !== id && p.uid !== id));
   }, []);
 
@@ -1162,8 +1169,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   }, [foodTokens, redeemToken]);
 
   const getMyTokens = useCallback((email: string): FoodToken[] => {
-    return foodTokens.filter((t) => t.participantEmail === email);
-  }, [foodTokens]);
+    return foodTokens.filter((t) => t.participantEmail === email && (!activeHackathonId || t.hackathonId === activeHackathonId));
+  }, [foodTokens, activeHackathonId]);
 
   const revokeToken = useCallback(async (tokenId: string) => {
     if (isConfigured && db) {
@@ -1172,19 +1179,72 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     setFoodTokens((prev) => prev.filter((t) => t.id !== tokenId));
   }, []);
 
+  const lookupToken = useCallback(async (codeOrRegister: string): Promise<FoodToken | null> => {
+    let token = foodTokens.find((t) => t.tokenCode === codeOrRegister || t.registerNumber === codeOrRegister);
+    if (!token && isConfigured && db) {
+      let snap = await getDocs(query(collection(db, "foodTokens"), where("tokenCode", "==", codeOrRegister)));
+      if (snap.empty) {
+        snap = await getDocs(query(collection(db, "foodTokens"), where("registerNumber", "==", codeOrRegister)));
+      }
+      if (!snap.empty) {
+        token = { id: snap.docs[0].id, ...snap.docs[0].data() } as FoodToken;
+      }
+    }
+    return token || null;
+  }, [foodTokens]);
+
+  // ── 4. Filtered values based on activeHackathonId ───────────────────────────
+  const filteredTeams = useMemo(() => {
+    return activeHackathonId ? teams.filter((t) => t.hackathonId === activeHackathonId) : [];
+  }, [teams, activeHackathonId]);
+
+  const filteredProblems = useMemo(() => {
+    return activeHackathonId ? problemStatements.filter((ps) => ps.hackathonId === activeHackathonId) : [];
+  }, [problemStatements, activeHackathonId]);
+
+  const filteredAnnouncements = useMemo(() => {
+    return announcements.filter((a) => !a.hackathonId || a.hackathonId === activeHackathonId);
+  }, [announcements, activeHackathonId]);
+
+  const filteredTickets = useMemo(() => {
+    return activeHackathonId ? tickets.filter((t) => t.hackathonId === activeHackathonId) : [];
+  }, [tickets, activeHackathonId]);
+
+  const filteredTeamRequests = useMemo(() => {
+    return activeHackathonId ? teamRequests.filter((tr) => tr.hackathonId === activeHackathonId) : [];
+  }, [teamRequests, activeHackathonId]);
+
+  const filteredFoodMeals = useMemo(() => {
+    return activeHackathonId ? foodMeals.filter((m) => m.hackathonId === activeHackathonId) : [];
+  }, [foodMeals, activeHackathonId]);
+
+  const filteredFoodTokens = useMemo(() => {
+    return activeHackathonId ? foodTokens.filter((t) => t.hackathonId === activeHackathonId) : [];
+  }, [foodTokens, activeHackathonId]);
+
   // ─── Context value ──────────────────────────────────────────────────────────
 
   const value = useMemo(() => ({
     // Data
-    teams, session, announcements, notifications,
-    volunteers, userProfiles, problemStatements, tickets,
-    hackathons, teamRequests, foodMeals, foodTokens, activeHackathonId,
+    teams: filteredTeams,
+    session,
+    announcements: filteredAnnouncements,
+    notifications,
+    volunteers,
+    userProfiles,
+    problemStatements: filteredProblems,
+    tickets: filteredTickets,
+    hackathons,
+    teamRequests: filteredTeamRequests,
+    foodMeals: filteredFoodMeals,
+    foodTokens: filteredFoodTokens,
+    activeHackathonId,
     // Auth
     login, logout,
     // Hackathons
     setActiveHackathon, createHackathon, updateHackathon, deleteHackathon,
     // Teams
-    registerTeam, updateTeamMembers, approveTeam, rejectTeam, deleteTeam,
+    registerTeam, updateTeamMembers, approveTeam, rejectTeam, deleteTeam, leaveTeam,
     updateProjectDetails, evaluateProject, updateMilestoneProgress, checkInTeam,
     // Team requests
     sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest,
@@ -1203,14 +1263,14 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     // Tickets (top-level)
     createTicket, assignTicket, updateTicketStatus,
     // Food tokens
-    createMeal, updateMeal, deleteMeal, issueMealTokens, redeemToken, redeemTokenByCode, getMyTokens, revokeToken,
+    createMeal, updateMeal, deleteMeal, issueMealTokens, redeemToken, redeemTokenByCode, getMyTokens, revokeToken, lookupToken,
   }), [
-    teams, session, announcements, notifications,
-    volunteers, userProfiles, problemStatements, tickets,
-    hackathons, teamRequests, foodMeals, foodTokens, activeHackathonId,
+    filteredTeams, session, filteredAnnouncements, notifications,
+    volunteers, userProfiles, filteredProblems, filteredTickets,
+    hackathons, filteredTeamRequests, filteredFoodMeals, filteredFoodTokens, activeHackathonId,
     login, logout,
     setActiveHackathon, createHackathon, updateHackathon, deleteHackathon,
-    registerTeam, updateTeamMembers, approveTeam, rejectTeam, deleteTeam,
+    registerTeam, updateTeamMembers, approveTeam, rejectTeam, deleteTeam, leaveTeam,
     updateProjectDetails, evaluateProject, updateMilestoneProgress, checkInTeam,
     sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest,
     addAnnouncement, removeAnnouncement,
@@ -1220,7 +1280,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     updateProfile, getProfile, addProfile, deleteProfile,
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
     createTicket, assignTicket, updateTicketStatus,
-    createMeal, updateMeal, deleteMeal, issueMealTokens, redeemToken, redeemTokenByCode, getMyTokens, revokeToken,
+    createMeal, updateMeal, deleteMeal, issueMealTokens, redeemToken, redeemTokenByCode, getMyTokens, revokeToken, lookupToken,
   ]);
 
   return (
