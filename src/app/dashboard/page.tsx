@@ -196,7 +196,7 @@ export default function ParticipantDashboard() {
       { label: "Account Created", done: true },
       { label: "Team Registered", done: team ? team.status !== "PENDING" : false },
       { label: "Members Added (2+)", done: team ? team.members.length >= 2 : false },
-      { label: "Faculty Approval", done: team ? !!team.facultyApproved : false },
+
       { label: "Idea Submitted", done: team ? !!team.ideaSubmitted : false },
     ];
   }, [team]);

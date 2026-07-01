@@ -17,7 +17,7 @@ export interface Team {
   submittedAt?: string;
   qrToken?: string;
   paymentVerified?: boolean;
-  facultyApproved?: boolean;
+
   attendance?: AttendanceRecord;
   supportTickets?: SupportTicket[];
   ideaSubmitted?: boolean;

@@ -600,7 +600,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       projectDescription: teamData.projectDescription,
       qrToken,
       paymentVerified: false,
-      facultyApproved: false,
+
       ideaSubmitted: false,
       shortlisted: false,
       attendance: { teamId, checkedIn: false },

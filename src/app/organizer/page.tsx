@@ -769,7 +769,7 @@ export default function OrganizerDashboard() {
                     const regChecklist = [
                       { label: "Team Created", done: true },
                       { label: "Members", done: team.size >= 2 },
-                      { label: "Faculty Approval", done: !!team.facultyApproved },
+
                     ];
                     const regPct = Math.round((regChecklist.filter((c) => c.done).length / regChecklist.length) * 100);
                     return (
@@ -1231,10 +1231,7 @@ export default function OrganizerDashboard() {
                     <div className="text-primary-dark dark:text-gray-100 font-semibold font-mono text-xs">{selectedTeam.qrToken || "—"}</div>
                   </div>
 
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                    <div className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold uppercase">Faculty Approval</div>
-                    <div className={`font-semibold ${selectedTeam.facultyApproved ? "text-emerald-600" : "text-gray-500"}`}>{selectedTeam.facultyApproved ? "Approved" : "Pending"}</div>
-                  </div>
+
                 </div>
 
                 {/* Members */}
@@ -1266,7 +1263,7 @@ export default function OrganizerDashboard() {
                     {[
                       { label: "Team Created", done: true },
                       { label: "Members Added", done: selectedTeam.size >= 2 },
-                      { label: "Faculty Approved", done: !!selectedTeam.facultyApproved },
+
                     ].map((item) => (
                       <div key={item.label} className="flex items-center gap-2 text-sm">
                         {item.done ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-gray-300" />}

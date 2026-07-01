@@ -186,7 +186,7 @@ export const INITIAL_TEAMS: Team[] = [
     qrToken: "NK-AI26-104-SEC7F3A",
     problemStatementId: "ps-1",
     paymentVerified: false,
-    facultyApproved: true,
+
     ideaSubmitted: false,
     shortlisted: false,
     githubUrl: "https://github.com/abhishek-sharma/advisory-rag",
@@ -258,7 +258,7 @@ export const INITIAL_TEAMS: Team[] = [
     qrToken: "VM-AI26-105-SEC8B2C",
     problemStatementId: "ps-2",
     paymentVerified: true,
-    facultyApproved: false,
+
     ideaSubmitted: false,
     shortlisted: false,
     attendance: { teamId: "team-2", checkedIn: false },
@@ -304,7 +304,7 @@ export const INITIAL_TEAMS: Team[] = [
     qrToken: "CS-AI26-106-SECD9E1",
     problemStatementId: "ps-3",
     paymentVerified: false,
-    facultyApproved: false,
+
     ideaSubmitted: false,
     shortlisted: false,
     attendance: { teamId: "team-3", checkedIn: false },
@@ -368,7 +368,7 @@ export const INITIAL_TEAMS: Team[] = [
     qrToken: "BA-AI26-107-SECA5F2",
     problemStatementId: "ps-4",
     paymentVerified: true,
-    facultyApproved: true,
+
     ideaSubmitted: true,
     shortlisted: false,
     attendance: { teamId: "team-4", checkedIn: false },

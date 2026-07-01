@@ -1825,7 +1825,7 @@ export default function AdminDashboard() {
                         { label: "Payment", val: managingTeam.paymentVerified ? "Verified ✅" : "Not Verified ❌" },
                         { label: "Check-in", val: managingTeam.attendance?.checkedIn ? "Checked In ✅" : "Not Arrived" },
                         { label: "Idea Submitted", val: managingTeam.ideaSubmitted ? "Yes ✅" : "No" },
-                        { label: "Faculty Approved", val: managingTeam.facultyApproved ? "Yes ✅" : "No" },
+
                       ].map(({label, val}) => (
                         <div key={label} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>

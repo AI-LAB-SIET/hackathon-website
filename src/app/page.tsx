@@ -231,9 +231,9 @@ export default function Home() {
             {[
               { 
                 num: "01", 
-                title: "Registrations & Faculty Approval", 
-                desc: "Complete your participant registration and get your academic mentor to sign off on your department log.",
-                detail: "All members must submit their rolls and department codes. Faculty approval is verified online before abstract uploads are unlocked."
+                title: "Registrations", 
+                desc: "Complete your participant registration.",
+                detail: "All members must submit their rolls and department codes."
               },
               { 
                 num: "02", 

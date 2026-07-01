@@ -20,7 +20,7 @@ export interface TeamAnalytics {
   teamsByDepartment: CategoryData[];
   teamSizeDistribution: CategoryData[];
   paymentVerificationRate: number;
-  facultyApprovalRate: number;
+
 }
 
 export interface ParticipantAnalytics {

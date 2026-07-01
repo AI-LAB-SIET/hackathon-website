@@ -93,7 +93,7 @@ export const teamService = {
       problemStatementId: data.problemStatementId,
       qrToken: `${prefix}-AI26-${teamNum}-SEC${generateId().substring(2, 7).toUpperCase()}`,
       paymentVerified: false,
-      facultyApproved: false,
+
       ideaSubmitted: false,
       shortlisted: false,
       attendance: { teamId, checkedIn: false },
