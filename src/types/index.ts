@@ -84,7 +84,6 @@ export interface Team {
   }[];
   // v2 additions
   qrToken?: string;
-  trackId?: string;
   paymentVerified?: boolean;
   facultyApproved?: boolean;
   attendance?: AttendanceRecord;
@@ -197,11 +196,7 @@ export interface UserSession {
   onboarded?: boolean;               // NEW
 }
 
-export interface HackTrack {
-  id: string;
-  label: string;
-  color: string;
-}
+
 
 export interface Volunteer {
   id: string;
@@ -253,7 +248,6 @@ export interface ProblemStatement {
   hackathonId?: string;            // optional — StateProvider fills from activeHackathonId
   title: string;
   description: string;
-  trackId: string;
   status: "draft" | "published" | "archived";
   createdAt: string;
   attachments?: FileAttachment[];

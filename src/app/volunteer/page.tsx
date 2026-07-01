@@ -42,7 +42,7 @@ const statusColors: Record<string, string> = {
 export default function VolunteerDashboard() {
   const router = useRouter();
   const {
-    session, teams, notifications, tickets, volunteers, updateTicketStatus,
+    session, teams, problemStatements, notifications, tickets, volunteers, updateTicketStatus,
     markAllNotificationsRead, updateProfile, getProfile,
     foodMeals, foodTokens, redeemToken, lookupToken, activeHackathonId
   } = useAppState();
@@ -596,7 +596,7 @@ export default function VolunteerDashboard() {
                           <div>
                             <div className="font-bold text-gray-800 dark:text-gray-100">{team.name}</div>
                             <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                              {team.members.length} members · {team.trackId || "No track"}
+                              {team.members.length} members · {problemStatements.find(ps => ps.id === team.problemStatementId)?.title || "No problem statement"}
                             </div>
                           </div>
                         </div>
@@ -934,7 +934,7 @@ export default function VolunteerDashboard() {
                           <div>
                             <div className="font-bold text-gray-800 dark:text-gray-100">{team.name}</div>
                             <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                              {team.members.length} members · {team.trackId || "No track"}
+                              {team.members.length} members · {problemStatements.find(ps => ps.id === team.problemStatementId)?.title || "No problem statement"}
                             </div>
                           </div>
                         </div>

@@ -1,13 +1,4 @@
-import { FAQItem, Milestone, Announcement, Team, Notification, HackTrack } from "@/types";
-
-export const HACK_TRACKS: HackTrack[] = [
-  { id: "gen-ai", label: "Generative AI & LLMs", color: "emerald" },
-  { id: "healthcare", label: "AI in Healthcare", color: "blue" },
-  { id: "smart-campus", label: "Smart Campus", color: "amber" },
-  { id: "decentralized", label: "Decentralized AI Agents", color: "purple" },
-  { id: "cybersecurity", label: "Cybersecurity AI", color: "red" },
-  { id: "iot", label: "IoT & Edge AI", color: "teal" },
-];
+import { FAQItem, Milestone, Announcement, Team, Notification } from "@/types";
 
 export const INITIAL_FAQS: FAQItem[] = [
   {
@@ -193,7 +184,7 @@ export const INITIAL_TEAMS: Team[] = [
     createdAt: "2026-06-25T14:32:00.000Z",
     projectDescription: "Developing a real-time localized RAG system for campus academic advisory.",
     qrToken: "NK-AI26-104-SEC7F3A",
-    trackId: "gen-ai",
+    problemStatementId: "ps-1",
     paymentVerified: false,
     facultyApproved: true,
     ideaSubmitted: false,
@@ -265,7 +256,7 @@ export const INITIAL_TEAMS: Team[] = [
     createdAt: "2026-06-26T09:15:00.000Z",
     projectDescription: "AI-powered computer vision system detecting safety violations in student labs.",
     qrToken: "VM-AI26-105-SEC8B2C",
-    trackId: "smart-campus",
+    problemStatementId: "ps-2",
     paymentVerified: true,
     facultyApproved: false,
     ideaSubmitted: false,
@@ -311,7 +302,7 @@ export const INITIAL_TEAMS: Team[] = [
     createdAt: "2026-06-26T10:45:00.000Z",
     projectDescription: "Intrusion detection dashboard using federated learning across campus nodes.",
     qrToken: "CS-AI26-106-SECD9E1",
-    trackId: "cybersecurity",
+    problemStatementId: "ps-3",
     paymentVerified: false,
     facultyApproved: false,
     ideaSubmitted: false,
@@ -375,7 +366,7 @@ export const INITIAL_TEAMS: Team[] = [
     createdAt: "2026-06-24T08:12:00.000Z",
     projectDescription: "Predicting molecular docking combinations for pharmaceutical chemistry laboratory datasets.",
     qrToken: "BA-AI26-107-SECA5F2",
-    trackId: "healthcare",
+    problemStatementId: "ps-4",
     paymentVerified: true,
     facultyApproved: true,
     ideaSubmitted: true,

@@ -19,25 +19,15 @@ import {
 import { FileAttachment, Participant, Notification, SupportTicket } from "@/types";
 type SupportTicketCategory = SupportTicket["category"];
 type SupportTicketPriority = SupportTicket["priority"];
-import { HACK_TRACKS, INITIAL_FAQS } from "@/lib/mockData";
+import { INITIAL_FAQS } from "@/lib/mockData";
 import {
   pptTemplates, datasets,
   type ResourceCard,
 } from "@/lib/resources";
 
 // ─────────────────────────────────────────────
-// Journey stages
+// Dynamic Timer Stages
 // ─────────────────────────────────────────────
-const JOURNEY_STAGES = [
-  { id: "registration", label: "Registration", desc: "Account created and team registered with the platform.", icon: "📋" },
-  { id: "team_created", label: "Team Created", desc: "Team profile is set up with all members added.", icon: "👥" },
-  { id: "payment", label: "Faculty Approval", desc: "Academic mentor or department head approved team participation.", icon: "👨‍🏫" },
-  { id: "idea", label: "Idea Submission", desc: "2-page abstract PDF submitted before July 5, 11:59 PM.", icon: "💡" },
-  { id: "shortlist", label: "Shortlisted", desc: "Team selected in top 20 — cloud GPU credits unlocked.", icon: "⭐" },
-  { id: "hackathon", label: "Hackathon Day", desc: "24-hour physical sprint at AI Research Lab — July 18.", icon: "🚀" },
-  { id: "evaluation", label: "Final Evaluation", desc: "Live demo presented to industry judges.", icon: "🎯" },
-  { id: "results", label: "Results", desc: "Winners announced and certificates issued.", icon: "🏆" },
-];
 
 type TabType = "home" | "team" | "foodWallet" | "project" | "notifications" | "resources" | "support" | "profile";
 
@@ -61,13 +51,17 @@ export default function ParticipantDashboard() {
     updateProjectDetails, updateTeamMembers,
     markNotificationRead, markAllNotificationsRead,
     logout, raiseTicket, getProfile, updateProfile,
-    registerTeam, deleteTeam, leaveTeam, sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest, teamRequests, activeHackathonId,
+    registerTeam, deleteTeam, leaveTeam, sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest, teamRequests, activeHackathonId, hackathons,
     foodTokens, foodMeals, userProfiles
   } = useAppState();
+  
+  const activeHackathon = hackathons.find((h) => h.id === activeHackathonId);
+  const maxTeamSize = activeHackathon?.maxTeamSize || 4;
+  const minTeamSize = activeHackathon?.minTeamSize || 1;
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("home");
-  const [activeJourneyStage, setActiveJourneyStage] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number; status: "upcoming" | "active" | "ended" } | null>(null);
   const [projectTab, setProjectTab] = useState<"overview" | "repo" | "submission">("overview");
   const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
   const [showAddMember, setShowAddMember] = useState(false);
@@ -96,7 +90,7 @@ export default function ParticipantDashboard() {
     skills: [], isLeader: false,
   });
   const [projectEdit, setProjectEdit] = useState({
-    projectDescription: "", githubUrl: "", videoUrl: "", demoUrl: "", aiDisclosure: "", trackId: "",
+    projectDescription: "", githubUrl: "", videoUrl: "", demoUrl: "", aiDisclosure: "",
   });
   const [regTeamName, setRegTeamName] = useState("");
   const [regProblemStatementId, setRegProblemStatementId] = useState("");
@@ -149,7 +143,7 @@ export default function ParticipantDashboard() {
         videoUrl: team.videoUrl || "",
         demoUrl: team.demoUrl || "",
         aiDisclosure: team.aiDisclosure || "",
-        trackId: team.trackId || "",
+
       });
     }
   }, [team]);
@@ -158,31 +152,43 @@ export default function ParticipantDashboard() {
   useEffect(() => {
     if (team) {
       setRegTeamName(team.name || "");
-      setRegProblemStatementId(team.problemStatementId || team.trackId || "");
+      setRegProblemStatementId(team.problemStatementId || "");
       setRegProjectBrief(team.projectDescription || "");
     }
   }, [team]);
 
-  // Journey status calculation — must be before early returns
-  const getStageStatus = useMemo(() => {
-    return (stageId: string) => {
-      if (!team) {
-        if (stageId === "registration") return "current";
-        return "locked";
+  // Hackathon Timer logic
+  useEffect(() => {
+    if (!activeHackathon) return;
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const start = new Date(activeHackathon.startDate).getTime();
+      const end = new Date(activeHackathon.endDate).getTime();
+      
+      let targetTime = start;
+      let status: "upcoming" | "active" | "ended" = "upcoming";
+      
+      if (now >= end) {
+        status = "ended";
+        targetTime = now;
+      } else if (now >= start) {
+        status = "active";
+        targetTime = end;
       }
-      switch (stageId) {
-        case "registration": return "completed";
-        case "team_created": return team.members.length >= 2 ? "completed" : "current";
-        case "payment": return team.facultyApproved ? "completed" : team.members.length >= 2 ? "current" : "locked";
-        case "idea": return team.ideaSubmitted ? "completed" : team.facultyApproved ? "current" : "locked";
-        case "shortlist": return team.shortlisted ? "completed" : team.ideaSubmitted ? "upcoming" : "locked";
-        case "hackathon": return team.shortlisted ? "upcoming" : "locked";
-        case "evaluation": return "locked";
-        case "results": return "locked";
-        default: return "locked";
+      
+      const diff = targetTime - now;
+      if (diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, status: "ended" });
+      } else {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft({ days, hours, minutes, seconds, status });
       }
-    };
-  }, [team]);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeHackathon]);
 
   // Registration progress — must be before early returns
   const regChecklist = useMemo(() => {
@@ -201,7 +207,7 @@ export default function ParticipantDashboard() {
 
   const leader = team ? (team.members.find((m) => m.isLeader) || team.members[0]) : null;
   const currentUser = team ? (team.members.find((m) => m.email === session.email) || leader) : null;
-  const track = team ? HACK_TRACKS.find((t) => t.id === team.trackId) : null;
+  const problemStatement = team ? problemStatements.find((t) => t.id === team.problemStatementId) : null;
   const avgScore = team && team.evaluations && team.evaluations.length > 0
     ? Math.round(team.evaluations.reduce((acc, e) => acc + (e.innovation + e.feasibility + e.presentation) / 3, 0) / team.evaluations.length)
     : null;
@@ -287,7 +293,7 @@ export default function ParticipantDashboard() {
 
   const handleRemoveMember = (email: string) => {
     if (!team) return;
-    if (team.members.length <= 2) { toast("Team must have at least 2 members.", "error"); return; }
+    if (team.members.length <= minTeamSize) { toast(`Team must have at least ${minTeamSize} member(s).`, "error"); return; }
     updateTeamMembers(team.id, team.members.filter((m) => m.email !== email));
     toast("Member removed.", "info");
   };
@@ -300,7 +306,7 @@ export default function ParticipantDashboard() {
       videoUrl: projectEdit.videoUrl || team.videoUrl,
       demoUrl: projectEdit.demoUrl || team.demoUrl,
       aiDisclosure: projectEdit.aiDisclosure || team.aiDisclosure,
-      trackId: projectEdit.trackId || team.trackId,
+
     });
     toast("Project details saved.", "success");
   };
@@ -325,7 +331,7 @@ export default function ParticipantDashboard() {
     }
   };
 
-  const needsRegistration = team ? (team.status === "PENDING" || (!team.trackId && !team.problemStatementId)) : false;
+  const needsRegistration = team ? (team.status === "PENDING" || (!team.problemStatementId)) : false;
 
   const handleSaveRegistration = () => {
     if (!team) return;
@@ -507,7 +513,7 @@ export default function ParticipantDashboard() {
                     <div>
                       <div className="text-emerald-200 text-xs font-semibold uppercase tracking-widest mb-1">Mission Control</div>
                       <h1 className="text-2xl font-extrabold mb-1">Welcome back, {session.name?.split(" ")[0] || "Participant"} 👋</h1>
-                      <div className="text-emerald-200 text-sm">{team ? `${team.name} · ${track?.label || "Track not set"}` : "No Team Setup Yet"}</div>
+                      <div className="text-emerald-200 text-sm">{team ? `${team.name} · ${problemStatements.find(ps => ps.id === team.problemStatementId)?.title || "Problem Statement not set"}` : "No Team Setup Yet"}</div>
                     </div>
                     <div className="flex items-center gap-3">
                       {team && team.status === "APPROVED" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/30 border border-emerald-400/30 text-xs font-bold text-emerald-100"><CheckCircle className="h-3.5 w-3.5" /> Approved</span>}
@@ -518,68 +524,26 @@ export default function ParticipantDashboard() {
                   </div>
                 </div>
 
-                {/* Animated Journey Timeline */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700">
-                  <h2 className="font-bold text-primary-dark mb-6 flex items-center gap-2 dark:text-gray-100"><Layers className="h-5 w-5 text-primary-green" /> Hackathon Journey</h2>
-                  <div className="relative">
-                    {/* Connecting line */}
-                    <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100 dark:bg-gray-700" />
-                    <div className="flex flex-col gap-1">
-                      {JOURNEY_STAGES.map((stage) => {
-                        const status = getStageStatus(stage.id);
-                        const isActive = activeJourneyStage === stage.id;
-                        return (
-                          <div key={stage.id}>
-                            <button
-                              onClick={() => setActiveJourneyStage(isActive ? null : stage.id)}
-                              className="relative w-full flex items-center gap-4 py-3 pl-2 pr-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group text-left"
-                            >
-                              {/* Icon */}
-                              <div className={`relative z-10 h-10 w-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-all ${
-                                status === "completed" ? "bg-emerald-100 dark:bg-emerald-900/50" :
-                                status === "current" ? "bg-amber-100 dark:bg-amber-900/50 ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-gray-900" :
-                                status === "upcoming" ? "bg-blue-50 dark:bg-blue-900/30" : "bg-gray-50 dark:bg-gray-800"
-                              }`}>
-                                {status === "completed" ? "✅" : status === "current" ? "🟡" : status === "upcoming" ? "⚪" : "🔒"}
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className={`font-semibold text-sm ${status === "locked" ? "text-gray-400 dark:text-gray-500" : "text-primary-dark dark:text-gray-100"}`}>{stage.label}</div>
-                                <div className={`text-xs ${status === "current" ? "text-amber-600 font-semibold" : status === "completed" ? "text-emerald-600" : "text-gray-400"}`}>
-                                  {status === "completed" ? "Completed" : status === "current" ? "In Progress" : status === "upcoming" ? "Up Next" : "Locked"}
-                                </div>
-                              </div>
-
-                              <ChevronRight className={`h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-transform ${isActive ? "rotate-90" : ""}`} />
-                            </button>
-
-                            {/* Expandable detail */}
-                            <AnimatePresence>
-                              {isActive && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: "auto" }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="ml-14 mr-4 mb-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{stage.desc}</p>
-                                    {status === "current" && (
-                                      <button
-                                        onClick={() => setActiveTab(stage.id === "idea" ? "project" : "team")}
-                                        className="mt-2 text-xs font-semibold text-primary-green hover:underline cursor-pointer"
-                                      >
-                                        Take action →
-                                      </button>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })}
-                    </div>
+                {/* Dynamic Hackathon Timer */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 text-center">
+                  <h2 className="font-bold text-primary-dark mb-4 flex items-center justify-center gap-2 dark:text-gray-100">
+                    <Clock className="h-5 w-5 text-primary-green" /> 
+                    {timeLeft?.status === "upcoming" ? "Time to Hackathon" : timeLeft?.status === "active" ? "Hacking Ends In" : "Hackathon Concluded"}
+                  </h2>
+                  <div className="flex justify-center items-center gap-4">
+                    {[
+                      { label: "Days", value: timeLeft?.days ?? 0 },
+                      { label: "Hours", value: timeLeft?.hours ?? 0 },
+                      { label: "Minutes", value: timeLeft?.minutes ?? 0 },
+                      { label: "Seconds", value: timeLeft?.seconds ?? 0 },
+                    ].map((unit) => (
+                      <div key={unit.label} className="flex flex-col items-center">
+                        <div className="bg-gray-50 dark:bg-gray-800 text-primary-dark dark:text-primary-green font-extrabold text-3xl sm:text-5xl w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center rounded-2xl shadow-inner border border-gray-100 dark:border-gray-700">
+                          {unit.value.toString().padStart(2, "0")}
+                        </div>
+                        <span className="text-xs sm:text-sm font-semibold text-gray-500 mt-2 uppercase tracking-wide">{unit.label}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -604,11 +568,21 @@ export default function ParticipantDashboard() {
                     <div className="flex flex-col gap-2.5">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-red-400 shrink-0" />
-                        <div><div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Idea Submission</div><div className="text-xs text-gray-400 dark:text-gray-500">July 5, 2026</div></div>
+                        <div>
+                          <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Idea Submission</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
+                            {activeHackathon?.startDate ? new Date(activeHackathon.startDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "TBA"}
+                          </div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-amber-400 shrink-0" />
-                        <div><div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Hackathon Day</div><div className="text-xs text-gray-400 dark:text-gray-500">July 18, 2026</div></div>
+                        <div>
+                          <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Hackathon Day</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
+                            {activeHackathon?.startDate ? new Date(activeHackathon.startDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "TBA"}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -646,7 +620,7 @@ export default function ParticipantDashboard() {
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="px-2.5 py-1 rounded-md bg-emerald-550 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                              {HACK_TRACKS.find(t => t.id === team.trackId)?.label || "No Track Assigned"}
+                              {problemStatement?.title || "No Problem Statement Assigned"}
                             </span>
                             <h3 className="font-extrabold text-primary-dark text-2xl dark:text-gray-100 mt-2">{team.name}</h3>
                           </div>
@@ -732,7 +706,7 @@ export default function ParticipantDashboard() {
                     <div className="space-y-6">
                       {/* Members list */}
                       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-4">
-                        <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Team Members ({team.members.length}/4)</h4>
+                        <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Team Members ({team.members.length}/{maxTeamSize})</h4>
                         <div className="flex flex-col gap-3">
                           {team.members.map((m) => {
                             const isLeaderMember = m.isLeader;
@@ -760,7 +734,7 @@ export default function ParticipantDashboard() {
                       </div>
 
                       {/* Invite form (only for leaders) */}
-                      {team.members.find(m => m.email === session.email)?.isLeader && team.members.length < 4 && (
+                      {team.members.find(m => m.email === session.email)?.isLeader && team.members.length < maxTeamSize && (
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
                           <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Invite Teammate</h4>
                           <input
@@ -1013,7 +987,7 @@ export default function ParticipantDashboard() {
                             .map((t) => {
                               const alreadyRequested = teamRequests.some(r => r.direction === "join" && r.teamId === t.id && r.fromEmail === session.email && r.status === "pending");
                               const isMember = t.members.some(m => m.email === session.email);
-                              const trackLabel = HACK_TRACKS.find(tr => tr.id === t.trackId)?.label || "General";
+                              const psLabel = problemStatements.find(ps => ps.id === t.problemStatementId)?.title || "General";
 
                               return (
                                 <div key={t.id} className="p-4 rounded-2xl border border-gray-100 dark:border-gray-750 bg-gray-50/50 dark:bg-gray-800/40 hover:border-primary-green/30 transition-all flex flex-col justify-between gap-4">
@@ -1025,7 +999,7 @@ export default function ParticipantDashboard() {
                                       </span>
                                     </div>
                                     <span className="text-[9px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wide block w-fit rounded px-1.5 py-0.5">
-                                      {trackLabel}
+                                      {psLabel}
                                     </span>
                                     <p className="text-xs text-gray-655 dark:text-gray-400 line-clamp-2">{t.projectDescription || "No brief solution provided yet."}</p>
                                   </div>
@@ -1278,9 +1252,9 @@ export default function ParticipantDashboard() {
                     {projectTab === "overview" && (
                       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 dark:bg-gray-900 dark:border-gray-700">
                         <div>
-                          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
+                          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Problem Statement</label>
                           <div className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                            {track?.label || "Not set"}
+                            {problemStatements.find(ps => ps.id === team?.problemStatementId)?.title || "Not set"}
                           </div>
                         </div>
                         <div>
@@ -1429,15 +1403,12 @@ export default function ParticipantDashboard() {
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {publishedProblemStatements.map((ps) => {
-                        const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
+
                         return (
                           <div key={ps.id} className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 space-y-3">
                             <div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="font-extrabold text-primary-dark dark:text-gray-100 text-sm">{ps.title}</h3>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                  {track?.label || "General"}
-                                </span>
                               </div>
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">{ps.description}</p>
                             </div>

@@ -22,25 +22,20 @@ import {
   FileText,
   Download,
 } from "lucide-react";
-import { HACK_TRACKS } from "@/lib/mockData";
+
 
 type TabType = "overview" | "tracks" | "timeline" | "rules" | "faq" | "problems";
 
 const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <Info className="h-4 w-4" /> },
-  { id: "tracks", label: "Tracks", icon: <Layers className="h-4 w-4" /> },
+
   { id: "timeline", label: "Schedule", icon: <Calendar className="h-4 w-4" /> },
   { id: "rules", label: "Guidelines", icon: <ShieldAlert className="h-4 w-4" /> },
   { id: "faq", label: "FAQ", icon: <HelpCircle className="h-4 w-4" /> },
   { id: "problems", label: "Problem Statements", icon: <BookOpen className="h-4 w-4" /> },
 ];
 
-const tracks = [
-  { title: "Generative AI & LLMs", desc: "Build systems utilizing localized Large Language Models, custom agents, RAG pipelines, or autonomous tool callers.", color: "from-emerald-600 to-teal-500" },
-  { title: "AI in Healthcare", desc: "Predictive diagnostics, lab report parsing, bioinformatics molecular docking, or real-time patient monitoring tools.", color: "from-blue-600 to-indigo-500" },
-  { title: "Smart Campus Solutions", desc: "Automate college logistics, smart library records, academic advisory chatbots, or classroom analytics platforms.", color: "from-amber-500 to-orange-500" },
-  { title: "Decentralized AI Agents", desc: "Develop autonomous software agents running multi-agent negotiations, smart grid controls, or autonomous web scrapers.", color: "from-purple-600 to-violet-500" },
-];
+
 
 const timelineSteps = [
   { num: "01", date: "June 25, 2026", title: "Registrations Open", desc: "Submit member registry, department details, and roll numbers.", status: "completed" },
@@ -89,16 +84,48 @@ const statusStyles: Record<string, { dot: string; text: string; border: string }
     },
   };
 
+const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
+  const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      const diff = new Date(targetDate).getTime() - Date.now();
+      if (diff <= 0) {
+        clearInterval(timer);
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+      } else {
+        setTimeLeft({
+          d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          h: Math.floor((diff / (1000 * 60 * 60)) % 24),
+          m: Math.floor((diff / 1000 / 60) % 60),
+          s: Math.floor((diff / 1000) % 60),
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  return (
+    <>
+      {Object.entries(timeLeft).map(([unit, val]) => (
+        <div key={unit} className="flex flex-col items-center">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-white dark:bg-gray-800 text-primary-dark dark:text-white flex items-center justify-center font-extrabold text-xl sm:text-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            {val.toString().padStart(2, '0')}
+          </div>
+          <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase mt-2">{unit === 'd' ? 'Days' : unit === 'h' ? 'Hours' : unit === 'm' ? 'Mins' : 'Secs'}</span>
+        </div>
+      ))}
+    </>
+  );
+};
+
 export default function HackathonPage() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [selectedTrack, setSelectedTrack] = useState<number | null>(null);
+
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
 
-  const { problemStatements } = useAppState();
+  const { problemStatements, hackathons, activeHackathonId } = useAppState();
   const publishedPs = problemStatements.filter((ps) => ps.status === "published");
-
-  const selectedTrackData = selectedTrack !== null ? tracks[selectedTrack] : null;
-
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -129,7 +156,7 @@ export default function HackathonPage() {
             Hackathon Blueprint
           </h1>
           <p className="max-w-2xl text-xs sm:text-sm text-gray-500 font-semibold leading-relaxed dark:text-gray-400">
-            Everything you need to understand about the AI Hack Lab rules, timeline, tracks, evaluation models, and prizes.
+            Everything you need to understand about the AI Hack Lab rules, timeline, problem statements, evaluation models, and prizes.
           </p>
         </div>
       </section>
@@ -240,45 +267,6 @@ export default function HackathonPage() {
               </div>
             )}
 
-            {/* TRACKS TAB */}
-            {activeTab === "tracks" && (
-              <div>
-                <div className="text-center mb-10 flex flex-col items-center gap-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Event Tracks</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Choose a track that matches your team interest and outline it in your slide deck abstract.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                  {tracks.map((t, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedTrack(idx)}
-                      className="border border-input-border/30 rounded-3xl p-6 bg-white shadow-sm flex flex-col gap-3 relative overflow-hidden group hover:border-primary-green/30 transition-all duration-300 text-left cursor-pointer dark:bg-gray-900 dark:border-gray-700"
-                    >
-                      <div className={`absolute top-0 left-0 w-2 h-full bg-linear-to-b ${t.color}`} />
-                      <h4 className="text-base sm:text-lg font-extrabold text-primary-dark ml-2 group-hover:text-primary-green transition-colors dark:text-gray-100">{t.title}</h4>
-                      <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold ml-2 dark:text-gray-400">{t.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TRACK MODAL */}
-            <Modal
-              isOpen={selectedTrackData !== null}
-              onClose={() => setSelectedTrack(null)}
-              title={selectedTrackData?.title ?? ""}
-            >
-              {selectedTrackData && (
-                <div className="flex flex-col gap-4">
-                  <div className={`h-1.5 w-full rounded-full bg-linear-to-r ${selectedTrackData.color}`} />
-                  <p className="text-sm text-gray-600 leading-relaxed font-medium">
-                    {selectedTrackData.desc}
-                  </p>
-                </div>
-              )}
-            </Modal>
-
             {/* TIMELINE TAB */}
             {activeTab === "timeline" && (
               <div>
@@ -286,6 +274,22 @@ export default function HackathonPage() {
                   <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Interactive Timeline</h2>
                   <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Stay updated on submission closings and review stages.</p>
                 </div>
+                
+                {/* Live Timer & Host Info */}
+                <div className="max-w-2xl mx-auto bg-card-bg/30 border border-input-border/30 rounded-3xl p-8 mb-12 shadow-sm text-center">
+                  <h3 className="text-lg font-extrabold text-primary-dark dark:text-gray-100 mb-6 flex items-center justify-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary-green" /> 
+                    Countdown to Hackathon Day
+                  </h3>
+                  <div className="flex gap-4 sm:gap-6 justify-center mb-8">
+                    <CountdownTimer targetDate={activeHackathonId ? hackathons.find(h => h.id === activeHackathonId)?.startDate || "2026-07-06T00:00:00" : "2026-07-06T00:00:00"} />
+                  </div>
+                  <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-100 dark:border-emerald-800">
+                    <MapPin className="h-4 w-4" /> 
+                    Hosted by: {activeHackathonId ? hackathons.find(h => h.id === activeHackathonId)?.venue || "AI Research Lab, SIET" : "AI Research Lab, SIET"}
+                  </div>
+                </div>
+                
                 <div className="relative max-w-3xl mx-auto">
                   {/* Vertical line */}
                   <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-gray-200" />
@@ -386,7 +390,7 @@ export default function HackathonPage() {
                 ) : (
                   <div className="flex flex-col gap-4">
                     {publishedPs.map((ps, idx) => {
-                      const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
+
                       const isExpanded = expandedPs === ps.id;
                       return (
                         <motion.div
@@ -407,11 +411,6 @@ export default function HackathonPage() {
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap mb-1">
                                   <h3 className="text-sm sm:text-base font-extrabold text-primary-dark dark:text-gray-100">{ps.title}</h3>
-                                  {track && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-green/10 text-primary-green border border-primary-green/20">
-                                      {track.label}
-                                    </span>
-                                  )}
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
                                   {ps.description}

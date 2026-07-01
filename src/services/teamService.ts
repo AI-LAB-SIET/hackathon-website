@@ -30,8 +30,8 @@ export const teamService = {
     if (filters?.status) {
       teams = teams.filter(t => t.status === filters.status);
     }
-    if (filters?.trackId) {
-      teams = teams.filter(t => t.trackId === filters.trackId);
+    if (filters?.problemStatementId) {
+      teams = teams.filter(t => t.problemStatementId === filters.problemStatementId);
     }
     if (filters?.department) {
       teams = teams.filter(t => t.members.some((m: Participant) => m.department === filters.department));
@@ -90,6 +90,7 @@ export const teamService = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       projectDescription: data.projectDescription,
+      problemStatementId: data.problemStatementId,
       qrToken: `${prefix}-AI26-${teamNum}-SEC${generateId().substring(2, 7).toUpperCase()}`,
       paymentVerified: false,
       facultyApproved: false,

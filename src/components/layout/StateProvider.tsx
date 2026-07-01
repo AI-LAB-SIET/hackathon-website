@@ -322,7 +322,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       const list: ProblemStatement[] = [];
       snap.forEach((d) => {
         const data = d.data();
-        list.push({ id: d.id, title: data.title ?? "", description: data.description ?? "", trackId: data.trackId ?? "", status: data.status ?? "draft", createdAt: data.createdAt ?? new Date().toISOString(), attachments: data.attachments ?? [], hackathonId: data.hackathonId ?? "" });
+        list.push({ id: d.id, title: data.title ?? "", description: data.description ?? "", status: data.status ?? "draft", createdAt: data.createdAt ?? new Date().toISOString(), attachments: data.attachments ?? [], hackathonId: data.hackathonId ?? "" });
       });
       setProblemStatements(list);
     }, (err) => console.warn("Problems sync error:", err));
@@ -984,7 +984,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addProblemStatement = useCallback(async (ps: Omit<ProblemStatement, "id" | "createdAt">) => {
-    const data = { title: ps.title, description: ps.description, trackId: ps.trackId ?? "", status: ps.status ?? "draft", attachments: ps.attachments ?? [], createdAt: new Date().toISOString(), hackathonId: ps.hackathonId || activeHackathonId || "" };
+    const data = { title: ps.title, description: ps.description, status: ps.status ?? "draft", attachments: ps.attachments ?? [], createdAt: new Date().toISOString(), hackathonId: ps.hackathonId || activeHackathonId || "" };
     if (isConfigured && db) {
       await addDoc(collection(db, "problemStatements"), data);
     } else {

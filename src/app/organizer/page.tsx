@@ -20,7 +20,7 @@ import {
   Archive, Send, Edit3, X, QrCode, Info
 } from "lucide-react";
 import { FileAttachment, ProblemStatement, Team, Volunteer, SupportTicket, FoodToken } from "@/types";
-import { HACK_TRACKS } from "@/lib/mockData";
+
 
 type TabType = "dashboard" | "scanner" | "teams" | "approval" | "problems" | "volunteers" | "tickets" | "profile";
 type ApprovalFilter = "all" | "pending" | "approved" | "rejected";
@@ -30,7 +30,7 @@ export default function OrganizerDashboard() {
   const router = useRouter();
   const {
     session, teams, notifications, volunteers, tickets, problemStatements,
-    approveTeam, rejectTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead,
+    approveTeam, rejectTeam, deleteTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead,
     addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus,
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
     foodMeals, foodTokens, redeemToken, lookupToken, activeHackathonId
@@ -48,7 +48,7 @@ export default function OrganizerDashboard() {
 
   // Filters
   const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>("all");
-  const [trackFilter, setTrackFilter] = useState("all");
+  const [problemStatementFilter, setProblemStatementFilter] = useState("all");
   const [sizeFilter, setSizeFilter] = useState("all");
   const [deptFilter, setDeptFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -61,7 +61,7 @@ export default function OrganizerDashboard() {
   const [annForm, setAnnForm] = useState({ title: "", content: "", type: "info" as "info" | "warning" | "success" });
 
   // On-spot material form
-  const [psForm, setPsForm] = useState({ title: "", description: "", trackId: "gen-ai", status: "draft" as "draft" | "published" | "archived" });
+  const [psForm, setPsForm] = useState({ title: "", description: "", status: "draft" as "draft" | "published" | "archived" });
   const [psEditId, setPsEditId] = useState<string | null>(null);
   const [psCreateOpen, setPsCreateOpen] = useState(false);
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
@@ -105,7 +105,7 @@ export default function OrganizerDashboard() {
   const filteredApproval = useMemo(() => {
     return teams.filter((t) => {
       if (approvalFilter !== "all" && t.status !== approvalFilter.toUpperCase()) return false;
-      if (trackFilter !== "all" && t.trackId !== trackFilter) return false;
+      if (problemStatementFilter !== "all" && t.problemStatementId !== problemStatementFilter) return false;
       if (deptFilter !== "all" && !t.members.some((m) => m.department === deptFilter)) return false;
       if (sizeFilter === "2" && t.size !== 2) return false;
       if (sizeFilter === "3" && t.size !== 3) return false;
@@ -113,7 +113,7 @@ export default function OrganizerDashboard() {
       if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [teams, approvalFilter, trackFilter, deptFilter, sizeFilter, search]);
+  }, [teams, approvalFilter, problemStatementFilter, deptFilter, sizeFilter, search]);
 
   // All tickets aggregated
   const allTickets = useMemo(() => {
@@ -248,7 +248,6 @@ export default function OrganizerDashboard() {
     const payload = {
       title: psForm.title,
       description: psForm.description,
-      trackId: psForm.trackId,
       status: psForm.status,
       attachments: psAttachments,
     };
@@ -261,7 +260,7 @@ export default function OrganizerDashboard() {
       toast("On-spot material created.", "success");
     }
 
-    setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+    setPsForm({ title: "", description: "", status: "draft" });
     setPsAttachments([]);
     setPsEditId(null);
     setPsCreateOpen(false);
@@ -269,7 +268,7 @@ export default function OrganizerDashboard() {
 
   const handleEditPs = (ps: ProblemStatement) => {
     setPsEditId(ps.id);
-    setPsForm({ title: ps.title, description: ps.description, trackId: ps.trackId, status: ps.status });
+    setPsForm({ title: ps.title, description: ps.description, status: ps.status });
     setPsAttachments(ps.attachments || []);
     setPsCreateOpen(true);
   };
@@ -287,12 +286,12 @@ export default function OrganizerDashboard() {
   const handleExportCSV = () => {
     const headers = ["Team Name", "Status", "Members", "Track", "Attendance", "Checked In"];
     const rows = teams.map((t) => {
-      const track = HACK_TRACKS.find((tr) => tr.id === t.trackId);
+      const problemStatement = problemStatements.find((ps) => ps.id === t.problemStatementId);
       return [
         t.name,
         t.status,
         t.size.toString(),
-        track?.label || "—",
+        problemStatement?.title || "—",
         t.attendance?.checkedIn ? "Yes" : "No",
         t.attendance?.checkInTime || "—",
       ];
@@ -363,7 +362,7 @@ export default function OrganizerDashboard() {
                 <button
                   onClick={() => {
                     setPsEditId(null);
-                    setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+                    setPsForm({ title: "", description: "", status: "draft" });
                     setPsAttachments([]);
                     setPsCreateOpen(true);
                   }}
@@ -670,14 +669,13 @@ export default function OrganizerDashboard() {
                     </thead>
                     <tbody>
                       {teams.filter((t) => !search || t.name.toLowerCase().includes(search.toLowerCase())).map((t) => {
-                        const track = HACK_TRACKS.find((tr) => tr.id === t.trackId);
                         return (
                           <tr key={t.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                             <td className="px-5 py-3">
                               <div className="font-semibold text-primary-dark dark:text-gray-100">{t.name}</div>
                               <div className="text-xs text-gray-400 dark:text-gray-500 font-mono">{t.qrToken?.split("-").slice(0, 3).join("-")}</div>
                             </td>
-                            <td className="px-5 py-3 text-xs text-gray-500 dark:text-gray-400">{track?.label || "—"}</td>
+                            <td className="px-5 py-3 text-xs text-gray-500 dark:text-gray-400">{problemStatements.find(ps => ps.id === t.problemStatementId)?.title || "—"}</td>
                             <td className="px-5 py-3 text-gray-600 dark:text-gray-300">{t.size}</td>
                             <td className="px-5 py-3">
                               <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : t.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>{t.status}</span>
@@ -688,9 +686,33 @@ export default function OrganizerDashboard() {
                                 : <span className="text-xs text-gray-400">—</span>}
                             </td>
                             <td className="px-5 py-3">
-                              <button onClick={() => setAttendanceTeam(t)} className="text-xs font-semibold text-amber-600 hover:underline cursor-pointer flex items-center gap-1">
-                                <UserCheck className="h-3 w-3" /> Manage
-                              </button>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button onClick={() => setSelectedTeam(t)} className="text-[10px] font-semibold px-2 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary-green/50 hover:text-primary-green cursor-pointer transition-all">
+                                  Details
+                                </button>
+                                {t.status !== "APPROVED" && (
+                                  <button onClick={() => handleApprove(t.id, t.name)} className="text-[10px] font-bold px-2 py-1.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer transition-colors">
+                                    Approve
+                                  </button>
+                                )}
+                                {t.status !== "REJECTED" && (
+                                  <button onClick={() => handleReject(t.id, t.name)} className="text-[10px] font-bold px-2 py-1.5 rounded bg-red-500 hover:bg-red-600 text-white cursor-pointer transition-colors">
+                                    Reject
+                                  </button>
+                                )}
+                                <button onClick={async () => {
+                                  if (!confirm(`Permanently delete team "${t.name}" and all its data? This cannot be undone.`)) return;
+                                  await deleteTeam(t.id);
+                                  toast(`Team "${t.name}" deleted.`, "success");
+                                }} className="text-[10px] font-bold px-2 py-1.5 rounded bg-gray-100 hover:bg-red-50 dark:bg-gray-700 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 border border-gray-200 dark:border-gray-600 cursor-pointer transition-colors">
+                                  Delete
+                                </button>
+                                {t.status === "APPROVED" && (
+                                  <button onClick={() => setAttendanceTeam(t)} className="text-[10px] font-bold text-amber-600 hover:underline cursor-pointer flex items-center gap-1 ml-1">
+                                    Attendance
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -718,11 +740,13 @@ export default function OrganizerDashboard() {
                     ))}
                   </div>
                   <div className="flex flex-wrap gap-2 ml-auto">
-                    <select value={trackFilter} onChange={(e) => setTrackFilter(e.target.value)}
-                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
-                      <option value="all">All Tracks</option>
-                      {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
-                    </select>
+                    <div className="flex-1 min-w-[140px]">
+                      <select value={problemStatementFilter} onChange={(e) => setProblemStatementFilter(e.target.value)}
+                        className="w-full rounded-xl border border-input-border bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-primary-green focus:ring-2 focus:ring-primary-green/20 dark:bg-gray-800 dark:border-gray-700">
+                        <option value="all">All Problem Statements</option>
+                        {problemStatements.map((ps) => <option key={ps.id} value={ps.id}>{ps.title}</option>)}
+                      </select>
+                    </div>
                     <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}
                       className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white cursor-pointer focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
                       <option value="all">All Departments</option>
@@ -740,7 +764,7 @@ export default function OrganizerDashboard() {
 
                 <div className="flex flex-col gap-3">
                   {filteredApproval.map((team) => {
-                    const track = HACK_TRACKS.find((tr) => tr.id === team.trackId);
+                    const track = problemStatements.find((tr) => tr.id === team.problemStatementId);
                     const leader = team.members.find((m) => m.isLeader) || team.members[0];
                     const regChecklist = [
                       { label: "Team Created", done: true },
@@ -758,7 +782,7 @@ export default function OrganizerDashboard() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-extrabold text-primary-dark dark:text-gray-100">{team.name}</div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500">{track?.label || "—"} · {team.size} members · Leader: {leader?.name}</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">{track?.title || "—"} · {team.size} members · Leader: {leader?.name}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{team.projectDescription}</div>
                           </div>
                           <span className={`text-xs font-bold px-3 py-1.5 rounded-full shrink-0 ${team.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : team.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
@@ -802,7 +826,7 @@ export default function OrganizerDashboard() {
                   <button
                     onClick={() => {
                       setPsEditId(null);
-                      setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+                      setPsForm({ title: "", description: "", status: "draft" });
                       setPsAttachments([]);
                       setPsCreateOpen(true);
                     }}
@@ -814,7 +838,7 @@ export default function OrganizerDashboard() {
 
                 <div className="flex flex-col gap-4">
                   {problemStatements.map((ps) => {
-                    const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
+
                     const isExpanded = expandedPs === ps.id;
                     return (
                       <div key={ps.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
@@ -838,7 +862,7 @@ export default function OrganizerDashboard() {
                                 </span>
                               </div>
                               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                                {track?.label || "General"} - {ps.attachments?.length || 0} files - Created {new Date(ps.createdAt).toLocaleDateString()}
+                                {ps.attachments?.length || 0} files - Created {new Date(ps.createdAt).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
@@ -1099,16 +1123,7 @@ export default function OrganizerDashboard() {
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Track</label>
-                  <select
-                    value={psForm.trackId}
-                    onChange={(e) => setPsForm((p) => ({ ...p, trackId: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer"
-                  >
-                    {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
-                  </select>
-                </div>
+
                 <div>
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Status</label>
                   <select
@@ -1197,7 +1212,7 @@ export default function OrganizerDashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="font-extrabold text-primary-dark text-lg dark:text-gray-100">{selectedTeam.name}</div>
                     <div className="text-xs text-gray-400 dark:text-gray-500">
-                      {HACK_TRACKS.find((tr) => tr.id === selectedTeam.trackId)?.label || "—"} · {selectedTeam.size} members
+                      {problemStatements.find(ps => ps.id === selectedTeam.problemStatementId)?.title || "—"} · {selectedTeam.size} members
                     </div>
                   </div>
                   <span className={`text-xs font-bold px-3 py-1.5 rounded-full shrink-0 ${selectedTeam.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : selectedTeam.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>

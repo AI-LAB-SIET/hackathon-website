@@ -15,7 +15,7 @@ export interface DashboardStats {
 
 export interface TeamAnalytics {
   registrationsOverTime: TimeSeriesData[];
-  teamsByTrack: CategoryData[];
+  teamsByProblemStatement: CategoryData[];
   teamsByStatus: CategoryData[];
   teamsByDepartment: CategoryData[];
   teamSizeDistribution: CategoryData[];
@@ -84,7 +84,7 @@ export interface CategoryData {
 export interface AnalyticsFilters {
   startDate?: string;
   endDate?: string;
-  trackId?: string;
+  problemStatementId?: string;
   department?: string;
   role?: string;
 }

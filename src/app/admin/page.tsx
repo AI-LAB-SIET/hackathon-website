@@ -37,7 +37,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import { Team, ProblemStatement, FileAttachment, Participant, Hackathon, FoodMeal } from "@/types";
-import { HACK_TRACKS } from "@/lib/mockData";
+
 import { isConfigured, db, auth } from "@/lib/firebase";
 
 type TabType = "dashboard" | "hackathons" | "members" | "participants" | "attendance" | "announcements" | "problems" | "teams" | "foodTokens" | "profile";
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
   const [managingTeam, setManagingTeam] = useState<(typeof teams)[0] | null>(null);
 
   // Problem statement form
-  const [psForm, setPsForm] = useState({ title: "", description: "", trackId: "gen-ai", status: "draft" as "draft" | "published" | "archived" });
+  const [psForm, setPsForm] = useState({ title: "", description: "", status: "draft" as "draft" | "published" | "archived" });
   const [psEditId, setPsEditId] = useState<string | null>(null);
   const [psCreateOpen, setPsCreateOpen] = useState(false);
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
@@ -576,20 +576,20 @@ export default function AdminDashboard() {
       return;
     }
     if (psEditId) {
-      updateProblemStatement(psEditId, { title: psForm.title, description: psForm.description, trackId: psForm.trackId, status: psForm.status, attachments: psAttachments });
+      updateProblemStatement(psEditId, { title: psForm.title, description: psForm.description, status: psForm.status, attachments: psAttachments });
       toast("Problem statement updated.", "success");
       setPsEditId(null);
     } else {
-      addProblemStatement({ title: psForm.title, description: psForm.description, trackId: psForm.trackId, status: psForm.status, attachments: psAttachments });
+      addProblemStatement({ title: psForm.title, description: psForm.description, status: psForm.status, attachments: psAttachments });
       toast("Problem statement created.", "success");
     }
-    setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+    setPsForm({ title: "", description: "", status: "draft" });
     setPsAttachments([]);
     setPsCreateOpen(false);
   };
   const handleEditPs = (ps: ProblemStatement) => {
     setPsEditId(ps.id);
-    setPsForm({ title: ps.title, description: ps.description, trackId: ps.trackId, status: ps.status });
+    setPsForm({ title: ps.title, description: ps.description, status: ps.status });
     setPsAttachments(ps.attachments || []);
     setPsCreateOpen(true);
   };
@@ -614,7 +614,7 @@ export default function AdminDashboard() {
       return;
     }
     setQuickPsAdding(true);
-    addProblemStatement({ title: quickPsForm.title.trim(), description: quickPsForm.description.trim(), trackId: "gen-ai", status: "draft", attachments: [] });
+    addProblemStatement({ title: quickPsForm.title.trim(), description: quickPsForm.description.trim(), status: "draft", attachments: [] });
     toast(`"${quickPsForm.title}" added as draft.`, "success");
     setQuickPsForm({ title: "", description: "" });
     setQuickPsAdding(false);
@@ -718,7 +718,7 @@ export default function AdminDashboard() {
                     setAnnCreateOpen(true);
                   } else {
                     setPsEditId(null);
-                    setPsForm({ title: "", description: "", trackId: "gen-ai", status: "draft" });
+                    setPsForm({ title: "", description: "", status: "draft" });
                     setPsCreateOpen(true);
                   }
                 }}
@@ -1332,7 +1332,7 @@ export default function AdminDashboard() {
 
                 {/* ── Problem statements list ── */}
                 {problemStatements.map((ps) => {
-                  const track = HACK_TRACKS.find((t) => t.id === ps.trackId);
+
                   const isExpanded = expandedPs === ps.id;
                   return (
                     <div key={ps.id} className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
@@ -1347,7 +1347,7 @@ export default function AdminDashboard() {
                           <div className="min-w-0">
                             <h4 className="text-sm font-bold text-primary-dark dark:text-gray-100 truncate">{ps.title}</h4>
                             <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold mt-0.5">
-                              {track?.label || "General"} · Created {new Date(ps.createdAt).toLocaleDateString()}
+                              Created {new Date(ps.createdAt).toLocaleDateString()}
                               {ps.attachments && ps.attachments.length > 0 && ` · ${ps.attachments.length} file${ps.attachments.length > 1 ? "s" : ""}`}
                             </p>
                           </div>
@@ -1441,7 +1441,7 @@ export default function AdminDashboard() {
                       <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                         <tr>
                           <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Team</th>
-                          <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Track</th>
+                          <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Problem Statement</th>
                           <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Status</th>
                           <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Checked In By</th>
                           <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider">Time</th>
@@ -1456,7 +1456,7 @@ export default function AdminDashboard() {
                             </td>
                             <td className="py-3 px-4">
                               <span className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold">
-                                {t.trackId || "N/A"}
+                                {problemStatements.find(ps => ps.id === t.problemStatementId)?.title || "N/A"}
                               </span>
                             </td>
                             <td className="py-3 px-4">
@@ -2244,18 +2244,7 @@ export default function AdminDashboard() {
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             />
           </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Track</label>
-            <select
-              value={psForm.trackId}
-              onChange={(e) => setPsForm((p) => ({ ...p, trackId: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 cursor-pointer"
-            >
-              {HACK_TRACKS.map((tr) => (
-                <option key={tr.id} value={tr.id}>{tr.label}</option>
-              ))}
-            </select>
-          </div>
+
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Status</label>
             <select
@@ -2342,7 +2331,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <h4 className="font-extrabold text-primary-dark dark:text-gray-100">{detailTeam.name}</h4>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500">{detailTeam.size} members · {HACK_TRACKS.find((t) => t.id === detailTeam.trackId)?.label || "—"}</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">{detailTeam.size} members · {problemStatements.find((ps) => ps.id === detailTeam.problemStatementId)?.title || "—"}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">

@@ -17,7 +17,7 @@ import {
   Eye
 } from "lucide-react";
 import { Team } from "@/types";
-import { HACK_TRACKS } from "@/lib/mockData";
+
 
 type TabType = "dashboard" | "queue" | "leaderboard" | "profile";
 
@@ -31,13 +31,13 @@ const SCORE_CRITERIA = [
 
 export default function JudgeDashboard() {
   const router = useRouter();
-  const { session, teams, notifications, evaluateProject, markNotificationRead, markAllNotificationsRead } = useAppState();
+  const { session, teams, notifications, problemStatements, evaluateProject, markNotificationRead, markAllNotificationsRead } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
 
   // Filters
-  const [trackFilter, setTrackFilter] = useState("all");
+  const [problemStatementFilter, setProblemStatementFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "reviewed">("all");
   const [deptFilter, setDeptFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -95,14 +95,14 @@ export default function JudgeDashboard() {
   const departments = useMemo(() => Array.from(new Set(assignedTeams.flatMap((t) => t.members.map((m) => m.department)))), [assignedTeams]);
   const filteredQueue = useMemo(() => {
     return assignedTeams.filter((t) => {
-      if (trackFilter !== "all" && t.trackId !== trackFilter) return false;
+      if (problemStatementFilter !== "all" && t.problemStatementId !== problemStatementFilter) return false;
       if (statusFilter === "pending" && t.evaluations?.some((e) => e.judgeEmail === session.email)) return false;
       if (statusFilter === "reviewed" && !t.evaluations?.some((e) => e.judgeEmail === session.email)) return false;
       if (deptFilter !== "all" && !t.members.some((m) => m.department === deptFilter)) return false;
       if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [assignedTeams, trackFilter, statusFilter, deptFilter, search, session.email]);
+  }, [assignedTeams, problemStatementFilter, statusFilter, deptFilter, search, session.email]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "judge") {
     return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading judge portal...</div>;
@@ -234,7 +234,6 @@ export default function JudgeDashboard() {
                   <div className="font-bold text-primary-dark dark:text-gray-100 text-sm mb-3">Pending Reviews</div>
                   <div className="flex flex-col gap-2">
                     {pendingTeams.slice(0, 3).map((t) => {
-                      const track = HACK_TRACKS.find((tr) => tr.id === t.trackId);
                       return (
                         <button key={t.id} onClick={() => openEvalModal(t)}
                           className="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer group text-left">
@@ -243,7 +242,7 @@ export default function JudgeDashboard() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-sm text-primary-dark dark:text-gray-100">{t.name}</div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500">{track?.label || "—"}</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">{problemStatements.find((ps) => ps.id === t.problemStatementId)?.title || "—"}</div>
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
                         </button>
@@ -267,10 +266,10 @@ export default function JudgeDashboard() {
                     <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search teams..."
                       className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
                   </div>
-                  <select value={trackFilter} onChange={(e) => setTrackFilter(e.target.value)}
+                  <select value={problemStatementFilter} onChange={(e) => setProblemStatementFilter(e.target.value)}
                     className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
-                    <option value="all">All Tracks</option>
-                    {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
+                    <option value="all">All Problem Statements</option>
+                    {problemStatements.map((ps) => <option key={ps.id} value={ps.id}>{ps.title}</option>)}
                   </select>
                   <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
                     className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
@@ -289,7 +288,6 @@ export default function JudgeDashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredQueue.map((team) => {
-                    const track = HACK_TRACKS.find((tr) => tr.id === team.trackId);
                     const reviewed = team.evaluations?.some((e) => e.judgeEmail === session.email);
                     const myEval = team.evaluations?.find((e) => e.judgeEmail === session.email);
                     const teamAvgScore = myEval ? Math.round((myEval.innovation + myEval.feasibility + myEval.presentation + (myEval.technicalDepth ?? 0) + (myEval.aiUsage ?? 0)) / 5 * 10) / 10 : null;
@@ -301,7 +299,7 @@ export default function JudgeDashboard() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-primary-dark dark:text-gray-100">{team.name}</div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500">{track?.label || "—"} · {team.members.length} members</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">{problemStatements.find(ps => ps.id === team.problemStatementId)?.title || "—"} · {team.members.length} members</div>
                           </div>
                           <span className={`text-xs font-bold px-2 py-1 rounded-full ${reviewed ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                             {reviewed ? "Reviewed" : "Pending"}
@@ -348,14 +346,13 @@ export default function JudgeDashboard() {
                       <tr>
                         <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Rank</th>
                         <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Team</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Track</th>
+                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Problem Statement</th>
                         <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Average Score</th>
                         <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Reviews</th>
                       </tr>
                     </thead>
                     <tbody>
                       {leaderboardTeams.map((team, index) => {
-                        const track = HACK_TRACKS.find((tr) => tr.id === team.trackId);
                         const evals = team.evaluations || [];
                         return (
                           <tr key={team.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -373,7 +370,7 @@ export default function JudgeDashboard() {
                               {team.name}
                             </td>
                             <td className="px-5 py-3 text-xs text-gray-500 dark:text-gray-400">
-                              {track?.label || "—"}
+                              {problemStatements.find((ps) => ps.id === team.problemStatementId)?.title || "—"}
                             </td>
                             <td className="px-5 py-3 font-extrabold text-blue-600 dark:text-blue-400">
                               {team.avgScore > 0 ? `${team.avgScore} / 10` : "Not evaluated"}
@@ -468,7 +465,7 @@ export default function JudgeDashboard() {
                   </div>
                   <div>
                     <div className="font-extrabold text-primary-dark dark:text-gray-100">{evalTeam.name}</div>
-                    <div className="text-sm text-gray-400 dark:text-gray-500">{HACK_TRACKS.find(t => t.id === evalTeam.trackId)?.label || "—"}</div>
+                    <div className="text-sm text-gray-400 dark:text-gray-500">{problemStatements.find(ps => ps.id === evalTeam.problemStatementId)?.title || "—"}</div>
                   </div>
                 </div>
 
@@ -610,7 +607,7 @@ export default function JudgeDashboard() {
                     {/* Project */}
                     <div>
                       <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Problem Statement & Abstract</div>
-                      <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">{HACK_TRACKS.find(t => t.id === selectedTeam.trackId)?.label || "—"}</div>
+                      <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">{problemStatements.find(ps => ps.id === selectedTeam.problemStatementId)?.title || "—"}</div>
                       <p className="text-sm text-gray-700 dark:text-gray-300">{selectedTeam.projectDescription || "Not provided."}</p>
                     </div>
 

@@ -16,7 +16,6 @@ export interface Team {
   submitted?: boolean;
   submittedAt?: string;
   qrToken?: string;
-  trackId?: string;
   paymentVerified?: boolean;
   facultyApproved?: boolean;
   attendance?: AttendanceRecord;
@@ -79,7 +78,7 @@ export interface Evaluation {
 export interface TeamRegistrationRequest {
   name: string;
   projectDescription: string;
-  trackId: string;
+  problemStatementId: string;
   members: Participant[];
 }
 
@@ -90,7 +89,7 @@ export interface TeamUpdateRequest {
   videoUrl?: string;
   demoUrl?: string;
   aiDisclosure?: string;
-  trackId?: string;
+  problemStatementId?: string;
   members?: Participant[];
 }
 
@@ -102,7 +101,7 @@ export interface TeamApprovalRequest {
 
 export interface TeamFilters {
   status?: TeamStatus;
-  trackId?: string;
+  problemStatementId?: string;
   department?: string;
   size?: number;
   search?: string;
