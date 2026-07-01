@@ -62,7 +62,7 @@ export default function ParticipantDashboard() {
     markNotificationRead, markAllNotificationsRead,
     logout, raiseTicket, getProfile, updateProfile,
     registerTeam, deleteTeam, leaveTeam, sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest, teamRequests, activeHackathonId,
-    foodTokens, foodMeals
+    foodTokens, foodMeals, userProfiles
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -88,6 +88,8 @@ export default function ParticipantDashboard() {
   const [createTeamDescription, setCreateTeamDescription] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
+  const [selectedUserEmail, setSelectedUserEmail] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
   const [newMember, setNewMember] = useState<Participant>({
     name: "", registerNumber: "", email: "", phone: "",
     department: DEPT_OPTIONS[0], year: YEAR_OPTIONS[2],
@@ -97,7 +99,7 @@ export default function ParticipantDashboard() {
     projectDescription: "", githubUrl: "", videoUrl: "", demoUrl: "", aiDisclosure: "", trackId: "",
   });
   const [regTeamName, setRegTeamName] = useState("");
-  const [regTrackId, setRegTrackId] = useState("");
+  const [regProblemStatementId, setRegProblemStatementId] = useState("");
   const [regProjectBrief, setRegProjectBrief] = useState("");
 
   useEffect(() => { setMounted(true); }, []);
@@ -156,7 +158,7 @@ export default function ParticipantDashboard() {
   useEffect(() => {
     if (team) {
       setRegTeamName(team.name || "");
-      setRegTrackId(team.trackId || "");
+      setRegProblemStatementId(team.problemStatementId || team.trackId || "");
       setRegProjectBrief(team.projectDescription || "");
     }
   }, [team]);
@@ -323,15 +325,15 @@ export default function ParticipantDashboard() {
     }
   };
 
-  const needsRegistration = team ? (team.status === "PENDING" || !team.trackId) : false;
+  const needsRegistration = team ? (team.status === "PENDING" || (!team.trackId && !team.problemStatementId)) : false;
 
   const handleSaveRegistration = () => {
     if (!team) return;
     if (!regTeamName.trim()) { toast("Please enter a team name.", "error"); return; }
-    if (!regTrackId) { toast("Please select a track.", "error"); return; }
+    if (!regProblemStatementId) { toast("Please select a problem statement.", "error"); return; }
     updateProjectDetails(team.id, {
       name: regTeamName.trim(),
-      trackId: regTrackId,
+      problemStatementId: regProblemStatementId,
       projectDescription: regProjectBrief.trim(),
     });
     toast("Registration details saved.", "success");
@@ -387,18 +389,11 @@ export default function ParticipantDashboard() {
     }
   };
 
-  const handleSendInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendInviteToUser = async (userEmail: string, userName: string) => {
     if (!team) return;
-    if (!inviteEmail.trim() || !inviteName.trim()) {
-      toast("Name and email are required.", "error");
-      return;
-    }
     try {
-      await sendTeamInvite(inviteEmail.trim(), inviteName.trim(), team.id, "Please join my team!");
-      toast(`Invite sent to ${inviteName}`, "success");
-      setInviteEmail("");
-      setInviteName("");
+      await sendTeamInvite(userEmail, userName, team.id, "Please join my team!");
+      toast(`Invite sent to ${userName}`, "success");
     } catch (err: unknown) {
       toast("Failed to send invite.", "error");
     }
@@ -689,11 +684,11 @@ export default function ParticipantDashboard() {
                                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                             </div>
                             <div>
-                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Track</label>
-                              <select value={regTrackId} onChange={(e) => setRegTrackId(e.target.value)}
+                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Problem Statement</label>
+                              <select value={regProblemStatementId} onChange={(e) => setRegProblemStatementId(e.target.value)}
                                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                                <option value="">Select a track...</option>
-                                {HACK_TRACKS.map((tr) => <option key={tr.id} value={tr.id}>{tr.label}</option>)}
+                                <option value="">Select a problem statement...</option>
+                                {publishedProblemStatements.map((ps) => <option key={ps.id} value={ps.id}>{ps.title}</option>)}
                               </select>
                             </div>
                           </div>
@@ -768,28 +763,70 @@ export default function ParticipantDashboard() {
                       {team.members.find(m => m.email === session.email)?.isLeader && team.members.length < 4 && (
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
                           <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Invite Teammate</h4>
-                          <form onSubmit={handleSendInvite} className="space-y-3">
-                            <input
-                              type="text"
-                              placeholder="Name"
-                              value={inviteName}
-                              onChange={(e) => setInviteName(e.target.value)}
-                              className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
-                            />
-                            <input
-                              type="email"
-                              placeholder="Email Address"
-                              value={inviteEmail}
-                              onChange={(e) => setInviteEmail(e.target.value)}
-                              className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
-                            />
-                            <button
-                              type="submit"
-                              className="w-full py-2 bg-primary-green text-white font-bold text-xs rounded-lg hover:bg-primary-dark transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                            >
-                              <Send className="h-3 w-3" /> Send Invitation
-                            </button>
-                          </form>
+                          <input
+                            type="text"
+                            placeholder="Search participants by name or email..."
+                            value={userSearchQuery}
+                            onChange={(e) => setUserSearchQuery(e.target.value)}
+                            className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                          />
+                          <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                            {userProfiles
+                              .filter((u) => u.role === "participant" && u.email !== session.email)
+                              .filter((u, index, self) => self.findIndex((t) => t.email === u.email) === index)
+                              .filter((u) => !userSearchQuery || u.name?.toLowerCase().includes(userSearchQuery.toLowerCase()) || u.email?.toLowerCase().includes(userSearchQuery.toLowerCase()))
+                              .map((u) => {
+                                const isAlreadyInTeam = teams.some(t => t.members.some(m => m.email === u.email));
+                                const isInvitePending = teamRequests.some(r => r.direction === "invite" && r.toEmail === u.email && r.teamId === team.id && r.status === "pending");
+                                return (
+                                  <div key={u.email} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750">
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-primary-dark dark:text-gray-100 truncate">{u.name || "Unknown"}</p>
+                                      <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{u.email}</p>
+                                    </div>
+                                    <button
+                                      onClick={() => handleSendInviteToUser(u.email, u.name || "Participant")}
+                                      disabled={isAlreadyInTeam || isInvitePending}
+                                      className={`shrink-0 px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 ${
+                                        isAlreadyInTeam ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400" :
+                                        isInvitePending ? "bg-amber-100 text-amber-700 cursor-not-allowed dark:bg-amber-900/30" :
+                                        "bg-primary-green text-white hover:bg-primary-dark cursor-pointer"
+                                      }`}
+                                    >
+                                      {isAlreadyInTeam ? "In Team" : isInvitePending ? "Pending" : <><Send className="h-3 w-3" /> Invite</>}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            {userProfiles.filter((u) => u.role === "participant" && u.email !== session.email).length === 0 && (
+                              <p className="text-[10px] text-gray-400 text-center py-2">No other participants found.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Sent Invites Status */}
+                      {team.members.find(m => m.email === session.email)?.isLeader && teamRequests.filter(r => r.direction === "invite" && r.teamId === team.id && r.status === "pending").length > 0 && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
+                          <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Pending Sent Invites</h4>
+                          <div className="space-y-2">
+                            {teamRequests
+                              .filter(r => r.direction === "invite" && r.teamId === team.id && r.status === "pending")
+                              .map((r) => (
+                                <div key={r.id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-150 dark:border-gray-700 rounded-xl">
+                                  <div className="text-xs">
+                                    <span className="font-bold block">{r.toEmail}</span>
+                                    <span className="text-[10px] text-gray-400">Waiting for response</span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleCancelRequest(r.id)}
+                                    className="px-2.5 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-700 text-[10px] font-bold rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ))}
+                          </div>
                         </div>
                       )}
 

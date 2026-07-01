@@ -315,7 +315,9 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     }, (err) => console.warn("Announcements sync error:", err));
 
     // Problem statements scoped listener
-    const problemsQ = query(collection(firestore, "problemStatements"), where("hackathonId", "==", targetHackathonId));
+    const problemsQ = (session.role === "admin" || session.role === "organizer") 
+      ? query(collection(firestore, "problemStatements"))
+      : query(collection(firestore, "problemStatements"), where("hackathonId", "==", targetHackathonId));
     const unsubProblems = onSnapshot(problemsQ, (snap) => {
       const list: ProblemStatement[] = [];
       snap.forEach((d) => {
@@ -371,15 +373,15 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       }, (err) => console.warn("FoodTokens sync error:", err));
     }
 
-    // Users listener (only for admin / organizer)
+    // Users listener (available for participants to invite teammates)
     let unsubUsers = () => {};
-    if (session.role === "admin" || session.role === "organizer") {
+    if (session.isLoggedIn) {
       unsubUsers = onSnapshot(collection(firestore, "users"), (snap) => {
         const allProfiles: UserProfile[] = [];
         const vols: Volunteer[] = [];
         snap.forEach((d) => {
           const data = d.data();
-          allProfiles.push({ id: d.id, ...data, email: data.email || "" } as unknown as UserProfile);
+          allProfiles.push({ id: d.id, ...data, name: data.name || data.displayName || "Unknown", email: data.email || "" } as unknown as UserProfile);
           if (data.role === "volunteer") {
             vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
           }
