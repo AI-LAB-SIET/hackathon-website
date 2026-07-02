@@ -40,7 +40,7 @@ import { Team, ProblemStatement, FileAttachment, Participant, Hackathon, FoodMea
 
 import { isConfigured, db, auth } from "@/lib/firebase";
 
-type TabType = "dashboard" | "hackathons" | "members" | "participants" | "attendance" | "announcements" | "problems" | "teams" | "foodTokens" | "profile";
+type TabType = "dashboard" | "hackathons" | "members" | "participants" | "attendance" | "announcements" | "problems" | "templates" | "teams" | "foodTokens" | "profile";
 
 interface Member {
   id: string;
@@ -59,7 +59,8 @@ export default function AdminDashboard() {
     updateProfile, getProfile, updateTeamMembers, addProfile, deleteProfile,
     approveTeam, rejectTeam, deleteTeam,
     hackathons, createHackathon, updateHackathon, deleteHackathon, setActiveHackathon, activeHackathonId,
-    foodMeals, createMeal, updateMeal, deleteMeal, issueMealTokens, foodTokens, revokeToken
+    foodMeals, createMeal, updateMeal, deleteMeal, issueMealTokens, foodTokens, revokeToken,
+    templates, addTemplate, deleteTemplate
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -137,10 +138,16 @@ export default function AdminDashboard() {
   const [psCreateOpen, setPsCreateOpen] = useState(false);
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
   const [psAttachments, setPsAttachments] = useState<FileAttachment[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
+  // Template form
+  const [tplForm, setTplForm] = useState({ title: "", description: "" });
+  const [tplAttachments, setTplAttachments] = useState<FileAttachment[]>([]);
+  const [tplCreateOpen, setTplCreateOpen] = useState(false);
+
   // Inline quick-add form
   const [quickPsForm, setQuickPsForm] = useState({ title: "", description: "" });
   const [quickPsAdding, setQuickPsAdding] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
 
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -637,6 +644,33 @@ export default function AdminDashboard() {
     setQuickPsAdding(false);
   };
 
+  const handleSaveTemplate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tplForm.title.trim()) {
+      toast("Title is required", "error");
+      return;
+    }
+
+    const payload = {
+      title: tplForm.title.trim(),
+      description: tplForm.description.trim(),
+      attachments: tplAttachments,
+      uploadedBy: session.email || "",
+    };
+
+    addTemplate(payload);
+    toast("Template published successfully.", "success");
+
+    setTplForm({ title: "", description: "" });
+    setTplAttachments([]);
+    setTplCreateOpen(false);
+  };
+
+  const handleArchiveTemplate = (id: string) => {
+    deleteTemplate(id);
+    toast("Template removed.", "info");
+  };
+
   // ─── PROFILE ───
   const handleSaveProfile = () => {
     if (session.email) {
@@ -654,11 +688,12 @@ export default function AdminDashboard() {
   const tabLabels: Record<TabType, string> = {
     dashboard: "Dashboard",
     hackathons: "Hackathons",
-    members: "Members & Roles",
+    members: "Users & Roles",
     participants: "Participants",
-    attendance: "Attendance Register",
+    attendance: "Attendance",
     announcements: "Announcements",
-    problems: "Problem Statements",
+    problems: "On-Spot Materials",
+    templates: "Publish Templates",
     teams: "Team Management",
     foodTokens: "Food Tokens",
     profile: "Profile",
@@ -1438,6 +1473,76 @@ export default function AdminDashboard() {
                   <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-10 text-center shadow-sm">
                     <BookOpen className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                     <p className="text-gray-400 dark:text-gray-500 text-sm">No problem statements yet. Use the quick-add form above or click &quot;Create&quot; for advanced options.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════ TEMPLATES TAB ═══════════════════════════════════════════ */}
+            {activeTab === "templates" && (
+              <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">Publish Templates</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Upload PPT templates and resources for participants.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setTplForm({ title: "", description: "" });
+                      setTplAttachments([]);
+                      setTplCreateOpen(true);
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-xs"
+                  >
+                    <Plus className="h-4 w-4" /> Upload Template
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {templates.map((tpl) => (
+                    <div key={tpl.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-150 dark:border-gray-800 p-4 flex flex-col h-full">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">{tpl.title}</h4>
+                          <p className="text-[10px] text-gray-500">{new Date(tpl.createdAt).toLocaleString()}</p>
+                        </div>
+                        <button
+                          onClick={() => handleArchiveTemplate(tpl.id)}
+                          className="shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-3 flex-1">{tpl.description}</p>
+                      
+                      {tpl.attachments && tpl.attachments.length > 0 && (
+                        <div className="mt-auto space-y-1.5">
+                          {tpl.attachments.map((file, idx) => (
+                            <a
+                              key={idx}
+                              href={file.dataUrl}
+                              download={file.name}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800 transition-colors group"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <FileText className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{file.name}</span>
+                              </div>
+                              <Download className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-500 shrink-0 ml-2" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                {templates.length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-10 text-center">
+                    <FileText className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">No templates published.</p>
                   </div>
                 )}
               </div>
@@ -2336,6 +2441,76 @@ export default function AdminDashboard() {
             {psEditId ? "Update" : "Create Problem Statement"}
           </Button>
         </div>
+      </Modal>
+
+      {/* ─── CREATE TEMPLATE MODAL ─── */}
+      <Modal isOpen={tplCreateOpen} onClose={() => { setTplCreateOpen(false); setTplForm({ title: "", description: "" }); setTplAttachments([]); }} title="Upload Template">
+        <form onSubmit={handleSaveTemplate} className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Template Title *</label>
+            <input type="text" required value={tplForm.title} onChange={(e) => setTplForm({ ...tplForm, title: e.target.value })}
+              placeholder="e.g. Official Pitch Deck Template" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Description</label>
+            <textarea rows={3} value={tplForm.description} onChange={(e) => setTplForm({ ...tplForm, description: e.target.value })}
+              placeholder="Describe this template..." className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Attachments</label>
+            <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <input type="file" multiple id="tpl-upload-admin" className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    setUploadingFile(true);
+                    Array.from(e.target.files).forEach(file => {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        setTplAttachments(prev => [...prev, {
+                          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                          name: file.name,
+                          type: file.type,
+                          size: file.size,
+                          dataUrl: ev.target?.result as string,
+                          uploadedAt: new Date().toISOString()
+                        }]);
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                    setUploadingFile(false);
+                  }
+                }}
+              />
+              <label htmlFor="tpl-upload-admin" className="cursor-pointer flex flex-col items-center">
+                <Paperclip className="h-6 w-6 text-gray-400 mb-2" />
+                <span className="text-sm font-semibold text-primary-dark dark:text-gray-100">Click to upload files</span>
+                <span className="text-xs text-gray-500 mt-1">PPTX, PDF, DOCX (Max 10MB)</span>
+              </label>
+            </div>
+            {tplAttachments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {tplAttachments.map((file) => (
+                  <div key={file.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-2 overflow-hidden text-xs">
+                      <FileText className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <span className="truncate font-medium text-gray-700 dark:text-gray-300">{file.name}</span>
+                      <span className="text-gray-400">({(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                    <button type="button" onClick={() => setTplAttachments(tplAttachments.filter(a => a.id !== file.id))} className="p-1 text-gray-400 hover:text-red-500 cursor-pointer rounded">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="pt-2">
+            <button type="submit" disabled={uploadingFile}
+              className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 cursor-pointer disabled:opacity-50">
+              {uploadingFile ? "Uploading..." : "Publish Template"}
+            </button>
+          </div>
+        </form>
       </Modal>
 
       {/* Team Detail Modal */}

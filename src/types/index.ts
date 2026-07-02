@@ -243,6 +243,16 @@ export interface FileAttachment {
   uploadedAt: string;
 }
 
+export interface TemplateResource {
+  id: string;
+  hackathonId?: string;
+  title: string;
+  description: string;
+  attachments?: FileAttachment[];
+  createdAt: string;
+  uploadedBy?: string;
+}
+
 export interface ProblemStatement {
   id: string;
   hackathonId?: string;            // optional — StateProvider fills from activeHackathonId

@@ -63,6 +63,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
           { id: "queue", name: "Review Queue", icon: <ListChecks className="h-5 w-5" /> },
           { id: "leaderboard", name: "Leaderboard", icon: <Award className="h-5 w-5" /> },
+          { id: "problems", name: "Problems", icon: <BookOpen className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
         ];
 
@@ -83,6 +84,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           { id: "teams", name: "Teams Directory", icon: <Users className="h-5 w-5" /> },
           { id: "approval", name: "Approval Queue", icon: <UserCheck className="h-5 w-5" /> },
           { id: "problems", name: "On-Spot Materials", icon: <BookOpen className="h-5 w-5" /> },
+          { id: "templates", name: "Publish Template", icon: <FolderCode className="h-5 w-5" /> },
           { id: "volunteers", name: "Volunteers", icon: <UserCheck className="h-5 w-5" /> },
           { id: "tickets", name: "Tickets", icon: <LifeBuoy className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },
@@ -96,6 +98,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           { id: "attendance", name: "Attendance Register", icon: <ClipboardCheck className="h-5 w-5" /> },
           { id: "announcements", name: "Announcements", icon: <Megaphone className="h-5 w-5" /> },
           { id: "problems", name: "Problems", icon: <BookOpen className="h-5 w-5" /> },
+          { id: "templates", name: "Publish Template", icon: <FolderCode className="h-5 w-5" /> },
           { id: "teams", name: "Approved Teams", icon: <Shield className="h-5 w-5" /> },
           { id: "foodTokens", name: "Food Tokens", icon: <QrCode className="h-5 w-5" /> },
           { id: "profile", name: "Profile", icon: <User className="h-5 w-5" /> },

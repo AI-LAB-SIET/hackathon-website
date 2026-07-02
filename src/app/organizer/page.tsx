@@ -17,12 +17,11 @@ import {
   Mail, Phone, ChevronRight, Activity, Ticket,
   Download, UserPlus, Trash2, UserCheck,
   Github, Video, Globe, BookOpen, Upload, FileText, Paperclip,
-  Archive, Send, Edit3, X, QrCode, Info
+  Archive, Send, Edit3, X, QrCode, Info, FolderCode
 } from "lucide-react";
-import { FileAttachment, ProblemStatement, Team, Volunteer, SupportTicket, FoodToken } from "@/types";
+import { FileAttachment, ProblemStatement, Team, Volunteer, SupportTicket, FoodToken, TemplateResource } from "@/types";
 
-
-type TabType = "dashboard" | "scanner" | "teams" | "approval" | "problems" | "volunteers" | "tickets" | "profile";
+type TabType = "dashboard" | "scanner" | "teams" | "approval" | "problems" | "templates" | "volunteers" | "tickets" | "profile";
 type ApprovalFilter = "all" | "pending" | "approved" | "rejected";
 type TicketFilter = "all" | "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
 
@@ -33,6 +32,7 @@ export default function OrganizerDashboard() {
     approveTeam, rejectTeam, deleteTeam, addAnnouncement, markNotificationRead, markAllNotificationsRead,
     addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus,
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
+    templates, addTemplate, deleteTemplate,
     foodMeals, foodTokens, redeemToken, lookupToken, activeHackathonId
   } = useAppState();
   const { toast } = useToast();
@@ -67,6 +67,11 @@ export default function OrganizerDashboard() {
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
   const [psAttachments, setPsAttachments] = useState<FileAttachment[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
+
+  // Template form
+  const [tplForm, setTplForm] = useState({ title: "", description: "" });
+  const [tplAttachments, setTplAttachments] = useState<FileAttachment[]>([]);
+  const [tplCreateOpen, setTplCreateOpen] = useState(false);
 
   // Team detail modal
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
@@ -275,12 +280,55 @@ export default function OrganizerDashboard() {
 
   const handlePublishPs = (id: string) => {
     updateProblemStatement(id, { status: "published" });
+    const ps = problemStatements.find(p => p.id === id);
+    if (ps) {
+        addAnnouncement(
+            `Problem Statement Published: ${ps.title}`, 
+            `A problem statement has been published by the organizers.`,
+            "info"
+        );
+    }
     toast("Published for participants.", "success");
   };
 
   const handleArchivePs = (id: string) => {
     archiveProblemStatement(id);
+    const ps = problemStatements.find(p => p.id === id);
+    if (ps) {
+        addAnnouncement(
+            `Problem Statement Removed: ${ps.title}`, 
+            `A problem statement has been removed by the organizers.`,
+            "warning"
+        );
+    }
     toast("Material archived.", "info");
+  };
+
+  const handleSaveTemplate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tplForm.title.trim()) {
+      toast("Title is required", "error");
+      return;
+    }
+
+    const payload = {
+      title: tplForm.title.trim(),
+      description: tplForm.description.trim(),
+      attachments: tplAttachments,
+      uploadedBy: session.email || "",
+    };
+
+    addTemplate(payload);
+    toast("Template published successfully.", "success");
+
+    setTplForm({ title: "", description: "" });
+    setTplAttachments([]);
+    setTplCreateOpen(false);
+  };
+
+  const handleArchiveTemplate = (id: string) => {
+    deleteTemplate(id);
+    toast("Template removed.", "info");
   };
 
   const handleExportCSV = () => {
@@ -931,6 +979,78 @@ export default function OrganizerDashboard() {
               </motion.div>
             )}
 
+            {/* ─── TEMPLATES ─── */}
+            {activeTab === "templates" && (
+              <motion.div key="templates" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Publish Templates</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Upload PPT templates, guidelines, and other resources for participants to download.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setTplForm({ title: "", description: "" });
+                      setTplAttachments([]);
+                      setTplCreateOpen(true);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer"
+                  >
+                    <Upload className="h-4 w-4" /> Upload Template
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {templates.map((tpl) => (
+                    <div key={tpl.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden p-5 flex flex-col h-full">
+                      <div className="flex items-center gap-3 min-w-0 mb-3">
+                        <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                          <FolderCode className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-extrabold text-primary-dark dark:text-gray-100 text-sm truncate">{tpl.title}</h3>
+                          <div className="text-[10px] text-gray-500">{new Date(tpl.createdAt).toLocaleString()}</div>
+                        </div>
+                        <button onClick={() => handleArchiveTemplate(tpl.id)} className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg cursor-pointer">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-4">{tpl.description}</p>
+                      
+                      {tpl.attachments && tpl.attachments.length > 0 && (
+                        <div className="flex flex-col gap-2 mt-auto">
+                          {tpl.attachments.map((file, idx) => (
+                            <a
+                              key={idx}
+                              href={file.dataUrl}
+                              download={file.name}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                <FileText className="h-4 w-4 text-emerald-500 shrink-0" />
+                                <span className="text-xs font-semibold truncate text-primary-dark dark:text-gray-100">{file.name}</span>
+                              </div>
+                              <Download className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {templates.length === 0 && (
+                    <div className="col-span-full py-16 text-center text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                      <FolderCode className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">No templates published</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {activeTab === "volunteers" && (
               <motion.div key="volunteers" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -1308,6 +1428,77 @@ export default function OrganizerDashboard() {
                 )}
               </div>
             )}
+          </Modal>
+
+          {/* ─── CREATE TEMPLATE MODAL ─── */}
+          <Modal isOpen={tplCreateOpen} onClose={() => { setTplCreateOpen(false); setTplForm({ title: "", description: "" }); setTplAttachments([]); }} title="Upload Template">
+            <form onSubmit={handleSaveTemplate} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Template Title *</label>
+                <input type="text" required value={tplForm.title} onChange={(e) => setTplForm({ ...tplForm, title: e.target.value })}
+                  placeholder="e.g. Official Pitch Deck Template" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Description</label>
+                <textarea rows={3} value={tplForm.description} onChange={(e) => setTplForm({ ...tplForm, description: e.target.value })}
+                  placeholder="Describe this template..." className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Attachments</label>
+                <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <input type="file" multiple id="tpl-upload" className="hidden"
+                    onChange={(e) => {
+                      // Using existing handleFileUpload logic conceptually
+                      if (e.target.files) {
+                        setUploadingFile(true);
+                        Array.from(e.target.files).forEach(file => {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            setTplAttachments(prev => [...prev, {
+                              id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                              name: file.name,
+                              type: file.type,
+                              size: file.size,
+                              dataUrl: ev.target?.result as string,
+                              uploadedAt: new Date().toISOString()
+                            }]);
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                        setUploadingFile(false);
+                      }
+                    }}
+                  />
+                  <label htmlFor="tpl-upload" className="cursor-pointer flex flex-col items-center">
+                    <Paperclip className="h-6 w-6 text-gray-400 mb-2" />
+                    <span className="text-sm font-semibold text-primary-dark dark:text-gray-100">Click to upload files</span>
+                    <span className="text-xs text-gray-500 mt-1">PPTX, PDF, DOCX (Max 10MB)</span>
+                  </label>
+                </div>
+                {tplAttachments.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {tplAttachments.map((file) => (
+                      <div key={file.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 overflow-hidden text-xs">
+                          <FileText className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                          <span className="truncate font-medium text-gray-700 dark:text-gray-300">{file.name}</span>
+                          <span className="text-gray-400">({(file.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                        <button type="button" onClick={() => setTplAttachments(tplAttachments.filter(a => a.id !== file.id))} className="p-1 text-gray-400 hover:text-red-500 cursor-pointer rounded">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="pt-2">
+                <button type="submit" disabled={uploadingFile}
+                  className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 cursor-pointer disabled:opacity-50">
+                  {uploadingFile ? "Uploading..." : "Publish Template"}
+                </button>
+              </div>
+            </form>
           </Modal>
 
           {/* ─── VOLUNTEER MODAL ─── */}

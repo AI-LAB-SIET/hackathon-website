@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Team, UserSession, Announcement, Participant, Notification, SupportTicket, Volunteer, UserProfile, ProblemStatement, Ticket, Hackathon, TeamRequest, FoodMeal, FoodToken } from "@/types";
+import { Team, UserSession, Announcement, Participant, Notification, SupportTicket, Volunteer, UserProfile, ProblemStatement, Ticket, Hackathon, TeamRequest, FoodMeal, FoodToken, TemplateResource } from "@/types";
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS, INITIAL_NOTIFICATIONS, INITIAL_VOLUNTEERS } from "@/lib/mockData";
 import { db as rawDb, auth as rawAuth, isConfigured } from "@/lib/firebase";
 import { Firestore } from "firebase/firestore";
@@ -39,6 +39,7 @@ interface StateContextType {
   teamRequests: TeamRequest[];
   foodMeals: FoodMeal[];
   foodTokens: FoodToken[];
+  templates: TemplateResource[];
   activeHackathonId: string | null;
   // ─── Auth ───────────────────────────────────────────────────────────────────
   login: (email: string, role?: "participant" | "admin" | "judge" | "organizer" | "volunteer") => { success: boolean; role?: "participant" | "admin" | "judge" | "organizer" | "volunteer" };
@@ -91,6 +92,9 @@ interface StateContextType {
   createTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "status">) => void;
   assignTicket: (ticketId: string, volunteerEmail: string) => void;
   updateTicketStatus: (ticketId: string, status: Ticket["status"]) => void;
+  // ─── Templates ───────────────────────────────────────────────────────────────
+  addTemplate: (template: Omit<TemplateResource, "id" | "createdAt">) => void;
+  deleteTemplate: (id: string) => void;
   // ─── Food Tokens ─────────────────────────────────────────────────────────────
   createMeal: (meal: Omit<FoodMeal, "id" | "createdAt" | "totalIssued" | "totalRedeemed">) => Promise<string>;
   updateMeal: (id: string, data: Partial<FoodMeal>) => Promise<void>;
@@ -130,6 +134,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const [teamRequests, setTeamRequests] = useState<TeamRequest[]>([]);
   const [foodMeals, setFoodMeals] = useState<FoodMeal[]>([]);
   const [foodTokens, setFoodTokens] = useState<FoodToken[]>([]);
+  const [templates, setTemplates] = useState<TemplateResource[]>([]);
   const [activeHackathonId, setActiveHackathonIdState] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
@@ -283,6 +288,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       setFoodTokens([]);
       setAnnouncements([]);
       setProblemStatements([]);
+      setTemplates([]);
       return;
     }
 
@@ -326,6 +332,14 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       });
       setProblemStatements(list);
     }, (err) => console.warn("Problems sync error:", err));
+
+    // Templates listener
+    const templatesQ = query(collection(firestore, "templates"), where("hackathonId", "==", targetHackathonId));
+    const unsubTemplates = onSnapshot(templatesQ, (snap) => {
+      const list: TemplateResource[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as TemplateResource));
+      setTemplates(list);
+    }, (err) => console.warn("Templates sync error:", err));
 
     // Notifications scoped listener
     const notificationsQ = query(collection(firestore, "notifications"), where("hackathonId", "==", targetHackathonId));
@@ -400,6 +414,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       unsubTeamRequests();
       unsubFoodMeals();
       unsubFoodTokens();
+      unsubTemplates();
       unsubUsers();
     };
   }, [session.isLoggedIn, session.role, session.email, activeHackathonId]);
@@ -871,7 +886,13 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     } else {
       setAnnouncements((prev) => [{ ...newAnn, id: `ann-${Date.now()}` }, ...prev]);
     }
-    addNotification({ userId: "all", type: "system", title, body: content, priority: "normal" });
+    
+    // Broadcast notification to all users explicitly so everyone gets their own copy
+    userProfilesRef.current.forEach((user) => {
+      if (user.email) {
+        addNotification({ userId: user.email, type: "system", title, body: content, priority: "normal" });
+      }
+    });
   }, [addNotification, activeHackathonId]);
 
   const removeAnnouncement = useCallback(async (id: string) => {
@@ -1031,6 +1052,29 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(doc(db, "tickets", ticketId), { status, updatedAt: new Date().toISOString() });
     } else {
       setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+    }
+  }, []);
+
+  // ─── Templates ───────────────────────────────────────────────────────────────
+
+  const addTemplate = useCallback(async (template: Omit<TemplateResource, "id" | "createdAt">) => {
+    const newTemplate = {
+      ...template,
+      hackathonId: activeHackathonId || null,
+      createdAt: new Date().toISOString(),
+    };
+    if (isConfigured && db) {
+      await addDoc(collection(db, "templates"), newTemplate);
+    } else {
+      setTemplates((prev) => [{ ...newTemplate, id: `tpl-${Date.now()}` } as TemplateResource, ...prev]);
+    }
+  }, [activeHackathonId]);
+
+  const deleteTemplate = useCallback(async (id: string) => {
+    if (isConfigured && db) {
+      await deleteDoc(doc(db, "templates", id));
+    } else {
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
     }
   }, []);
 
@@ -1201,8 +1245,13 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   }, [teams, activeHackathonId]);
 
   const filteredProblems = useMemo(() => {
-    return activeHackathonId ? problemStatements.filter((ps) => ps.hackathonId === activeHackathonId) : [];
-  }, [problemStatements, activeHackathonId]);
+    let filtered = activeHackathonId ? problemStatements.filter((ps) => ps.hackathonId === activeHackathonId) : [];
+    if (session.role === "participant" || session.role === "volunteer") {
+      filtered = filtered.filter((ps) => ps.status === "published");
+    }
+    // Organizers, Admins, and Judges can see all statuses (draft, published, archived)
+    return filtered;
+  }, [problemStatements, activeHackathonId, session.role]);
 
   const filteredAnnouncements = useMemo(() => {
     return announcements.filter((a) => !a.hackathonId || a.hackathonId === activeHackathonId);
@@ -1215,6 +1264,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const filteredTeamRequests = useMemo(() => {
     return activeHackathonId ? teamRequests.filter((tr) => tr.hackathonId === activeHackathonId) : [];
   }, [teamRequests, activeHackathonId]);
+
+  const filteredNotifications = useMemo(() => {
+    if (!session.email) return [];
+    return notifications.filter(n => n.userId === "all" || n.userId === session.email);
+  }, [notifications, session.email]);
 
   const filteredFoodMeals = useMemo(() => {
     return activeHackathonId ? foodMeals.filter((m) => m.hackathonId === activeHackathonId) : [];
@@ -1231,7 +1285,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     teams: filteredTeams,
     session,
     announcements: filteredAnnouncements,
-    notifications,
+    notifications: filteredNotifications,
     volunteers,
     userProfiles,
     problemStatements: filteredProblems,
@@ -1241,6 +1295,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     foodMeals: filteredFoodMeals,
     foodTokens: filteredFoodTokens,
     activeHackathonId,
+    templates,
     // Auth
     login, logout,
     // Hackathons
@@ -1266,6 +1321,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     createTicket, assignTicket, updateTicketStatus,
     // Food tokens
     createMeal, updateMeal, deleteMeal, issueMealTokens, redeemToken, redeemTokenByCode, getMyTokens, revokeToken, lookupToken,
+    // Templates
+    addTemplate, deleteTemplate,
   }), [
     filteredTeams, session, filteredAnnouncements, notifications,
     volunteers, userProfiles, filteredProblems, filteredTickets,
@@ -1283,6 +1340,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
     createTicket, assignTicket, updateTicketStatus,
     createMeal, updateMeal, deleteMeal, issueMealTokens, redeemToken, redeemTokenByCode, getMyTokens, revokeToken, lookupToken,
+    addTemplate, deleteTemplate,
   ]);
 
   return (

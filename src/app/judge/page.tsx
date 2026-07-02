@@ -14,12 +14,12 @@ import {
   Bell,
   Search, CheckCircle, Clock, X, ChevronRight,
   Github, Video, Globe, Star, Users, Mail, Phone,
-  Eye
+  Eye, BookOpen, Upload, FileText, Trash2, Edit3, Archive, Download, Paperclip, Send
 } from "lucide-react";
-import { Team } from "@/types";
+import { Team, FileAttachment, ProblemStatement } from "@/types";
 
 
-type TabType = "dashboard" | "queue" | "leaderboard" | "profile";
+type TabType = "dashboard" | "queue" | "leaderboard" | "problems" | "profile";
 
 const SCORE_CRITERIA = [
   { key: "innovation" as const, label: "Innovation & Originality", max: 10 },
@@ -31,7 +31,7 @@ const SCORE_CRITERIA = [
 
 export default function JudgeDashboard() {
   const router = useRouter();
-  const { session, teams, notifications, problemStatements, evaluateProject, markNotificationRead, markAllNotificationsRead } = useAppState();
+  const { session, teams, notifications, problemStatements, evaluateProject, markNotificationRead, markAllNotificationsRead, addProblemStatement, updateProblemStatement, archiveProblemStatement, addAnnouncement } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -41,6 +41,14 @@ export default function JudgeDashboard() {
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "reviewed">("all");
   const [deptFilter, setDeptFilter] = useState("all");
   const [search, setSearch] = useState("");
+
+  // On-spot material form
+  const [psForm, setPsForm] = useState({ title: "", description: "", status: "draft" as "draft" | "published" | "archived" });
+  const [psEditId, setPsEditId] = useState<string | null>(null);
+  const [psCreateOpen, setPsCreateOpen] = useState(false);
+  const [expandedPs, setExpandedPs] = useState<string | null>(null);
+  const [psAttachments, setPsAttachments] = useState<FileAttachment[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   // Team detail popup
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
@@ -136,6 +144,125 @@ export default function JudgeDashboard() {
     setEvalTeam(null);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast("File too large. Max 10MB allowed.", "error");
+      e.target.value = "";
+      return;
+    }
+
+    setUploadingFile(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const attachment: FileAttachment = {
+        id: `file-${Date.now()}`,
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        dataUrl: reader.result as string,
+        uploadedAt: new Date().toISOString(),
+      };
+      setPsAttachments((prev) => [...prev, attachment]);
+      setUploadingFile(false);
+      toast(`"${file.name}" attached successfully.`, "success");
+    };
+    reader.onerror = () => {
+      setUploadingFile(false);
+      toast("Failed to read file.", "error");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const downloadAttachment = (att: FileAttachment) => {
+    const link = document.createElement("a");
+    link.href = att.dataUrl;
+    link.download = att.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleRemoveAttachment = (attachmentId: string) => {
+    setPsAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    toast("Attachment removed.", "info");
+  };
+
+  const handleSaveProblemStatement = () => {
+    if (!psForm.title || !psForm.description) {
+      toast("Title and description are required.", "error");
+      return;
+    }
+
+    const payload = {
+      title: psForm.title,
+      description: psForm.description,
+      status: psForm.status,
+      attachments: psAttachments,
+    };
+
+    if (psEditId) {
+      updateProblemStatement(psEditId, payload);
+      toast("Problem statement updated.", "success");
+    } else {
+      addProblemStatement(payload);
+      addAnnouncement(
+        `New Problem Statement: ${psForm.title}`, 
+        `A new problem statement has been submitted by the judges.`,
+        "info"
+      );
+      toast("Problem statement created.", "success");
+    }
+
+    setPsForm({ title: "", description: "", status: "draft" });
+    setPsAttachments([]);
+    setPsEditId(null);
+    setPsCreateOpen(false);
+  };
+
+  const handleEditPs = (ps: ProblemStatement) => {
+    setPsEditId(ps.id);
+    setPsForm({ title: ps.title, description: ps.description, status: ps.status });
+    setPsAttachments(ps.attachments || []);
+    setPsCreateOpen(true);
+  };
+
+  const handlePublishPs = (id: string) => {
+    updateProblemStatement(id, { status: "published" });
+    const ps = problemStatements.find(p => p.id === id);
+    if (ps) {
+        addAnnouncement(
+            `Problem Statement Published: ${ps.title}`, 
+            `A problem statement has been published by the judges.`,
+            "info"
+        );
+    }
+    toast("Published for participants.", "success");
+  };
+
+  const handleArchivePs = (id: string) => {
+    archiveProblemStatement(id);
+    const ps = problemStatements.find(p => p.id === id);
+    if (ps) {
+        addAnnouncement(
+            `Problem Statement Removed: ${ps.title}`, 
+            `A problem statement has been removed by the judges.`,
+            "warning"
+        );
+    }
+    toast("Problem statement archived.", "info");
+  };
+
   return (
     <PageWrapper>
       <div className="flex min-h-screen bg-[#f8fafb] dark:bg-gray-950">
@@ -145,6 +272,19 @@ export default function JudgeDashboard() {
           <div className="flex items-center justify-end gap-2 mb-8">
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              {activeTab === "problems" && (
+                <button
+                  onClick={() => {
+                    setPsEditId(null);
+                    setPsForm({ title: "", description: "", status: "draft" });
+                    setPsAttachments([]);
+                    setPsCreateOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
+                >
+                  <Upload className="h-4 w-4" /> Upload Material
+                </button>
+              )}
 
               {/* Notification Bell */}
               <div className="relative">
@@ -390,6 +530,133 @@ export default function JudgeDashboard() {
                       )}
                     </tbody>
                   </table>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── PROBLEMS ─── */}
+            {activeTab === "problems" && (
+              <motion.div key="problems" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Problem Statements</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Upload and manage problem statements for participants.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setPsEditId(null);
+                      setPsForm({ title: "", description: "", status: "draft" });
+                      setPsAttachments([]);
+                      setPsCreateOpen(true);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer"
+                  >
+                    <Upload className="h-4 w-4" /> Add Problem Statement
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  {problemStatements.map((ps) => {
+                    const isExpanded = expandedPs === ps.id;
+                    return (
+                      <div key={ps.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                        <button
+                          onClick={() => setExpandedPs(isExpanded ? null : ps.id)}
+                          className="w-full p-5 flex items-center justify-between gap-4 text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                              <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-extrabold text-primary-dark dark:text-gray-100 text-sm">{ps.title}</h3>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  ps.status === "published" ? "bg-emerald-100 text-emerald-700" :
+                                  ps.status === "archived" ? "bg-red-100 text-red-700" :
+                                  "bg-amber-100 text-amber-700"
+                                }`}>
+                                  {ps.status.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                {ps.attachments?.length || 0} files - Created {new Date(ps.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronRight className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                        </button>
+
+                        {isExpanded && (
+                          <div className="px-5 pb-5 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{ps.description}</p>
+
+                            {ps.attachments && ps.attachments.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                                  <Paperclip className="h-3.5 w-3.5" /> Attachments
+                                </div>
+                                {ps.attachments.map((att) => (
+                                  <div key={att.id} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="h-9 w-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+                                        <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{att.name}</div>
+                                        <div className="text-xs text-gray-400 dark:text-gray-500">{formatFileSize(att.size)}</div>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => downloadAttachment(att)}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-100 cursor-pointer shrink-0"
+                                    >
+                                      <Download className="h-3.5 w-3.5" /> Download
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex gap-2 flex-wrap">
+                              <button onClick={() => handleEditPs(ps)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer">
+                                <Edit3 className="h-3.5 w-3.5" /> Edit
+                              </button>
+                              {ps.status !== "published" && (
+                                <button onClick={() => handlePublishPs(ps.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold hover:bg-emerald-200 cursor-pointer">
+                                  <Send className="h-3.5 w-3.5" /> Publish
+                                </button>
+                              )}
+                              {ps.status !== "archived" && (
+                                <button onClick={() => handleArchivePs(ps.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold hover:bg-amber-200 cursor-pointer">
+                                  <Archive className="h-3.5 w-3.5" /> Archive
+                                </button>
+                              )}
+                              {ps.status === "archived" && (
+                                <button onClick={() => {
+                                  if (confirm("Are you sure you want to permanently delete this problem statement?")) {
+                                    // You can use a delete function here, but currently only archive is provided by state provider.
+                                    toast("To fully delete, an admin needs to remove it from the database.", "info");
+                                  }
+                                }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold hover:bg-red-200 cursor-pointer">
+                                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {problemStatements.length === 0 && (
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-10 text-center">
+                      <BookOpen className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                      <p className="text-sm text-gray-400 dark:text-gray-500">No problem statements uploaded yet.</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -641,6 +908,114 @@ export default function JudgeDashboard() {
               </div>
             )}
           </AnimatePresence>
+
+          {/* ─── PROBLEM STATEMENT MODAL ─── */}
+          <Modal
+            isOpen={psCreateOpen}
+            onClose={() => {
+              setPsCreateOpen(false);
+              setPsEditId(null);
+              setPsAttachments([]);
+            }}
+            title={psEditId ? "Edit Problem Statement" : "Add Problem Statement"}
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Title *</label>
+                <input
+                  type="text"
+                  value={psForm.title}
+                  onChange={(e) => setPsForm((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="Problem statement title"
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Description *</label>
+                <textarea
+                  rows={5}
+                  value={psForm.description}
+                  onChange={(e) => setPsForm((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Describe the problem statement..."
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Status</label>
+                  <select
+                    value={psForm.status}
+                    onChange={(e) => setPsForm((p) => ({ ...p, status: e.target.value as typeof psForm.status }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Attachments</label>
+                <label className={`flex flex-col items-center justify-center w-full px-4 py-5 rounded-xl border-2 border-dashed transition-colors cursor-pointer ${
+                  uploadingFile
+                    ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-gray-300 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-blue-900/10"
+                }`}>
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={uploadingFile}
+                  />
+                  {uploadingFile ? (
+                    <div className="text-blue-600 dark:text-blue-400 text-sm font-semibold flex items-center gap-2">
+                      <div className="h-4 w-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+                      Uploading...
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 text-gray-400 dark:text-gray-500 mb-2" />
+                      <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Click to upload file</div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">PDF, DOC, ZIP up to 10MB</div>
+                    </>
+                  )}
+                </label>
+
+                {psAttachments.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {psAttachments.map((att) => (
+                      <div key={att.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-4 w-4 text-gray-400 shrink-0" />
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{att.name}</span>
+                          <span className="text-[10px] text-gray-400 shrink-0">({formatFileSize(att.size)})</span>
+                        </div>
+                        <button onClick={() => handleRemoveAttachment(att.id)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 hover:text-red-500 transition-colors cursor-pointer">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => { setPsCreateOpen(false); setPsEditId(null); setPsAttachments([]); }}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProblemStatement}
+                  className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 cursor-pointer"
+                >
+                  {psEditId ? "Save Changes" : "Create Material"}
+                </button>
+              </div>
+            </div>
+          </Modal>
         </main>
       </div>
     </PageWrapper>
