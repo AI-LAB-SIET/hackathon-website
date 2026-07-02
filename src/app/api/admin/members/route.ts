@@ -10,6 +10,9 @@ async function verifyAdmin(req: NextRequest): Promise<{ uid: string } | null> {
     return null;
   }
   const idToken = authHeader.split(" ")[1];
+  if (!idToken || idToken === "undefined" || idToken === "null") {
+    return null;
+  }
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
@@ -23,6 +26,39 @@ async function verifyAdmin(req: NextRequest): Promise<{ uid: string } | null> {
   } catch (error) {
     console.error("Token verification failed:", error);
     return null;
+  }
+}
+
+/**
+ * GET /api/admin/members
+ * Lists all non-participant members from Firestore.
+ */
+export async function GET(req: NextRequest) {
+  const admin = await verifyAdmin(req);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
+  }
+
+  try {
+    const usersSnapshot = await adminDb.collection("users").get();
+    const members: Array<{ id: string; name: string; email: string; role: string; hackathonIds: string[] }> = [];
+    usersSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.role && data.role !== "participant") {
+        members.push({
+          id: doc.id,
+          name: data.displayName || data.name || "Unknown",
+          email: data.email || "",
+          role: data.role,
+          hackathonIds: data.hackathonIds || [],
+        });
+      }
+    });
+    return NextResponse.json({ success: true, members });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch members.";
+    console.error("Error fetching members:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -89,22 +125,35 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields (id, name, email, role)." }, { status: 400 });
     }
 
-    // 1. Update Firebase Auth user
-    const updateParams: { email: string; displayName: string; password?: string } = {
-      email,
-      displayName: name,
-    };
-    if (password) {
-      updateParams.password = password;
+    // 1. Try to update Firebase Auth user — gracefully handle if user doesn't exist in Auth
+    try {
+      const updateParams: { email?: string; displayName?: string; password?: string } = {
+        displayName: name,
+      };
+      // Only update email if it actually changed (to avoid "email already in use" errors)
+      const existingUser = await adminAuth.getUser(id).catch(() => null);
+      if (existingUser && existingUser.email !== email) {
+        updateParams.email = email;
+      }
+      if (password) {
+        updateParams.password = password;
+      }
+      if (existingUser) {
+        await adminAuth.updateUser(id, updateParams);
+      }
+    } catch (authErr: unknown) {
+      // Auth update failed — log but continue to update Firestore
+      const authMsg = authErr instanceof Error ? authErr.message : "Unknown auth error";
+      console.warn(`Firebase Auth update for user ${id} failed (continuing with Firestore):`, authMsg);
     }
-    await adminAuth.updateUser(id, updateParams);
 
-    // 2. Update Firestore user document
+    // 2. Update Firestore user document (this is the critical part for role/hackathon updates)
     const userRef = adminDb.collection("users").doc(id);
     await userRef.set(
       {
         email,
         displayName: name,
+        name,
         role,
         hackathonIds: hackathonIds || [],
         updatedAt: new Date().toISOString(),

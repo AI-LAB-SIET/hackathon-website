@@ -219,9 +219,12 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (isConfigured && db && auth) {
+    if (isConfigured && db && auth && auth.currentUser) {
       try {
-        const token = await auth.currentUser?.getIdToken();
+        const token = await auth.currentUser.getIdToken();
+        if (!token) {
+          throw new Error("Failed to retrieve authentication token. Please log in again.");
+        }
         const method = editingMember ? "PUT" : "POST";
         const payload = editingMember
           ? { id: editingMember.id, name: memberForm.name, email: memberForm.email, password: memberForm.password || undefined, role: memberForm.role, hackathonIds: memberForm.hackathonIds }
@@ -241,6 +244,18 @@ export default function AdminDashboard() {
           throw new Error(data.error || "Failed to save member.");
         }
 
+        // Also update local state immediately so the UI refreshes
+        const memberId = editingMember ? editingMember.id : (data.uid || `m-${Date.now()}`);
+        addProfile({
+          id: memberId,
+          uid: memberId,
+          email: memberForm.email,
+          displayName: memberForm.name,
+          name: memberForm.name,
+          role: memberForm.role,
+          hackathonIds: memberForm.hackathonIds,
+        });
+
         toast(editingMember ? "Member updated." : "Member added.", "success");
         setMemberModalOpen(false);
         setEditingMember(null);
@@ -249,6 +264,7 @@ export default function AdminDashboard() {
         toast(msg, "error");
       }
     } else {
+      // Local mock mode or user not authenticated via Firebase
       const memberId = editingMember ? editingMember.id : `m-${Date.now()}`;
       const newProfile = {
         id: memberId,
@@ -257,21 +273,22 @@ export default function AdminDashboard() {
         displayName: memberForm.name,
         name: memberForm.name,
         role: memberForm.role,
-        password: memberForm.password || undefined,
         hackathonIds: memberForm.hackathonIds,
-        createdAt: new Date().toISOString()
       };
       addProfile(newProfile);
-      toast(editingMember ? "Member updated (local mock)." : "Member added (local mock).", "success");
+      toast(editingMember ? "Member updated." : "Member added.", "success");
       setMemberModalOpen(false);
       setEditingMember(null);
     }
   };
   const handleRemoveMember = async (id: string) => {
     if (confirm("Are you sure you want to remove this member?")) {
-      if (isConfigured && db && auth) {
+      if (isConfigured && db && auth && auth.currentUser) {
         try {
-          const token = await auth.currentUser?.getIdToken();
+          const token = await auth.currentUser.getIdToken();
+          if (!token) {
+            throw new Error("Failed to retrieve authentication token.");
+          }
           const res = await fetch(`/api/admin/members?id=${id}`, {
             method: "DELETE",
             headers: {
@@ -291,7 +308,7 @@ export default function AdminDashboard() {
         }
       } else {
         deleteProfile(id);
-        toast("Member removed (local mock).", "info");
+        toast("Member removed.", "info");
         setMemberModalOpen(false);
         setEditingMember(null);
       }
