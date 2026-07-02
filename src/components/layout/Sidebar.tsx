@@ -131,7 +131,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               />
             </div>
             <span className="font-extrabold tracking-tight text-primary-dark text-sm dark:text-gray-100">
-              AI<span className="text-accent-green">_LAB</span>
+              SIET<span className="text-accent-green">_HACKATHONS</span>
             </span>
           </Link>
         )}

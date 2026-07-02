@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -24,7 +25,7 @@ import {
 } from "lucide-react";
 
 
-type TabType = "overview" | "tracks" | "timeline" | "rules" | "faq" | "problems";
+type TabType = "overview" | "tracks" | "timeline" | "rules" | "faq";
 
 const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <Info className="h-4 w-4" /> },
@@ -32,7 +33,6 @@ const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: "timeline", label: "Schedule", icon: <Calendar className="h-4 w-4" /> },
   { id: "rules", label: "Guidelines", icon: <ShieldAlert className="h-4 w-4" /> },
   { id: "faq", label: "FAQ", icon: <HelpCircle className="h-4 w-4" /> },
-  { id: "problems", label: "Problem Statements", icon: <BookOpen className="h-4 w-4" /> },
 ];
 
 
@@ -54,15 +54,15 @@ const rules = [
 ];
 
 const prizes = [
-  { title: "First Place", amount: "₹50,000", desc: "Cash prize, trophy, winner certificate, and direct incubation shortlisting.", glow: "border-amber-400 bg-amber-500/5" },
-  { title: "Second Place", amount: "₹30,000", desc: "Cash prize, runner-up certificate, and AI research lab internship invites.", glow: "border-gray-300 bg-gray-500/5" },
-  { title: "Best Innovative Agent", amount: "₹20,000", desc: "Dedicated recognition for outstanding autonomous agent architecture.", glow: "border-emerald-400 bg-emerald-500/5" },
+  { title: "Cash Rewards", amount: "Varies", desc: "Each hackathon features its own cash prize pool dedicated to rewarding top solutions.", glow: "border-amber-400 bg-amber-500/5" },
+  { title: "Certificate Credentials", amount: "Verified", desc: "Earn official blockchain-verifiable certificates validating your project submission and role.", glow: "border-gray-300 bg-gray-500/5" },
+  { title: "Incubation & Internships", amount: "Direct Access", desc: "Top builders gain direct entry to incubation reviews and internship pipelines at SIET partner labs.", glow: "border-emerald-400 bg-emerald-500/5" },
 ];
 
 const faqs = [
-  { q: "What is the registration fee?", a: "There is absolutely no registration fee. The event is fully sponsored by the AI Research Lab." },
-  { q: "What hardware support will be provided?", a: "Each shortlisted team will be provided with high-speed Wi-Fi, desk space, and power connections in the AI Lab. All teams also receive ₹5,000 in GPU cloud credits." },
-  { q: "Can we modify our team members after registration?", a: "Team rosters can be managed inside the workspace up until the abstract submission deadline on July 5th." },
+  { q: "What is the registration fee?", a: "There is absolutely no registration fee. All hackathons hosted on SIET_HACKATHONS are free to join for eligible students." },
+  { q: "How are the events conducted?", a: "Depending on the specific hackathon, events can be fully virtual, hybrid, or physical sprints hosted at the college campuses (like the AI Research Lab)." },
+  { q: "Can I participate in multiple hackathons?", a: "Yes, you can register for any active hackathon. However, you can only belong to one team per specific hackathon." },
   { q: "Who can I contact if I face errors?", a: "You can submit support tickets directly from the dashboard workspace, join our official WhatsApp group, or email the organizing desk." },
 ];
 
@@ -125,7 +125,6 @@ export default function HackathonPage() {
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
 
   const { problemStatements, hackathons, activeHackathonId } = useAppState();
-  const publishedPs = problemStatements.filter((ps) => ps.status === "published");
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -153,10 +152,10 @@ export default function HackathonPage() {
             Ecosystem Directory
           </span>
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-primary-dark dark:text-gray-100">
-            Hackathon Blueprint
+            SIET_HACKATHONS Directory
           </h1>
           <p className="max-w-2xl text-xs sm:text-sm text-gray-500 font-semibold leading-relaxed dark:text-gray-400">
-            Everything you need to understand about the AI Hack Lab rules, timeline, problem statements, evaluation models, and prizes.
+            Explore active hackathons, review general platform guidelines, and find answers to frequently asked questions.
           </p>
         </div>
       </section>
@@ -201,20 +200,20 @@ export default function HackathonPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                   <div className="flex flex-col gap-5">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight leading-tight dark:text-gray-100">
-                      Welcome to the AI Hack Lab 2026
+                      Welcome to SIET_HACKATHONS
                     </h2>
                     <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-medium">
-                      The AI Hackathon, conducted by AI Research Lab, challenges student developers to move beyond simple boilerplate code. Our 24-hour physical sprint offers direct access to top deep learning mentors, cloud infrastructure, and a dedicated platform workspace.
+                      Our platform brings together the brightest minds to solve challenging problems. Host, manage, or participate in physical, hybrid, and virtual developer sprints designed to push your technical capabilities to the next level.
                     </p>
                     <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-medium">
-                      This year, we focus on <span className="font-bold">Agentic Intelligence</span>—autonomous software agents that can reason, orchestrate APIs, and deliver end-to-end user flows.
+                      Gain access to dedicated student communities, collaborate on open-source code repositories, receive expert engineering mentorship, and showcase working prototypes to industry experts.
                     </p>
                     <div className="flex items-center gap-4 text-xs font-bold text-gray-700 mt-2 dark:text-gray-300">
                       <span className="flex items-center gap-1 bg-card-bg px-3 py-1.5 rounded-lg border border-input-border/20">
-                        <MapPin className="h-4 w-4 text-primary-green" /> Main Research Lab
+                        <MapPin className="h-4 w-4 text-primary-green" /> Partner Campus Labs
                       </span>
                       <span className="flex items-center gap-1 bg-card-bg px-3 py-1.5 rounded-lg border border-input-border/20">
-                        <Calendar className="h-4 w-4 text-primary-green" /> 24 Hrs Physical
+                        <Calendar className="h-4 w-4 text-primary-green" /> Active Hackathons
                       </span>
                     </div>
                   </div>
@@ -227,19 +226,19 @@ export default function HackathonPage() {
                     <ul className="flex flex-col gap-3.5 text-xs text-primary-dark font-bold mt-2 dark:text-gray-200">
                       <li className="flex gap-2.5 items-center">
                         <span className="h-5 w-5 rounded-full bg-primary-green text-white flex items-center justify-center text-[10px]">1</span>
-                        <span>Form team & submit idea abstract</span>
+                        <span>Find an active hackathon and register</span>
                       </li>
                       <li className="flex gap-2.5 items-center">
                         <span className="h-5 w-5 rounded-full bg-primary-green text-white flex items-center justify-center text-[10px]">2</span>
-                        <span>Claim GPU credits on shortlisting</span>
+                        <span>Form a team or join an open roster</span>
                       </li>
                       <li className="flex gap-2.5 items-center">
                         <span className="h-5 w-5 rounded-full bg-primary-green text-white flex items-center justify-center text-[10px]">3</span>
-                        <span>Iterate prototype with live mentor feedback</span>
+                        <span>Build and iterate with mentor guidance</span>
                       </li>
                       <li className="flex gap-2.5 items-center">
                         <span className="h-5 w-5 rounded-full bg-primary-green text-white flex items-center justify-center text-[10px]">4</span>
-                        <span>Submit repos and pitch to judges</span>
+                        <span>Submit repository and present layout</span>
                       </li>
                     </ul>
                   </div>
@@ -248,8 +247,8 @@ export default function HackathonPage() {
                 {/* Prizes (moved from standalone tab) */}
                 <div>
                   <div className="text-center mb-10 flex flex-col items-center gap-2">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Winner Recognition</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Competitors stand a chance to claim trophies and cash prize allocations.</p>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Platform Benefits</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Stand out, earn credentials, and showcase your engineering prowess.</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                     {prizes.map((p, idx) => (
@@ -269,65 +268,37 @@ export default function HackathonPage() {
 
             {/* TIMELINE TAB */}
             {activeTab === "timeline" && (
-              <div>
-                <div className="text-center mb-10 flex flex-col items-center gap-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Interactive Timeline</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">Stay updated on submission closings and review stages.</p>
+              <div className="flex flex-col gap-8">
+                <div className="text-center mb-6 flex flex-col items-center gap-2">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Hackathon Schedule</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">List of all active and upcoming hackathons. Join and build something amazing!</p>
                 </div>
                 
-                {/* Live Timer & Host Info */}
-                <div className="max-w-2xl mx-auto bg-card-bg/30 border border-input-border/30 rounded-3xl p-8 mb-12 shadow-sm text-center">
-                  <h3 className="text-lg font-extrabold text-primary-dark dark:text-gray-100 mb-6 flex items-center justify-center gap-2">
-                    <Calendar className="h-5 w-5 text-primary-green" /> 
-                    Countdown to Hackathon Day
-                  </h3>
-                  <div className="flex gap-4 sm:gap-6 justify-center mb-8">
-                    <CountdownTimer targetDate={activeHackathonId ? hackathons.find(h => h.id === activeHackathonId)?.startDate || "2026-07-06T00:00:00" : "2026-07-06T00:00:00"} />
-                  </div>
-                  <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-100 dark:border-emerald-800">
-                    <MapPin className="h-4 w-4" /> 
-                    Hosted by: {activeHackathonId ? hackathons.find(h => h.id === activeHackathonId)?.venue || "AI Research Lab, SIET" : "AI Research Lab, SIET"}
-                  </div>
-                </div>
-                
-                <div className="relative max-w-3xl mx-auto">
-                  {/* Vertical line */}
-                  <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-gray-200" />
-
-                  <div className="flex flex-col gap-0">
-                    {timelineSteps.map((step, idx) => {
-                      const style = statusStyles[step.status] ?? statusStyles.upcoming;
-                      return (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, x: -30 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true, amount: 0.3 }}
-                          transition={{ duration: 0.4, delay: idx * 0.1 }}
-                          className="relative flex gap-5 py-6"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
+                  {hackathons
+                    .filter((h) => h.status === "active" || h.status === "upcoming")
+                    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                    .map((h) => (
+                      <div key={h.id} className="bg-card-bg/30 border border-input-border/30 rounded-3xl p-8 shadow-sm flex flex-col gap-6 text-center justify-between">
+                        <div>
+                          <h3 className="text-xl font-extrabold text-primary-dark dark:text-gray-100 mb-2">
+                            {h.name}
+                          </h3>
+                          <p className="text-xs text-gray-400 mb-4 dark:text-gray-500">
+                            {h.venue || "SIET"} | {new Date(h.startDate).toLocaleDateString()} - {new Date(h.endDate).toLocaleDateString()}
+                          </p>
+                          <div className="flex gap-3 justify-center mb-6">
+                            <CountdownTimer targetDate={h.startDate} />
+                          </div>
+                        </div>
+                        <Link
+                          href={`/register?h=${h.slug}`}
+                          className="w-full py-3 px-4 rounded-xl bg-primary-green hover:bg-primary-dark text-white text-xs font-bold text-center transition-colors shadow-md shadow-primary-green/10"
                         >
-                          {/* Status dot */}
-                          <div className="relative z-10 flex items-start pt-1">
-                            <div className={`w-10 h-10 rounded-full border-2 ${style.border} bg-white dark:bg-gray-900 flex items-center justify-center`}>
-                              <div className={`w-3 h-3 rounded-full ${style.dot}`} />
-                            </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className={`flex-1 p-4 rounded-2xl border ${style.border} bg-white hover:shadow-md transition-all duration-200 dark:bg-gray-900`}>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                              <h4 className="text-xs sm:text-sm font-extrabold text-primary-dark dark:text-gray-100">{step.title}</h4>
-                              <span className="text-[10px] text-gray-400 font-bold dark:text-gray-500">{step.date}</span>
-                            </div>
-                            <p className="text-[11px] sm:text-xs text-gray-500 font-medium mt-1 dark:text-gray-400">{step.desc}</p>
-                            <span className={`inline-block mt-2 text-[10px] font-bold uppercase tracking-wider ${style.text}`}>
-                              {step.status}
-                            </span>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                          Login
+                        </Link>
+                      </div>
+                    ))}
                 </div>
               </div>
             )}
@@ -371,111 +342,7 @@ export default function HackathonPage() {
               </div>
             )}
 
-            {/* PROBLEMS TAB */}
-            {activeTab === "problems" && (
-              <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-10 flex flex-col items-center gap-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight dark:text-gray-100">Problem Statements</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold max-w-lg dark:text-gray-400">
-                    Official problem statements published by the organizing team. Expand each card to read the full explanation and download any attached materials.
-                  </p>
-                </div>
 
-                {publishedPs.length === 0 ? (
-                  <div className="bg-white dark:bg-gray-900 rounded-3xl border border-input-border/20 dark:border-gray-700 p-16 text-center shadow-sm">
-                    <BookOpen className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400 font-semibold text-sm">No problem statements published yet.</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Check back closer to the hackathon start date.</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {publishedPs.map((ps, idx) => {
-
-                      const isExpanded = expandedPs === ps.id;
-                      return (
-                        <motion.div
-                          key={ps.id}
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: idx * 0.06 }}
-                          className="bg-white dark:bg-gray-900 rounded-3xl border border-input-border/20 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                        >
-                          <button
-                            onClick={() => setExpandedPs(isExpanded ? null : ps.id)}
-                            className="w-full p-6 flex items-center justify-between gap-4 text-left cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
-                          >
-                            <div className="flex items-center gap-4 min-w-0">
-                              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary-green/20 to-teal-500/20 flex items-center justify-center shrink-0 border border-primary-green/10">
-                                <BookOpen className="h-6 w-6 text-primary-green" />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <h3 className="text-sm sm:text-base font-extrabold text-primary-dark dark:text-gray-100">{ps.title}</h3>
-                                </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                                  {ps.description}
-                                </p>
-                              </div>
-                            </div>
-                            <ChevronDown className={`h-5 w-5 text-gray-400 shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
-                          </button>
-
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.25 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="px-6 pb-6 border-t border-gray-100 dark:border-gray-700 pt-5 space-y-4">
-                                  {/* Full description */}
-                                  <div className="bg-gradient-to-br from-gray-50 to-emerald-50/30 dark:from-gray-800/60 dark:to-emerald-900/10 rounded-2xl p-5">
-                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Full Problem Statement</p>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{ps.description}</p>
-                                  </div>
-
-                                  {/* Attachments */}
-                                  {ps.attachments && ps.attachments.length > 0 && (
-                                    <div>
-                                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                        <Paperclip className="h-3 w-3" /> Attached Files ({ps.attachments.length})
-                                      </p>
-                                      <div className="flex flex-col gap-2">
-                                        {ps.attachments.map((att) => (
-                                          <div key={att.id} className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                              <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                                                <FileText className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-                                              </div>
-                                              <div className="min-w-0">
-                                                <p className="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">{att.name}</p>
-                                                <p className="text-[10px] text-gray-400 dark:text-gray-500">{formatFileSize(att.size)}</p>
-                                              </div>
-                                            </div>
-                                            <button
-                                              onClick={() => downloadAttachment(att)}
-                                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-green text-white text-xs font-bold hover:bg-primary-dark cursor-pointer transition-colors shrink-0"
-                                            >
-                                              <Download className="h-3.5 w-3.5" /> Download
-                                            </button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
           </motion.div>
         </AnimatePresence>
       </main>

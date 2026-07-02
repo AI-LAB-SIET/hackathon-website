@@ -14,7 +14,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="relative bg-white border-t border-input-border/30 overflow-hidden dark:bg-gray-900 dark:border-gray-700">
+    <footer className="relative bg-gray-950 border-t border-white/5 overflow-hidden text-gray-400">
       {/* Background Orbs */}
       <div className="absolute top-1/2 left-0 -translate-y-1/2 w-72 h-72 rounded-full bg-primary-green/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-accent-yellow/5 blur-[140px] pointer-events-none" />
@@ -23,7 +23,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand Col */}
           <div className="flex flex-col gap-4">
-            <Link href="/" className="flex items-center gap-2 select-none">
+            <Link href="/" className="flex items-center gap-2.5 select-none">
               <div className="relative h-9 w-9 overflow-hidden">
                 <Image
                   src="/siet_logo.png"
@@ -33,12 +33,12 @@ export function Footer() {
                   className="object-contain"
                 />
               </div>
-              <span className="font-extrabold tracking-tight text-primary-dark text-lg dark:text-gray-100">
-                AI<span className="text-accent-green">_LAB</span>
+              <span className="font-extrabold tracking-tight text-white text-lg">
+                SIET<span className="text-accent-green">_HACKATHONS</span>
               </span>
             </Link>
-            <p className="text-xs text-gray-500 leading-relaxed max-w-sm dark:text-gray-400">
-              Empowering undergraduate research, machine learning exploration, and agentic intelligence projects, conducted by AI Research Lab.
+            <p className="text-xs text-gray-400 leading-relaxed max-w-sm">
+              The premier portal for student-led innovation, hosting development challenges, and coordinating technical codeathons across partner campuses.
             </p>
             <div className="flex gap-3 mt-2">
               {socialLinks.map((s, idx) => (
@@ -49,7 +49,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   whileHover={{ y: -3, scale: 1.08 }}
                   whileTap={{ scale: 0.95 }}
-                  className="h-8 w-8 rounded-lg bg-card-bg text-primary-green border border-input-border/30 flex items-center justify-center hover:bg-primary-green hover:text-white transition-colors duration-250 cursor-pointer dark:bg-gray-800 dark:border-gray-700"
+                  className="h-8 w-8 rounded-lg bg-white/5 text-primary-green border border-white/5 flex items-center justify-center hover:bg-primary-green hover:text-white transition-colors duration-250 cursor-pointer"
                   title={s.name}
                 >
                   {s.icon}
@@ -60,7 +60,7 @@ export function Footer() {
 
           {/* Quick Links Col */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider dark:text-gray-200">Event Navigator</h4>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Event Navigator</h4>
             <div className="flex flex-col gap-2">
               {[
                 { name: "Overview", href: "/" },
@@ -70,7 +70,7 @@ export function Footer() {
                 <Link
                   key={idx}
                   href={link.href}
-                  className="text-xs text-gray-500 hover:text-primary-green hover:translate-x-1 transition-all duration-200 dark:text-gray-400"
+                  className="text-xs text-gray-400 hover:text-primary-green hover:translate-x-1 transition-all duration-200"
                 >
                   {link.name}
                 </Link>
@@ -80,8 +80,8 @@ export function Footer() {
 
           {/* Contact Col */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-bold text-primary-dark uppercase tracking-wider dark:text-gray-200">Get in Touch</h4>
-            <div className="flex flex-col gap-2.5 text-xs text-gray-500 dark:text-gray-400">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Get in Touch</h4>
+            <div className="flex flex-col gap-2.5 text-xs text-gray-400">
               <div className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-primary-green shrink-0" />
                 <a href="mailto:ailab@siet.ac.in" className="hover:text-primary-green transition-colors">
@@ -101,12 +101,12 @@ export function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-linear-to-r from-transparent via-input-border/30 to-transparent my-10" />
+        <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent my-10" />
 
         {/* Bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] sm:text-xs text-gray-400">
-            &copy; {currentYear} AI Research Lab. All rights reserved.
+          <p className="text-[10px] sm:text-xs text-gray-500">
+            &copy; {currentYear} SIET_HACKATHONS. All rights reserved.
           </p>
         </div>
       </div>

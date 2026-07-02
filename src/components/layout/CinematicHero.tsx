@@ -35,7 +35,7 @@ export function CinematicHero({ session }: CinematicHeroProps) {
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     }
   }, []);
 
@@ -71,12 +71,12 @@ export function CinematicHero({ session }: CinematicHeroProps) {
 
       {/* ── Content Area (z-10): Centered, editorial ── */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center pt-24 pb-20">
-        
+
         {/* Animated Badge */}
         <div className="animate-fade-rise inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 shadow-sm transition-all duration-300">
           <Sparkles className="h-3.5 w-3.5 text-white/80 animate-pulse" />
           <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] text-white">
-            AI HACKATHON 2026
+            SIET SPECIAL LABS
           </span>
         </div>
 
@@ -85,12 +85,12 @@ export function CinematicHero({ session }: CinematicHeroProps) {
           className="animate-fade-rise mt-8 text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-[-2.46px] max-w-7xl font-normal text-white"
           style={{ fontFamily: "'Instrument Serif', serif" }}
         >
-          Architecting the <em className="not-italic text-muted-foreground">Future of</em> Agentic <em className="not-italic text-muted-foreground">Intelligence.</em>
+          The Premier <em className="not-italic text-muted-foreground">Platform for</em> SIET <em className="not-italic text-muted-foreground">Hackathons.</em>
         </h1>
 
         {/* Cinematic Subtext */}
         <p className="animate-fade-rise-delay mt-8 text-muted-foreground text-base sm:text-lg max-w-2xl leading-relaxed font-normal">
-          Join the premier AI HACKATHON, conducted by AI RESEARCH LAB. Collaborate with brilliant minds, build next-gen AI projects, and showcase your solutions.
+          Empowering developers to discover events, form teams, and deploy production-grade code. Host, join, and manage hackathons seamlessly.
         </p>
 
         {/* CTA Actions (Liquid Glass, animate-fade-rise-delay-2) */}
@@ -101,12 +101,12 @@ export function CinematicHero({ session }: CinematicHeroProps) {
                 session.role === "admin"
                   ? "/admin"
                   : session.role === "judge"
-                  ? "/judge"
-                  : session.role === "organizer"
-                  ? "/organizer"
-                  : session.role === "volunteer"
-                  ? "/volunteer"
-                  : "/dashboard"
+                    ? "/judge"
+                    : session.role === "organizer"
+                      ? "/organizer"
+                      : session.role === "volunteer"
+                        ? "/volunteer"
+                        : "/dashboard"
               }
               className="liquid-glass rounded-full px-14 py-5 text-base font-semibold text-white hover:scale-[1.03] active:scale-[0.98] transition-transform duration-300 inline-flex items-center justify-center gap-2 cursor-pointer shadow-xl"
             >

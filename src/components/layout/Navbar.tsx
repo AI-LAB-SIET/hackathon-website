@@ -112,7 +112,7 @@ export function Navbar() {
               <Image src="/siet_logo.png" alt="AI Lab Logo" fill sizes="28px" priority className="object-contain" />
             </div>
             <span className={`font-serif text-xl tracking-tight transition-colors duration-300 ${useTransparent ? "text-white" : "text-black dark:text-white"}`}>
-              AI<span className="text-primary-green">_LAB</span>
+              SIET<span className="text-primary-green">_HACKATHONS</span>
             </span>
           </Link>
 
