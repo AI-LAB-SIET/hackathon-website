@@ -21,10 +21,6 @@ import { FileAttachment, Participant, Notification, SupportTicket, ProblemStatem
 type SupportTicketCategory = SupportTicket["category"];
 type SupportTicketPriority = SupportTicket["priority"];
 import { INITIAL_FAQS } from "@/lib/mockData";
-import {
-  datasets,
-  type ResourceCard,
-} from "@/lib/resources";
 
 // ─────────────────────────────────────────────
 // Dynamic Timer Stages
@@ -69,7 +65,7 @@ export default function ParticipantDashboard() {
   const [notifFilter, setNotifFilter] = useState<"all" | Notification["type"]>("all");
   const [showAddMember, setShowAddMember] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [resourceTab, setResourceTab] = useState<"templates" | "datasets">("templates");
+  const [resourceTab, setResourceTab] = useState<"templates">("templates");
   const [ticketCategory, setTicketCategory] = useState<SupportTicketCategory>("Other");
   const [ticketPriority, setTicketPriority] = useState<SupportTicketPriority>("Medium");
   const [ticketDescription, setTicketDescription] = useState("");
@@ -254,10 +250,9 @@ export default function ParticipantDashboard() {
     router.push("/");
   };
 
-  // Resources sub-category data (derived from shared lib/resources.ts)
-  const resourceData: Record<string, { label: string; desc: string; items?: ResourceCard[] }> = {
+  // Resources sub-category data
+  const resourceData: Record<string, { label: string; desc: string }> = {
     templates: { label: "PPT Templates", desc: "Official presentation guidelines and pitch deck templates uploaded by the organizers." },
-    datasets: { label: "Datasets", items: datasets, desc: "Curated open datasets across all hackathon tracks." },
   };
 
   const publishedProblemStatements = problemStatements.filter((ps) => ps.status === "published");
@@ -1529,7 +1524,7 @@ export default function ParticipantDashboard() {
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                       <div className="font-extrabold text-primary-dark dark:text-gray-100 text-sm">On-Spot Problem Materials</div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Official problem statements, PPT templates, and datasets uploaded by the organizing team.</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Official problem statements and PPT templates uploaded by the organizing team.</p>
                     </div>
                     <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
                       {publishedProblemStatements.length} published
@@ -1583,92 +1578,50 @@ export default function ParticipantDashboard() {
                   })()}
                 </div>
 
-                {/* Sub-category pills */}
-                <div className="flex gap-2 flex-wrap">
-                  {(Object.keys(resourceData)).map((k) => (
-                    <button key={k} onClick={() => setResourceTab(k as "templates" | "datasets")}
-                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${resourceTab === k ? "bg-primary-green text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green/40 hover:text-primary-green"}`}
-                    >
-                      {k === "templates" && <Code2 className="h-4 w-4" />}
-                      {k === "datasets" && <Database className="h-4 w-4" />}
-                      {resourceData[k].label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3 mb-2">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{resourceData[resourceTab].desc}</p>
+                <div className="flex items-center gap-3 mb-2 mt-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{resourceData["templates"].desc}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {resourceTab === "templates" ? (
-                    templates.map((tpl, i) => (
-                      <motion.div
-                        key={tpl.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.04, duration: 0.3 }}
-                        className="group flex flex-col gap-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-primary-dark dark:text-gray-100 text-sm leading-tight group-hover:text-primary-green transition-colors">{tpl.title}</h3>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700`}>Official</span>
-                          </div>
+                  {templates.map((tpl, i) => (
+                    <motion.div
+                      key={tpl.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.3 }}
+                      className="group flex flex-col gap-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-bold text-primary-dark dark:text-gray-100 text-sm leading-tight group-hover:text-primary-green transition-colors">{tpl.title}</h3>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700`}>Official</span>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex-1">{tpl.description}</p>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex-1">{tpl.description}</p>
 
-                        {tpl.attachments && tpl.attachments.length > 0 && (
-                          <div className="flex flex-col gap-2 mt-auto pt-3 border-t border-gray-100 dark:border-gray-800">
-                            {tpl.attachments.map((file, idx) => (
-                              <a
-                                key={idx}
-                                href={file.dataUrl}
-                                download={file.name}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                              >
-                                <div className="flex items-center gap-2 overflow-hidden text-xs">
-                                  <FileText className="h-4 w-4 text-emerald-500 shrink-0" />
-                                  <span className="font-semibold text-primary-dark dark:text-gray-100 truncate">{file.name}</span>
-                                </div>
-                                <Download className="h-4 w-4 text-gray-400 shrink-0 ml-2 group-hover:text-emerald-500 transition-colors" />
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </motion.div>
-                    ))
-                  ) : (
-                    resourceData[resourceTab].items?.map((item, i) => (
-                      <motion.a
-                        key={item.title}
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.04, duration: 0.3 }}
-                        className="group flex flex-col gap-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:shadow-lg hover:border-primary-green/30 transition-all duration-300 cursor-pointer"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-primary-dark dark:text-gray-100 text-sm leading-tight group-hover:text-primary-green transition-colors">{item.title}</h3>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {item.badge && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${item.badgeColor}`}>{item.badge}</span>}
-                            <ExternalLink className="h-4 w-4 text-gray-300 group-hover:text-primary-green transition-colors" />
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex-1">{item.description}</p>
-                        <div className="flex flex-wrap gap-1.5 mt-auto">
-                          {item.tags.map((tag) => (
-                            <span key={tag} className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{tag}</span>
+                      {tpl.attachments && tpl.attachments.length > 0 && (
+                        <div className="flex flex-col gap-2 mt-auto pt-3 border-t border-gray-100 dark:border-gray-800">
+                          {tpl.attachments.map((file, idx) => (
+                            <a
+                              key={idx}
+                              href={file.dataUrl}
+                              download={file.name}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                            >
+                              <div className="flex items-center gap-2 overflow-hidden text-xs">
+                                <FileText className="h-4 w-4 text-emerald-500 shrink-0" />
+                                <span className="font-semibold text-primary-dark dark:text-gray-100 truncate">{file.name}</span>
+                              </div>
+                              <Download className="h-4 w-4 text-gray-400 shrink-0 ml-2 group-hover:text-emerald-500 transition-colors" />
+                            </a>
                           ))}
                         </div>
-                      </motion.a>
-                    ))
-                  )}
-                  {resourceTab === "templates" && templates.length === 0 && (
+                      )}
+                    </motion.div>
+                  ))}
+                  {templates.length === 0 && (
                     <div className="col-span-full py-10 text-center rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30">
                       <Code2 className="h-8 w-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                       <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">No templates published yet.</p>

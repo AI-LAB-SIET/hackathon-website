@@ -35,6 +35,7 @@ import {
   Download,
   X,
   Paperclip,
+  Clock,
 } from "lucide-react";
 import { Team, ProblemStatement, FileAttachment, Participant, Hackathon, FoodMeal } from "@/types";
 
@@ -1333,6 +1334,52 @@ export default function AdminDashboard() {
             {/* ═══════════════════════════════════════════ PROBLEM STATEMENTS TAB ═══════════════════════════════════════════ */}
             {activeTab === "problems" && (
               <div className="flex flex-col gap-5">
+                {/* ── Reveal Settings ── */}
+                {(() => {
+                  const activeHackathon = hackathons.find(h => h.id === activeHackathonId);
+                  if (!activeHackathon) return null;
+                  const isRevealed = !activeHackathon.problemStatementRevealTime || new Date().getTime() >= new Date(activeHackathon.problemStatementRevealTime).getTime();
+                  return (
+                    <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-primary-dark dark:text-gray-100 flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-primary-green" /> Problem Statement Reveal Time
+                        </h3>
+                        <p className="text-[10px] text-gray-500 mt-1 max-w-md">Set a specific date & time to automatically reveal published problem statements to participants. If left empty, they are revealed immediately.</p>
+                      </div>
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <input
+                          type="datetime-local"
+                          className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-primary-green"
+                          value={activeHackathon.problemStatementRevealTime ? new Date(new Date(activeHackathon.problemStatementRevealTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateHackathon(activeHackathon.id, { 
+                              problemStatementRevealTime: val ? new Date(val).toISOString() : "" 
+                            });
+                            toast(val ? "Reveal time updated." : "Problem statements are now immediately visible.", "success");
+                          }}
+                        />
+                        {activeHackathon.problemStatementRevealTime && (
+                           <button
+                             onClick={() => {
+                               updateHackathon(activeHackathon.id, { problemStatementRevealTime: "" });
+                               toast("Problem statements revealed immediately.", "success");
+                             }}
+                             className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs font-bold whitespace-nowrap cursor-pointer"
+                           >
+                             Reveal Now
+                           </button>
+                        )}
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase ${isRevealed ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'}`}>
+                          {isRevealed ? 'Revealed' : 'Locked'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+
 
                 {/* ── Inline Quick-Add Form ── */}
                 <div className="rounded-3xl border-2 border-dashed border-primary-green/30 bg-emerald-50/30 dark:bg-emerald-950/10 p-5 flex flex-col gap-4">
