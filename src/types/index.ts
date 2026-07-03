@@ -25,7 +25,7 @@ export interface Hackathon {
   registrationOpen: boolean;
   maxTeamSize: number;        // default 4
   minTeamSize: number;        // default 1 (solo allowed)
-  status: "upcoming" | "active" | "completed" | "archived";
+  status: "upcoming" | "active" | "completed" | "archived" | "ended";
   createdAt: string;
   createdBy: string;          // admin email
   registrationLink?: string;  // computed: /register?h=slug
@@ -90,6 +90,7 @@ export interface Team {
   supportTickets?: SupportTicket[];
   ideaSubmitted?: boolean;
   shortlisted?: boolean;
+  attachments?: FileAttachment[];
 }
 
 // ─── Team Requests (join / invite) ───────────────────────────────────────────
@@ -232,6 +233,7 @@ export interface UserProfile {
   year?: string;
   registerNumber?: string;
   teamSetupDone?: boolean;
+  assignedArea?: string;
 }
 
 export interface FileAttachment {

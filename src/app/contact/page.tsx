@@ -31,7 +31,7 @@ export default function Contact() {
           name: p.name || p.displayName || "Volunteer",
           email: p.email,
           phone: p.phone || "",
-          assignedArea: (p as any).assignedArea || "General Support",
+          assignedArea: p.assignedArea || "General Support",
           assignedResponsibilities: "",
           createdAt: new Date().toISOString(),
         });
