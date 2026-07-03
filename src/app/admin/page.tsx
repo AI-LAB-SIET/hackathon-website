@@ -159,6 +159,7 @@ export default function AdminDashboard() {
   const profile = getProfile(session.email || "");
   const [profileForm, setProfileForm] = useState({
     name: profile?.name || session.name || "",
+    college: profile?.college || "",
     bio: profile?.bio || "",
     skills: profile?.skills?.join(", ") || "",
     socialLinks: profile?.socialLinks || [] as { platform: string; url: string }[],
@@ -173,6 +174,7 @@ export default function AdminDashboard() {
     if (profile) {
       setProfileForm({
         name: profile.name || session.name || "",
+        college: profile.college || "",
         bio: profile.bio || "",
         skills: profile.skills?.join(", ") || "",
         socialLinks: profile.socialLinks || [],
@@ -676,6 +678,7 @@ export default function AdminDashboard() {
     if (session.email) {
       updateProfile(session.email, {
         name: profileForm.name,
+        college: profileForm.college,
         bio: profileForm.bio,
         skills: profileForm.skills.split(",").map((s) => s.trim()).filter(Boolean),
         socialLinks: profileForm.socialLinks,
@@ -2005,6 +2008,12 @@ export default function AdminDashboard() {
                       value={profileForm.name}
                       onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
                       placeholder="Your display name"
+                    />
+                    <Input
+                      label="College Name"
+                      value={profileForm.college}
+                      onChange={(e) => setProfileForm((p) => ({ ...p, college: e.target.value }))}
+                      placeholder="e.g. SIET"
                     />
                     <div>
                       <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>

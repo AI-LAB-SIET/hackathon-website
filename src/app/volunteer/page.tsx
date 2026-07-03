@@ -62,6 +62,7 @@ export default function VolunteerDashboard() {
 
   // Profile form state
   const [profileName, setProfileName] = useState("");
+  const [profileCollege, setProfileCollege] = useState("");
   const [profileBio, setProfileBio] = useState("");
   const [profileSkills, setProfileSkills] = useState("");
   const [profileSocialLinks, setProfileSocialLinks] = useState<{ platform: string; url: string }[]>([]);
@@ -78,6 +79,7 @@ export default function VolunteerDashboard() {
       const profile = getProfile(session.email);
       if (profile) {
         setProfileName(profile.name || "");
+        setProfileCollege(profile.college || "");
         setProfileBio(profile.bio || "");
         setProfileSkills((profile.skills || []).join(", "));
         setProfileSocialLinks(profile.socialLinks || []);
@@ -164,6 +166,7 @@ export default function VolunteerDashboard() {
     if (!session.email) return;
     updateProfile(session.email, {
       name: profileName,
+      college: profileCollege,
       bio: profileBio,
       skills: profileSkills.split(",").map((s) => s.trim()).filter(Boolean),
       socialLinks: profileSocialLinks,
@@ -525,6 +528,18 @@ export default function VolunteerDashboard() {
                           type="text"
                           value={profileName}
                           onChange={(e) => setProfileName(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
+                          College Name
+                        </label>
+                        <input
+                          type="text"
+                          value={profileCollege}
+                          onChange={(e) => setProfileCollege(e.target.value)}
+                          placeholder="e.g. SIET"
                           className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                         />
                       </div>

@@ -76,7 +76,7 @@ export default function ParticipantDashboard() {
   const [profileNewSkill, setProfileNewSkill] = useState("");
   const [memberNewSkill, setMemberNewSkill] = useState("");
   const [profileEdit, setProfileEdit] = useState({
-    bio: "", skills: [] as string[], socialLinks: [] as { platform: string; url: string }[], profilePicture: "",
+    college: "", bio: "", skills: [] as string[], socialLinks: [] as { platform: string; url: string }[], profilePicture: "",
   });
   const [newSocialPlatform, setNewSocialPlatform] = useState("");
   const [newSocialUrl, setNewSocialUrl] = useState("");
@@ -117,6 +117,7 @@ export default function ParticipantDashboard() {
       const profile = getProfile(session.email);
       if (profile) {
         setProfileEdit({
+          college: profile.college || "",
           bio: profile.bio || "",
           skills: profile.skills || [],
           socialLinks: profile.socialLinks || [],
@@ -367,6 +368,7 @@ export default function ParticipantDashboard() {
   const handleSaveProfile = () => {
     if (session.email) {
       updateProfile(session.email, {
+        college: profileEdit.college,
         bio: profileEdit.bio,
         skills: profileEdit.skills,
         socialLinks: profileEdit.socialLinks,
@@ -1740,6 +1742,16 @@ export default function ParticipantDashboard() {
                   <div>
                     <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 block mb-1">Email (immutable)</label>
                     <div className="px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">{session.email}</div>
+                  </div>
+
+                  {/* College Name */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">College Name</label>
+                    <input type="text" value={profileEdit.college}
+                      onChange={(e) => setProfileEdit((p) => ({ ...p, college: e.target.value }))}
+                      placeholder="e.g. SIET"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    />
                   </div>
 
                   {/* Profile Picture URL */}

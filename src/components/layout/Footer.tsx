@@ -65,6 +65,7 @@ export function Footer() {
               {[
                 { name: "Overview", href: "/" },
                 { name: "Hackathon Details", href: "/hackathon" },
+                { name: "About the Lab", href: "/about" },
                 { name: "Contact & Support", href: "/contact" },
               ].map((link, idx) => (
                 <Link

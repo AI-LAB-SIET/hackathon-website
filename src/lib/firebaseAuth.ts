@@ -184,6 +184,7 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   name: string,
+  college: string,
   currentHackathonId?: string
 ): Promise<FirebaseAuthResult> {
   if (!isConfigured || !auth || !db) {
@@ -207,6 +208,7 @@ export async function signUpWithEmail(
       uid: firebaseUser.uid,
       email,
       displayName: name,
+      college,
       role: 'participant' as AppRole,
       verified: false,
       teamSetupDone: false,

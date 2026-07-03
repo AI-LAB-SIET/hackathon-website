@@ -20,7 +20,7 @@ function RegisterForm() {
   const { toast } = useToast();
   const { hackathons, addProfile } = useAppState();
 
-  const [account, setAccount] = useState({ name: "", email: "", password: "", confirm: "" });
+  const [account, setAccount] = useState({ name: "", email: "", college: "", password: "", confirm: "" });
   const [selectedHackathonId, setSelectedHackathonId] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -48,6 +48,7 @@ function RegisterForm() {
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!account.name.trim()) errs.name = "Full name is required";
+    if (!account.college.trim()) errs.college = "College name is required";
     if (!account.email.includes("@")) errs.email = "Valid email is required";
     if (account.password.length < 6) errs.password = "Must be at least 6 characters";
     if (account.password !== account.confirm) errs.confirm = "Passwords do not match";
@@ -62,7 +63,7 @@ function RegisterForm() {
     setSubmitting(true);
     try {
       if (isConfigured) {
-        await signUpWithEmail(account.email, account.password, account.name, selectedHackathonId);
+        await signUpWithEmail(account.email, account.password, account.name, account.college, selectedHackathonId);
       } else {
         // In local mock mode, simulate registration and save user profile
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -71,6 +72,7 @@ function RegisterForm() {
           uid: `m-${Date.now()}`,
           email: account.email,
           name: account.name,
+          college: account.college,
           displayName: account.name,
           role: "participant" as const,
           currentHackathonId: selectedHackathonId,
@@ -111,6 +113,20 @@ function RegisterForm() {
               value={account.name}
               onChange={(e) => setAccount((p) => ({ ...p, name: e.target.value }))}
               error={errors.name}
+              className="pl-9"
+            />
+          </div>
+
+          <div className="relative">
+            <div className="absolute left-3 top-[38px] text-gray-400 pointer-events-none z-10">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <Input
+              label="College Name"
+              placeholder="e.g. SIET"
+              value={account.college}
+              onChange={(e) => setAccount((p) => ({ ...p, college: e.target.value }))}
+              error={errors.college}
               className="pl-9"
             />
           </div>
