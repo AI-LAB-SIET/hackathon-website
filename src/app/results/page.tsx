@@ -161,7 +161,7 @@ function ResultsContent() {
             <select
               value={selectedHackId}
               onChange={(e) => setSelectedHackId(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold bg-[#f8fafb] dark:bg-gray-850 text-gray-850 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+              className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold bg-[#f8fafb] dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
             >
               {eligibleHackathons.map((h) => (
                 <option key={h.id} value={h.id}>
@@ -175,7 +175,7 @@ function ResultsContent() {
         {eligibleHackathons.length === 0 ? (
           <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
             <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="font-extrabold text-gray-650 dark:text-gray-300">No Results Available</h3>
+            <h3 className="font-extrabold text-gray-700 dark:text-gray-300">No Results Available</h3>
             <p className="text-xs text-gray-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">
               Leaderboards are only rendered for active or completed hackathons. Check back once a sprint goes live!
             </p>
@@ -190,7 +190,7 @@ function ResultsContent() {
 
               {!podium.first && !podium.second && !podium.third ? (
                 <div className="text-center py-10 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xs max-w-md mx-auto">
-                  <p className="text-xs text-gray-450 italic font-semibold">Evaluation scores are currently pending for this event.</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic font-semibold">Evaluation scores are currently pending for this event.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end max-w-4xl mx-auto">
@@ -212,7 +212,7 @@ function ResultsContent() {
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
                         Silver Medalist
                       </p>
-                      <p className="text-[10px] text-gray-450 mt-1 line-clamp-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
                         {getProblemStatementTitle(podium.second.problemStatementId)}
                       </p>
                       <div className="mt-4 bg-slate-50 dark:bg-gray-950 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-900 text-xs font-extrabold text-slate-600 dark:text-slate-400">
@@ -223,7 +223,7 @@ function ResultsContent() {
                         <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-1.5 flex items-center justify-center gap-1"><Users className="h-3 w-3" /> Members</p>
                         <div className="flex flex-wrap gap-1 justify-center">
                           {podium.second.members.map((m) => (
-                            <span key={m.email} className="text-[9px] bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-655 dark:text-gray-300 font-semibold">{m.name}</span>
+                            <span key={m.email} className="text-[9px] bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-700 dark:text-gray-300 font-semibold">{m.name}</span>
                           ))}
                         </div>
                       </div>
@@ -250,7 +250,7 @@ function ResultsContent() {
                       <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-bold uppercase tracking-wider mt-0.5">
                         Gold Champion
                       </p>
-                      <p className="text-[10px] text-gray-450 mt-1 line-clamp-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
                         {getProblemStatementTitle(podium.first.problemStatementId)}
                       </p>
                       <div className="mt-4 bg-yellow-50 dark:bg-yellow-950/20 px-4 py-2 rounded-xl border border-yellow-100 dark:border-yellow-900/30 text-sm font-extrabold text-yellow-700 dark:text-yellow-400">
@@ -261,7 +261,7 @@ function ResultsContent() {
                         <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-1.5 flex items-center justify-center gap-1"><Users className="h-3 w-3" /> Members</p>
                         <div className="flex flex-wrap gap-1 justify-center">
                           {podium.first.members.map((m) => (
-                            <span key={m.email} className="text-[9px] bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-655 dark:text-gray-300 font-semibold">{m.name}</span>
+                            <span key={m.email} className="text-[9px] bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-700 dark:text-gray-300 font-semibold">{m.name}</span>
                           ))}
                         </div>
                       </div>
@@ -288,7 +288,7 @@ function ResultsContent() {
                       <p className="text-[10px] text-orange-650 dark:text-orange-400 font-bold uppercase tracking-wider mt-0.5">
                         Bronze medalist
                       </p>
-                      <p className="text-[10px] text-gray-450 mt-1 line-clamp-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
                         {getProblemStatementTitle(podium.third.problemStatementId)}
                       </p>
                       <div className="mt-4 bg-orange-50 dark:bg-orange-950/20 px-3 py-1.5 rounded-xl border border-orange-100 dark:border-orange-900/30 text-xs font-extrabold text-orange-700 dark:text-orange-400">
@@ -299,7 +299,7 @@ function ResultsContent() {
                         <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-1.5 flex items-center justify-center gap-1"><Users className="h-3 w-3" /> Members</p>
                         <div className="flex flex-wrap gap-1 justify-center">
                           {podium.third.members.map((m) => (
-                            <span key={m.email} className="text-[9px] bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-655 dark:text-gray-300 font-semibold">{m.name}</span>
+                            <span key={m.email} className="text-[9px] bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-700 dark:text-gray-300 font-semibold">{m.name}</span>
                           ))}
                         </div>
                       </div>
@@ -333,17 +333,17 @@ function ResultsContent() {
 
               {rankedTeams.length <= 3 ? (
                 <div className="text-center py-8">
-                  <p className="text-xs text-gray-450 italic font-bold">No other teams are currently evaluated in this hackathon.</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic font-bold">No other teams are currently evaluated in this hackathon.</p>
                 </div>
               ) : filteredStandings.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-xs text-gray-405 italic font-bold">No standings matching &quot;{searchQuery}&quot;</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic font-bold">No standings matching &quot;{searchQuery}&quot;</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="border-b border-gray-100 dark:border-gray-850 text-gray-450 uppercase font-bold text-[10px]">
+                      <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 uppercase font-bold text-[10px]">
                         <th className="py-3 px-4 w-16">Rank</th>
                         <th className="py-3 px-4">Team</th>
                         <th className="py-3 px-4">Problem Statement Track</th>
@@ -361,18 +361,18 @@ function ResultsContent() {
                             </td>
                             <td className="py-4 px-4">
                               <div>
-                                <p className="font-bold text-gray-850 dark:text-gray-200">{team.name}</p>
+                                <p className="font-bold text-gray-800 dark:text-gray-200">{team.name}</p>
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {team.members.map((m) => (
-                                    <span key={m.email} className="text-[8px] bg-gray-100 dark:bg-gray-800/80 px-1.5 py-0.5 rounded text-gray-550 dark:text-gray-450 font-semibold">{m.name}</span>
+                                    <span key={m.email} className="text-[8px] bg-gray-100 dark:bg-gray-800/80 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-400 font-semibold">{m.name}</span>
                                   ))}
                                 </div>
                               </div>
                             </td>
-                            <td className="py-4 px-4 text-gray-650 dark:text-gray-400 font-semibold">
+                            <td className="py-4 px-4 text-gray-600 dark:text-gray-400 font-semibold">
                               {getProblemStatementTitle(team.problemStatementId)}
                             </td>
-                            <td className="py-4 px-4 font-extrabold text-blue-600 dark:text-blue-450">
+                            <td className="py-4 px-4 font-extrabold text-blue-600 dark:text-blue-400">
                               {team.avgScore > 0 ? `${team.avgScore}/10` : "—"}
                             </td>
                             <td className="py-4 px-4">

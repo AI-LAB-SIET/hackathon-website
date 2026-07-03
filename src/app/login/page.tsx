@@ -114,7 +114,7 @@ export default function Login() {
     if (isConfigured) {
       try {
         const result = await signInWithRole(inputEmail, password);
-        
+
         toast(`Welcome back! Logged in as ${result.role.toUpperCase()}.`, "success");
         // Do not setSubmitting(false) or redirect here.
         // Wait for onAuthStateChanged in StateProvider to update the session.
@@ -196,8 +196,8 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input
-              label="Account Email / Admin Username"
-              placeholder="e.g. name@college.edu or Admin2727"
+              label="Email"
+              placeholder="e.g. name@college.edu"
               type="text"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setFirebaseError(""); setError(""); setIsUnverified(false); }}

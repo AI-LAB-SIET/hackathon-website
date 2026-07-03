@@ -143,6 +143,7 @@ export function Navbar() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle transparent={useTransparent} />
             {session.isLoggedIn ? (
               <>
 
@@ -211,8 +212,6 @@ export function Navbar() {
                   </AnimatePresence>
                 </div>
 
-                {/* Theme Toggle */}
-                <ThemeToggle transparent={useTransparent} />
 
                 <Link
                   href={rolePortalHref}
@@ -258,18 +257,21 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            className={`md:hidden p-1.5 rounded-xl transition-colors cursor-pointer ${
-              useTransparent
-                ? "text-white hover:bg-white/10"
-                : "text-gray-700 hover:bg-card-bg hover:text-primary-dark dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            }`}
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          {/* Mobile Actions */}
+          <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle transparent={useTransparent} />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+                useTransparent
+                  ? "text-white hover:bg-white/10"
+                  : "text-gray-700 hover:bg-card-bg hover:text-primary-dark dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              }`}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
       </header>
 
