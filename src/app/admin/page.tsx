@@ -1068,6 +1068,19 @@ export default function AdminDashboard() {
                             <Button
                               size="sm"
                               variant="secondary"
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to ${h.teamsLocked ? 'unlock' : 'lock'} teams for this hackathon?`)) {
+                                  updateHackathon(h.id, { teamsLocked: !h.teamsLocked });
+                                  toast(`Teams ${h.teamsLocked ? 'unlocked' : 'locked'} successfully.`, "success");
+                                }
+                              }}
+                              className={`h-7 text-[10px] ${h.teamsLocked ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30' : 'text-primary-dark hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}
+                            >
+                              {h.teamsLocked ? 'Unlock Teams' : 'Lock Teams'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
                               onClick={() => openEditHackathon(h)}
                               className="h-7 text-[10px]"
                             >

@@ -59,6 +59,7 @@ export default function ParticipantDashboard() {
   const activeHackathon = hackathons.find((h) => h.id === activeHackathonId);
   const maxTeamSize = activeHackathon?.maxTeamSize || 4;
   const minTeamSize = activeHackathon?.minTeamSize || 1;
+  const isTeamLocked = activeHackathon?.teamsLocked === true;
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -730,10 +731,14 @@ export default function ParticipantDashboard() {
                               className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                           </div>
 
-                          <button onClick={handleSaveRegistration}
-                            className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">
-                            Save Registration Details
-                          </button>
+                          {!isTeamLocked ? (
+                            <button onClick={handleSaveRegistration}
+                              className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">
+                              Save Registration Details
+                            </button>
+                          ) : (
+                            <p className="text-xs text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 p-3 rounded-xl inline-block mt-2">🔒 Registration details are locked by administrators.</p>
+                          )}
                         </div>
                       )}
 
@@ -777,7 +782,7 @@ export default function ParticipantDashboard() {
                                   </div>
                                   <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{m.email}</div>
                                 </div>
-                                {!isLeaderMember && team.members.find(memb => memb.email === session.email)?.isLeader && (
+                                {!isTeamLocked && !isLeaderMember && team.members.find(memb => memb.email === session.email)?.isLeader && (
                                   <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
                                     <Trash2 className="h-4 w-4" />
                                   </button>
@@ -789,7 +794,7 @@ export default function ParticipantDashboard() {
                       </div>
 
                       {/* Invite form (only for leaders) */}
-                      {team.members.find(m => m.email === session.email)?.isLeader && team.members.length < maxTeamSize && (
+                      {!isTeamLocked && team.members.find(m => m.email === session.email)?.isLeader && team.members.length < maxTeamSize && (
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
                           <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Invite Teammate</h4>
                           <input
@@ -860,7 +865,7 @@ export default function ParticipantDashboard() {
                       )}
 
                       {/* Manage incoming requests for leaders */}
-                      {team.members.find(m => m.email === session.email)?.isLeader && (
+                      {!isTeamLocked && team.members.find(m => m.email === session.email)?.isLeader && (
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
                           <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Join Requests</h4>
                           <div className="space-y-2">
@@ -896,29 +901,31 @@ export default function ParticipantDashboard() {
                       )}
 
                       {/* Dangerous Actions */}
-                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
-                        <h4 className="font-bold text-sm text-red-650">Actions</h4>
-                        {team.members.find(m => m.email === session.email)?.isLeader ? (
-                          <button
-                            onClick={() => {
-                              if (confirm("Are you sure you want to disband the team? This action is permanent!")) {
-                                deleteTeam(team.id);
-                                toast("Team disbanded successfully.", "info");
-                              }
-                            }}
-                            className="w-full py-2.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" /> Disband Team
-                          </button>
-                        ) : (
-                          <button
-                            onClick={handleLeaveTeam}
-                            className="w-full py-2.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                          >
-                            <LogOut className="h-3.5 w-3.5" /> Leave Team
-                          </button>
-                        )}
-                      </div>
+                      {!isTeamLocked && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
+                          <h4 className="font-bold text-sm text-red-650">Actions</h4>
+                          {team.members.find(m => m.email === session.email)?.isLeader ? (
+                            <button
+                              onClick={() => {
+                                if (confirm("Are you sure you want to disband the team? This action is permanent!")) {
+                                  deleteTeam(team.id);
+                                  toast("Team disbanded successfully.", "info");
+                                }
+                              }}
+                              className="w-full py-2.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" /> Disband Team
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handleLeaveTeam}
+                              className="w-full py-2.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <LogOut className="h-3.5 w-3.5" /> Leave Team
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -926,8 +933,14 @@ export default function ParticipantDashboard() {
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Create Team Form */}
                     <div className="space-y-6">
-                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
-                        <h3 className="font-extrabold text-primary-dark text-lg dark:text-gray-100 flex items-center gap-1.5">
+                      {isTeamLocked && (
+                        <div className="bg-amber-50 rounded-2xl border border-amber-200 shadow-sm p-6 dark:bg-amber-900/20 dark:border-amber-800">
+                          <p className="text-amber-700 dark:text-amber-400 font-bold text-sm text-center">🔒 Teams are currently locked. You cannot create or join teams.</p>
+                        </div>
+                      )}
+                      {!isTeamLocked && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                          <h3 className="font-extrabold text-primary-dark text-lg dark:text-gray-100 flex items-center gap-1.5">
                           <Plus className="h-5 w-5 text-primary-green" /> Create a New Team
                         </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -965,6 +978,7 @@ export default function ParticipantDashboard() {
                           </button>
                         </form>
                       </div>
+                      )}
 
                       {/* Requests Status */}
                       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-4">
@@ -1077,12 +1091,16 @@ export default function ParticipantDashboard() {
                                     ) : alreadyRequested ? (
                                       <span className="text-[10px] text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-md">Pending Approval</span>
                                     ) : (
-                                      <button
-                                        onClick={() => handleJoinRequest(t.id)}
-                                        className="px-3.5 py-1.5 bg-primary-green hover:bg-primary-dark text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-                                      >
-                                        Request to Join
-                                      </button>
+                                      {!isTeamLocked ? (
+                                        <button
+                                          onClick={() => handleJoinRequest(t.id)}
+                                          className="px-3.5 py-1.5 bg-primary-green hover:bg-primary-dark text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                                        >
+                                          Request to Join
+                                        </button>
+                                      ) : (
+                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">Locked</span>
+                                      )}
                                     )}
                                   </div>
                                 </div>
@@ -1320,7 +1338,11 @@ export default function ParticipantDashboard() {
                             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                           />
                         </div>
-                        <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Changes</button>
+                        {!isTeamLocked ? (
+                          <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Changes</button>
+                        ) : (
+                          <p className="text-xs text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 p-2.5 rounded-xl inline-block">🔒 Project details are locked</p>
+                        )}
 
                         {/* Judge Feedback */}
                         {(team.evaluations || []).length > 0 && (
@@ -1361,7 +1383,11 @@ export default function ParticipantDashboard() {
                             </div>
                           </div>
                         ))}
-                        <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Links</button>
+                        {!isTeamLocked ? (
+                          <button onClick={handleSaveProject} className="px-6 py-2.5 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer">Save Links</button>
+                        ) : (
+                          <p className="text-xs text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 p-2.5 rounded-xl inline-block">🔒 Project links are locked</p>
+                        )}
                       </div>
                     )}
 

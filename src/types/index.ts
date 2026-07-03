@@ -29,6 +29,7 @@ export interface Hackathon {
   createdAt: string;
   createdBy: string;          // admin email
   registrationLink?: string;  // computed: /register?h=slug
+  teamsLocked?: boolean;      // NEW — permanently locks all teams under this hackathon
 }
 
 // ─── Team ─────────────────────────────────────────────────────────────────────

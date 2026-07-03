@@ -15,6 +15,7 @@ import {
   Github,
   Sparkles,
   Zap,
+  Linkedin,
 } from "lucide-react";
 
 export default function About() {
@@ -23,12 +24,12 @@ export default function About() {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Fetch live GitHub profiles
     const fetchProfiles = async () => {
       try {
         const logins = ["NITISH-R-G", "bala-2305", "PRABHUSIDDARTH", "bsrikumar855-dot", "Siva9664"];
-        const promises = logins.map(login => 
+        const promises = logins.map(login =>
           fetch(`https://api.github.com/users/${login}`, { cache: "no-store" }).then(res => res.json())
         );
         const results = await Promise.all(promises);
@@ -37,7 +38,7 @@ export default function About() {
         console.error("Failed to fetch dev profiles", err);
       }
     };
-    
+
     fetchProfiles();
   }, []);
 
@@ -77,6 +78,7 @@ export default function About() {
       bio: "Focuses on core system architecture, routing orchestration, and state design patterns.",
       avatar: "https://avatars.githubusercontent.com/u/225521762?v=4",
       github: "https://github.com/NITISH-R-G",
+      Linkedin: "https://www.linkedin.com/in/nitish-r-g-15-10-2007-rgn/",
     },
     {
       name: "Mahibala",
@@ -85,6 +87,7 @@ export default function About() {
       bio: "Fusing machine learning integrations, React workflows, and agentic assistant paradigms.",
       avatar: "https://avatars.githubusercontent.com/u/172978374?v=4",
       github: "https://github.com/bala-2305",
+      Linkedin: "https://www.linkedin.com/in/mahibala-h/",
     },
     {
       name: "Prabhu Siddarth A V",
@@ -93,6 +96,7 @@ export default function About() {
       bio: "Designing elite, dark-themed responsive dashboards and smooth framer-motion micro-animations.",
       avatar: "https://avatars.githubusercontent.com/u/89624285?v=4",
       github: "https://github.com/PRABHUSIDDARTH",
+      Linkedin: "https://www.linkedin.com/in/prabhu-siddarth-av/",
     },
     {
       name: "Shreekumar B",
@@ -101,6 +105,7 @@ export default function About() {
       bio: "Architecting local database structures, session caching, and mock environment routines.",
       avatar: "https://avatars.githubusercontent.com/u/243531451?v=4",
       github: "https://github.com/bsrikumar855-dot",
+      Linkedin: "https://www.linkedin.com/in/shreekumar-b-103922381/",
     },
     {
       name: "Sivaranjith",
@@ -109,6 +114,7 @@ export default function About() {
       bio: "Designing database schema migrations, input sanitizations, and executing test suites.",
       avatar: "https://avatars.githubusercontent.com/u/224603939?v=4",
       github: "https://github.com/Siva9664",
+      Linkedin: "https://www.linkedin.com/in/sivaranjith-s-8aa535307/",
     },
   ];
 
@@ -283,54 +289,65 @@ export default function About() {
               const displayName = liveProfile?.name || member.name;
               const displayBio = liveProfile?.bio || member.bio;
               const displayAvatar = liveProfile?.avatar_url || member.avatar;
-              
-              return (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.08 }}
-                whileHover={{ y: -6, borderColor: "rgba(88,204,2,0.25)" }}
-                className="p-5 rounded-3xl border border-input-border/30 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-300 shadow-2xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-4 border border-input-border/20 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={displayAvatar}
-                      alt={displayName}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  </div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-primary-dark dark:text-white truncate">
-                    {displayName}
-                  </h3>
-                  <span className="text-[10px] text-primary-green font-extrabold uppercase tracking-wide block mb-1">
-                    {member.role}
-                  </span>
-                  <div className="text-[9px] text-gray-400 dark:text-gray-500 font-bold tracking-tight mb-3">
-                    @{member.login}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-normal font-medium mb-5">
-                    {displayBio}
-                  </p>
-                </div>
 
-                <div className="flex gap-2.5 border-t border-input-border/20 dark:border-gray-800/80 pt-4 mt-auto">
-                  <a
-                    href={member.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-7 w-7 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-black hover:text-white dark:hover:bg-black dark:hover:text-white transition-colors duration-250 cursor-pointer"
-                    title="GitHub Profile"
-                  >
-                    <Github className="h-3.5 w-3.5" />
-                  </a>
-                </div>
-              </motion.div>
-            );
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.08 }}
+                  whileHover={{ y: -6, borderColor: "rgba(88,204,2,0.25)" }}
+                  className="p-5 rounded-3xl border border-input-border/30 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-300 shadow-2xs flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-4 border border-input-border/20 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={displayAvatar}
+                        alt={displayName}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    </div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-primary-dark dark:text-white truncate">
+                      {displayName}
+                    </h3>
+                    <span className="text-[10px] text-primary-green font-extrabold uppercase tracking-wide block mb-1">
+                      {member.role}
+                    </span>
+                    <div className="text-[9px] text-gray-400 dark:text-gray-500 font-bold tracking-tight mb-3">
+                      @{member.login}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-normal font-medium mb-5">
+                      {displayBio}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2.5 border-t border-input-border/20 dark:border-gray-800/80 pt-4 mt-auto">
+                    <a
+                      href={member.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-7 w-7 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-black hover:text-white dark:hover:bg-black dark:hover:text-white transition-colors duration-250 cursor-pointer"
+                      title="GitHub Profile"
+                    >
+                      <Github className="h-3.5 w-3.5" />
+                    </a>
+                    {member.Linkedin && (
+                      <a
+                        href={member.Linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-7 w-7 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-[#0077b5] hover:text-white dark:hover:bg-[#0077b5] dark:hover:text-white transition-colors duration-250 cursor-pointer"
+                        title="LinkedIn Profile"
+                      >
+                        <Linkedin className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              );
             })}
           </div>
         </div>
@@ -345,7 +362,7 @@ export default function About() {
             <Zap className="h-6 w-6" />
           </div>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-primary-dark dark:text-white tracking-tight">
-            Host Your Next Big Hackathon
+            SIET Hackathons
           </h2>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-semibold">
             Leverage our unified platform to manage participants, streamline judging, and accelerate developer success.
@@ -355,7 +372,7 @@ export default function About() {
               href="/contact"
               className="inline-flex items-center justify-center w-full sm:w-auto px-7 py-3 rounded-full bg-primary-green hover:bg-green-hover text-white font-extrabold text-xs tracking-wider transition-all duration-300 shadow-md shadow-primary-green/15 hover:-translate-y-0.5"
             >
-              CONTACT SALES
+              LOG IN
             </Link>
             <Link
               href="/hackathon"
