@@ -387,23 +387,21 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       }, (err) => console.warn("FoodTokens sync error:", err));
     }
 
-    // Users listener (available for participants to invite teammates)
-    let unsubUsers = () => {};
-    if (session.isLoggedIn) {
-      unsubUsers = onSnapshot(collection(firestore, "users"), (snap) => {
-        const allProfiles: UserProfile[] = [];
-        const vols: Volunteer[] = [];
-        snap.forEach((d) => {
-          const data = d.data();
-          allProfiles.push({ id: d.id, ...data, name: data.name || data.displayName || "Unknown", email: data.email || "" } as unknown as UserProfile);
-          if (data.role === "volunteer") {
-            vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
-          }
-        });
-        setUserProfiles(allProfiles);
-        setVolunteers(vols);
-      }, (err) => console.warn("Users sync error:", err));
-    }
+    // Users listener (available for public pages, participants to invite teammates)
+    const unsubUsers = onSnapshot(collection(firestore, "users"), (snap) => {
+      const allProfiles: UserProfile[] = [];
+      const vols: Volunteer[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        allProfiles.push({ id: d.id, ...data, name: data.name || data.displayName || "Unknown", email: data.email || "" } as unknown as UserProfile);
+        if (data.role === "volunteer") {
+          vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
+        }
+      });
+      setUserProfiles(allProfiles);
+      setVolunteers(vols);
+    }, (err) => console.warn("Users sync error:", err));
+
 
     return () => {
       unsubTeams();

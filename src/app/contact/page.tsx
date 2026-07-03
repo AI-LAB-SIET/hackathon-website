@@ -7,13 +7,71 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { useAppState } from "@/components/layout/StateProvider";
 import { Mail, Phone, MapPin, Send, MessageSquare, Compass, ShieldAlert, Clock } from "lucide-react";
 
 export default function Contact() {
   const { toast } = useToast();
+  const { volunteers, userProfiles } = useAppState();
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [errors, setErrors] = useState({ name: "", email: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
+
+  // Get organizers from userProfiles
+  const organizersList = userProfiles.filter((p) => p.role === "organizer");
+
+  // Get volunteers and merge with volunteer profiles to prevent duplicates
+  const volunteersList = [...volunteers];
+  userProfiles
+    .filter((p) => p.role === "volunteer")
+    .forEach((p) => {
+      if (!volunteersList.some((v) => v.email.toLowerCase() === p.email.toLowerCase())) {
+        volunteersList.push({
+          id: p.uid || p.id || `vol-${p.email}`,
+          name: p.name || p.displayName || "Volunteer",
+          email: p.email,
+          phone: p.phone || "",
+          assignedArea: (p as any).assignedArea || "General Support",
+          assignedResponsibilities: "",
+          createdAt: new Date().toISOString(),
+        });
+      }
+    });
+
+  const supportStaff = [
+    ...organizersList.map((org) => ({
+      name: org.name || org.displayName || "Organizer",
+      role: "Organizer / Coordinator",
+      email: org.email,
+      phone: org.phone || "",
+      isOrganizer: true,
+    })),
+    ...volunteersList.map((vol) => ({
+      name: vol.name,
+      role: `Volunteer (${vol.assignedArea || "General Support"})`,
+      email: vol.email,
+      phone: vol.phone || "",
+      isOrganizer: false,
+    })),
+  ];
+
+  const fallbackStaff = [
+    { name: "Prof. Suresh Kumar", role: "Organizer / Coordinator", email: "organizer@college.edu", isOrganizer: true },
+    { name: "Dr. A. Rajesh", role: "Organizer / Lab Coordinator", email: "rajesh@college.edu", isOrganizer: true },
+    { name: "Riya Verma", role: "Volunteer (AI Research Lab)", email: "riya@college.edu", isOrganizer: false },
+    { name: "Arjun Nair", role: "Volunteer (Logistics Support)", email: "arjun@college.edu", isOrganizer: false }
+  ];
+
+  const finalStaff = supportStaff.length > 0 ? supportStaff : fallbackStaff;
+
+  // Pad the list to at least 4 items so that infinite scrolling has enough content to scroll seamlessly
+  let marqueeStaff = [...finalStaff];
+  if (marqueeStaff.length > 0 && marqueeStaff.length < 4) {
+    while (marqueeStaff.length < 4) {
+      marqueeStaff = [...marqueeStaff, ...finalStaff];
+    }
+  }
+
 
   const validate = () => {
     let valid = true;
@@ -135,30 +193,53 @@ export default function Contact() {
             {/* Live Support desks */}
             <div className="p-6 rounded-3xl border border-input-border/30 bg-white flex flex-col gap-4 dark:bg-gray-900 dark:border-gray-700">
               <h4 className="text-sm font-extrabold text-primary-dark flex items-center gap-2 dark:text-gray-100">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Live Support Volunteers
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Support Team & Volunteers
               </h4>
-              <div className="flex flex-col gap-3">
-                {[
-                  { role: "IT & Sandbox Support", name: "Rahul Sharma", status: "Online" },
-                  { role: "Lab Coordinator", name: "Dr. A. Rajesh", status: "Offline (Email only)" },
-                  { role: "Registrations Desk", name: "Sneha Nair", status: "Online" },
-                ].map((vol, index) => (
-                  <div key={index} className="flex justify-between items-center text-xs border-b border-gray-100 pb-2 last:border-0 last:pb-0 dark:border-gray-700">
-                    <div>
-                      <p className="font-bold text-gray-800 dark:text-gray-200">{vol.name}</p>
-                      <p className="text-[10px] text-gray-400 font-semibold dark:text-gray-500">{vol.role}</p>
+              <div className="relative h-[220px] overflow-hidden select-none">
+                {/* Fade masks for top/bottom edge */}
+                <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+                
+                <div className="flex flex-col gap-3 animate-marquee-vertical hover:[animation-play-state:paused] py-2">
+                  {/* First list copy */}
+                  {marqueeStaff.map((staff, index) => (
+                    <div key={`staff-1-${index}`} className="flex justify-between items-center text-xs border-b border-gray-100 dark:border-gray-800 pb-2 last:border-0 last:pb-0">
+                      <div className="min-w-0 flex-1 pr-3">
+                        <p className="font-bold text-gray-800 dark:text-gray-200 truncate">{staff.name}</p>
+                        <p className="text-[10px] text-gray-400 font-semibold dark:text-gray-500 truncate">{staff.role}</p>
+                        <p className="text-[9px] text-gray-400 dark:text-gray-500 truncate">{staff.email}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 ${
+                        staff.isOrganizer
+                          ? "bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30"
+                          : "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30"
+                      }`}>
+                        {staff.isOrganizer ? "Organizer" : "Volunteer"}
+                      </span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                      vol.status.includes("Online") 
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                        : "bg-gray-50 text-gray-500 border border-gray-200"
-                    }`}>
-                      {vol.status}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                  
+                  {/* Second list copy for infinite scroll effect */}
+                  {marqueeStaff.map((staff, index) => (
+                    <div key={`staff-2-${index}`} className="flex justify-between items-center text-xs border-b border-gray-100 dark:border-gray-800 pb-2 last:border-0 last:pb-0">
+                      <div className="min-w-0 flex-1 pr-3">
+                        <p className="font-bold text-gray-800 dark:text-gray-200 truncate">{staff.name}</p>
+                        <p className="text-[10px] text-gray-400 font-semibold dark:text-gray-500 truncate">{staff.role}</p>
+                        <p className="text-[9px] text-gray-400 dark:text-gray-500 truncate">{staff.email}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 ${
+                        staff.isOrganizer
+                          ? "bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30"
+                          : "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30"
+                      }`}>
+                        {staff.isOrganizer ? "Organizer" : "Volunteer"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
+
           </div>
         </div>
 

@@ -227,6 +227,7 @@ body {
     rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%,
     rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
@@ -249,3 +250,22 @@ body {
 .velorah-theme .animate-fade-rise-delay-2 {
   animation: fade-rise-velorah 0.8s ease-out 0.4s both;
 }
+
+/* Vertical scrolling marquee animation */
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical 25s linear infinite;
+}
+
+.animate-marquee-vertical:hover {
+  animation-play-state: paused;
+}
+
