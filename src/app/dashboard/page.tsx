@@ -61,6 +61,7 @@ export default function ParticipantDashboard() {
   const minTeamSize = activeHackathon?.minTeamSize || 1;
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number; status: "upcoming" | "active" | "ended" } | null>(null);
   const [projectTab, setProjectTab] = useState<"overview" | "repo" | "submission">("overview");
@@ -313,6 +314,56 @@ export default function ParticipantDashboard() {
     toast("Project details saved.", "success");
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!team) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast("File too large. Max 10MB allowed.", "error");
+      e.target.value = "";
+      return;
+    }
+
+    setUploadingFile(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const attachment: FileAttachment = {
+        id: `file-${Date.now()}`,
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        dataUrl: reader.result as string,
+        uploadedAt: new Date().toISOString(),
+      };
+
+      const updatedAttachments = [...(team.attachments || []), attachment];
+      updateProjectDetails(team.id, {
+        attachments: updatedAttachments,
+        ideaSubmitted: file.name.endsWith(".pdf") ? true : team.ideaSubmitted,
+      });
+      setUploadingFile(false);
+      toast(`"${file.name}" uploaded successfully!`, "success");
+      e.target.value = "";
+    };
+    reader.onerror = () => {
+      setUploadingFile(false);
+      toast("Failed to read file.", "error");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeleteAttachment = (fileId: string) => {
+    if (!team) return;
+    const updated = (team.attachments || []).filter((a) => a.id !== fileId);
+    updateProjectDetails(team.id, {
+      attachments: updated,
+      ideaSubmitted: updated.some(a => a.name.endsWith(".pdf")) ? team.ideaSubmitted : false,
+    });
+    toast("File removed.", "info");
+  };
+
   const handleSaveProfile = () => {
     if (session.email) {
       updateProfile(session.email, {
@@ -440,7 +491,7 @@ export default function ParticipantDashboard() {
         {/* Sidebar — the single source of navigation */}
         <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
 
-        <main className="flex-1 min-w-0 p-6 lg:p-8">
+        <main className="flex-1 min-w-0 p-6 lg:p-8 pt-20 md:pt-8">
           {/* Utility Header — replaces the duplicate top pills.
               Navigation is now handled SOLELY by the Sidebar; this header
               holds utility actions (search, notifications, profile menu). */}
@@ -1313,21 +1364,59 @@ export default function ParticipantDashboard() {
                     )}
 
                     {projectTab === "submission" && (
-                      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-4">
-                        <div className={`p-4 rounded-xl ${team.ideaSubmitted ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"}`}>
+                      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-6">
+                        <div className={`p-4 rounded-xl ${team.ideaSubmitted ? "bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800" : "bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"}`}>
                           <div className="flex items-center gap-2 font-bold text-sm mb-1">
-                            {team.ideaSubmitted ? <><CheckCircle className="h-4 w-4 text-emerald-600" /><span className="text-emerald-700">Idea Submitted</span></> : <><Clock className="h-4 w-4 text-amber-600" /><span className="text-amber-700">Submission Pending</span></>}
+                            {team.ideaSubmitted ? <><CheckCircle className="h-4 w-4 text-emerald-600" /><span className="text-emerald-700 dark:text-emerald-400">Idea Submitted</span></> : <><Clock className="h-4 w-4 text-amber-600" /><span className="text-amber-700 dark:text-amber-450">Submission Pending</span></>}
                           </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-300">Upload your 2-page idea abstract PDF. Deadline: July 5, 2026 at 11:59 PM.</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Upload your 2-page idea abstract PDF, system architecture diagrams, or source code entrypoints.</p>
                         </div>
-                        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center">
-                          <div className="text-4xl mb-3">📄</div>
-                          <div className="font-semibold text-gray-600 dark:text-gray-300 mb-1">Drop your PDF here</div>
-                          <div className="text-xs text-gray-400 dark:text-gray-500 mb-4">Maximum 10 MB · PDF format only</div>
-                          <button
-                            onClick={() => { updateProjectDetails(team.id, { ideaSubmitted: true }); toast("Idea abstract submitted!", "success"); }}
-                            className="px-5 py-2 rounded-xl bg-primary-green text-white font-bold text-sm hover:bg-primary-dark transition-colors cursor-pointer"
-                          >Submit Abstract</button>
+                        
+                        {/* Custom Uploader Input */}
+                        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center bg-gray-50/20 dark:bg-gray-900/20">
+                          <input type="file" onChange={handleFileUpload} className="hidden" id="participant-file-upload" disabled={uploadingFile} />
+                          <label htmlFor="participant-file-upload" className="cursor-pointer flex flex-col items-center">
+                            <div className="text-4xl mb-3">📁</div>
+                            <div className="font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                              {uploadingFile ? "Uploading File..." : "Click to select a file"}
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500 mb-4">Supported formats: PDF, PNG, JPG, PY, JS, MD · Max 10MB</div>
+                            <span className="px-5 py-2 rounded-xl bg-primary-green hover:bg-primary-dark text-white font-bold text-sm transition-colors shadow-md shadow-primary-green/10">Select File</span>
+                          </label>
+                        </div>
+
+                        {/* File Listings */}
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1">
+                            <Paperclip className="h-3.5 w-3.5" /> Uploaded Attachments ({(team.attachments || []).length})
+                          </h4>
+                          {(team.attachments || []).length === 0 ? (
+                            <p className="text-xs text-gray-400 dark:text-gray-500">No project files uploaded yet.</p>
+                          ) : (
+                            <div className="grid grid-cols-1 gap-2">
+                              {(team.attachments || []).map((att) => (
+                                <div key={att.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-900/30">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <FileText className="h-4.5 w-4.5 text-gray-400 shrink-0" />
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{att.name}</p>
+                                      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                                        {Math.round(att.size / 102.4) / 10} KB · Uploaded {new Date(att.uploadedAt).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <a href={att.dataUrl} download={att.name} className="p-1 text-gray-500 hover:text-primary-green dark:text-gray-400 dark:hover:text-white transition-colors">
+                                      <Download className="h-4 w-4" />
+                                    </a>
+                                    <button onClick={() => handleDeleteAttachment(att.id)} className="p-1 text-gray-550 hover:text-red-650 dark:text-gray-400 dark:hover:text-red-400 transition-colors cursor-pointer">
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

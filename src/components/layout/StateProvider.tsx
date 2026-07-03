@@ -1276,6 +1276,27 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     return activeHackathonId ? foodTokens.filter((t) => t.hackathonId === activeHackathonId) : [];
   }, [foodTokens, activeHackathonId]);
 
+  // Auto-lifecycle updater for hackathon status based on start/end dates
+  useEffect(() => {
+    if (hackathons.length === 0) return;
+    const checkLifecycle = async () => {
+      const now = Date.now();
+      for (const h of hackathons) {
+        const start = new Date(h.startDate).getTime();
+        const end = new Date(h.endDate).getTime();
+        
+        if (h.status === "upcoming" && now >= start && now <= end) {
+          await updateHackathon(h.id, { status: "active" });
+        } else if ((h.status === "active" || h.status === "upcoming") && now > end) {
+          await updateHackathon(h.id, { status: "ended" });
+        }
+      }
+    };
+    checkLifecycle();
+    const interval = setInterval(checkLifecycle, 10000);
+    return () => clearInterval(interval);
+  }, [hackathons, updateHackathon]);
+
   // ─── Context value ──────────────────────────────────────────────────────────
 
   const value = useMemo(() => ({

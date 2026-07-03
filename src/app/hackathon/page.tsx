@@ -86,6 +86,7 @@ const statusStyles: Record<string, { dot: string; text: string; border: string }
 
 const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const [isLive, setIsLive] = useState(false);
   
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -93,6 +94,7 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
       if (diff <= 0) {
         clearInterval(timer);
         setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        setIsLive(true);
       } else {
         setTimeLeft({
           d: Math.floor(diff / (1000 * 60 * 60 * 24)),
@@ -105,17 +107,25 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
     return () => clearInterval(timer);
   }, [targetDate]);
 
+  if (isLive || Object.values(timeLeft).every(v => v === 0)) {
+    return (
+      <span className="text-emerald-500 font-extrabold flex items-center gap-1.5 text-xs animate-pulse bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-xl border border-emerald-200/50">
+        <span className="h-2 w-2 rounded-full bg-emerald-500" /> LIVE NOW
+      </span>
+    );
+  }
+
   return (
-    <>
+    <div className="flex gap-2 justify-center">
       {Object.entries(timeLeft).map(([unit, val]) => (
         <div key={unit} className="flex flex-col items-center">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-white dark:bg-gray-800 text-primary-dark dark:text-white flex items-center justify-center font-extrabold text-xl sm:text-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white dark:bg-gray-800 text-primary-dark dark:text-white flex items-center justify-center font-extrabold text-base sm:text-lg shadow-sm border border-gray-100 dark:border-gray-700">
             {val.toString().padStart(2, '0')}
           </div>
-          <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase mt-2">{unit === 'd' ? 'Days' : unit === 'h' ? 'Hours' : unit === 'm' ? 'Mins' : 'Secs'}</span>
+          <span className="text-[9px] font-bold text-gray-400 uppercase mt-1">{unit === 'd' ? 'Days' : unit === 'h' ? 'Hours' : unit === 'm' ? 'Mins' : 'Secs'}</span>
         </div>
       ))}
-    </>
+    </div>
   );
 };
 
@@ -124,7 +134,22 @@ export default function HackathonPage() {
 
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
 
-  const { problemStatements, hackathons, activeHackathonId } = useAppState();
+  const { problemStatements, hackathons, teams } = useAppState();
+
+  const getTopThreeTeams = (hackathonId: string) => {
+    const filtered = (teams || []).filter((t) => t.hackathonId === hackathonId && t.status === "APPROVED");
+    const scored = filtered.map((t) => {
+      const evals = t.evaluations || [];
+      if (evals.length === 0) return { ...t, avgScore: 0 };
+      const sum = evals.reduce((acc, ev) => {
+        const scoreSum = ev.innovation + ev.feasibility + ev.presentation + (ev.technicalDepth ?? 0) + (ev.aiUsage ?? 0);
+        return acc + scoreSum / 5;
+      }, 0);
+      return { ...t, avgScore: Math.round((sum / evals.length) * 10) / 10 };
+    });
+    return scored.sort((a, b) => b.avgScore - a.avgScore).slice(0, 3);
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -278,27 +303,69 @@ export default function HackathonPage() {
                   {hackathons
                     .filter((h) => h.status === "active" || h.status === "upcoming")
                     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-                    .map((h) => (
-                      <div key={h.id} className="bg-card-bg/30 border border-input-border/30 rounded-3xl p-8 shadow-sm flex flex-col gap-6 text-center justify-between">
-                        <div>
-                          <h3 className="text-xl font-extrabold text-primary-dark dark:text-gray-100 mb-2">
-                            {h.name}
-                          </h3>
-                          <p className="text-xs text-gray-400 mb-4 dark:text-gray-500">
-                            {h.venue || "SIET"} | {new Date(h.startDate).toLocaleDateString()} - {new Date(h.endDate).toLocaleDateString()}
-                          </p>
-                          <div className="flex gap-3 justify-center mb-6">
-                            <CountdownTimer targetDate={h.startDate} />
+                    .map((h) => {
+                      const isLive = h.status === "active";
+                      const topTeams = isLive ? getTopThreeTeams(h.id) : [];
+                      return (
+                        <div key={h.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col justify-between min-h-[360px]">
+                          <div>
+                            <div className="flex justify-between items-start gap-3 mb-2">
+                              <h3 className="text-lg sm:text-xl font-extrabold text-primary-dark dark:text-gray-100 text-left">
+                                {h.name}
+                              </h3>
+                              {isLive ? (
+                                <span className="text-[9px] font-bold text-white bg-red-600 px-2 py-0.5 rounded uppercase animate-pulse flex items-center gap-1 shrink-0">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-white" /> LIVE
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-bold text-blue-600 border border-blue-200 dark:border-blue-805/30 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded uppercase shrink-0">
+                                  UPCOMING
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-450 mb-4 text-left dark:text-gray-500 font-semibold">
+                              📍 {h.venue || "SIET"} | 📅 {new Date(h.startDate).toLocaleDateString()} - {new Date(h.endDate).toLocaleDateString()}
+                            </p>
+                            
+                            {/* Countdown Timer or Leaderboard */}
+                            <div className="py-2 mb-6">
+                              {!isLive ? (
+                                <div className="flex gap-3 justify-center">
+                                  <CountdownTimer targetDate={h.startDate} />
+                                </div>
+                              ) : (
+                                <div className="bg-gray-55 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-2.5 text-left">
+                                  <h4 className="text-xs font-bold text-primary-green uppercase tracking-wider mb-2 flex items-center gap-1">
+                                    🏆 Live Leaderboard (Top 3 Teams)
+                                  </h4>
+                                  {topTeams.length === 0 ? (
+                                    <p className="text-xs text-gray-450 italic">Leaderboard updating live...</p>
+                                  ) : (
+                                    <div className="space-y-1.5">
+                                      {topTeams.map((team, rankIdx) => {
+                                        const badge = rankIdx === 0 ? "🥇" : rankIdx === 1 ? "🥈" : "🥉";
+                                        return (
+                                          <div key={team.id} className="flex justify-between items-center bg-white dark:bg-gray-900 px-3 py-2 rounded-xl border border-gray-150/50 dark:border-gray-800 shadow-xs">
+                                            <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate max-w-[160px]">{badge} {team.name}</span>
+                                            <span className="text-xs font-extrabold text-primary-green">{team.avgScore > 0 ? `${team.avgScore}/10` : "Unevaluated"}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
+                          <Link
+                            href={`/register?h=${h.slug}`}
+                            className="w-full py-3 px-4 rounded-xl bg-primary-green hover:bg-primary-dark text-white text-xs font-bold text-center transition-colors shadow-md shadow-primary-green/10"
+                          >
+                            {isLive ? "View Live Workspace" : "Register Now"}
+                          </Link>
                         </div>
-                        <Link
-                          href={`/register?h=${h.slug}`}
-                          className="w-full py-3 px-4 rounded-xl bg-primary-green hover:bg-primary-dark text-white text-xs font-bold text-center transition-colors shadow-md shadow-primary-green/10"
-                        >
-                          Login
-                        </Link>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             )}

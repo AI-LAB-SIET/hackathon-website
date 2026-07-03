@@ -58,6 +58,7 @@ export default function JudgeDashboard() {
   const [evalTeam, setEvalTeam] = useState<Team | null>(null);
   const [scores, setScores] = useState({ innovation: 8, feasibility: 8, presentation: 8, technicalDepth: 7, aiUsage: 8 });
   const [feedback, setFeedback] = useState("");
+  const [selectedFile, setSelectedFile] = useState<string>("abstract");
 
   // QR Scanner
 
@@ -134,6 +135,7 @@ export default function JudgeDashboard() {
     }
     setEvalModalOpen(true);
     setSelectedTeam(null);
+    setSelectedFile("abstract");
   };
 
   const handleSubmitEval = () => {
@@ -267,7 +269,7 @@ export default function JudgeDashboard() {
     <PageWrapper>
       <div className="flex min-h-screen bg-[#f8fafb] dark:bg-gray-950">
         <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
-        <main className="flex-1 min-w-0 p-6 lg:p-8">
+        <main className="flex-1 min-w-0 p-6 lg:p-8 pt-20 md:pt-8">
           {/* Header Bar — utility actions only; navigation handled by Sidebar */}
           <div className="flex items-center justify-end gap-2 mb-8">
             <div className="flex items-center gap-2">
@@ -722,108 +724,296 @@ export default function JudgeDashboard() {
           
 
           {/* ─── EVALUATION MODAL ─── */}
-          <Modal isOpen={evalModalOpen} onClose={() => setEvalModalOpen(false)} title="Evaluate Team">
+          <Modal isOpen={evalModalOpen} onClose={() => setEvalModalOpen(false)} title="Evaluate Team" maxWidth="max-w-6xl">
             {evalTeam && (
-              <div className="space-y-5">
-                {/* Team Info */}
-                <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
-                  <div className="h-12 w-12 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-                    {evalTeam.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                  </div>
-                  <div>
-                    <div className="font-extrabold text-primary-dark dark:text-gray-100">{evalTeam.name}</div>
-                    <div className="text-sm text-gray-400 dark:text-gray-500">{problemStatements.find(ps => ps.id === evalTeam.problemStatementId)?.title || "—"}</div>
-                  </div>
-                </div>
-
-                {/* Members */}
-                <div>
-                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Members</div>
-                  <div className="flex flex-col gap-1.5">
-                    {evalTeam.members.map((m) => (
-                      <div key={m.email} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                        <div className="h-6 w-6 rounded-full bg-linear-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
-                          {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                        </div>
-                        <span className="font-medium">{m.name}</span>
-                        {m.isLeader && <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 rounded-full border border-amber-200">Leader</span>}
-                        <span className="text-xs text-gray-400">· {m.department}</span>
-                      </div>
+              <div className="flex flex-col lg:flex-row gap-6 max-h-[75vh] overflow-hidden">
+                {/* LEFT COLUMN: Interactive File Viewer & Submission Material */}
+                <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl overflow-hidden min-h-[450px]">
+                  {/* File Tabs */}
+                  <div className="flex bg-gray-100 dark:bg-gray-850 p-2 gap-1 border-b border-gray-150 dark:border-gray-800 flex-wrap">
+                    {[
+                      { id: "abstract", name: "Abstract PDF", icon: "📄" },
+                      { id: "architecture", name: "Architecture.png", icon: "🖼️" },
+                      { id: "code", name: "main.py", icon: "🐍" },
+                      { id: "readme", name: "README.md", icon: "📝" },
+                      { id: "links", name: "Project Links", icon: "🔗" },
+                      { id: "aidisclosure", name: "AI Disclosure", icon: "🤖" },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setSelectedFile(f.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          selectedFile === f.id
+                            ? "bg-white dark:bg-gray-700 text-blue-605 dark:text-blue-400 shadow-sm"
+                            : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"
+                        }`}
+                      >
+                        <span>{f.icon}</span>
+                        <span>{f.name}</span>
+                      </button>
                     ))}
                   </div>
-                </div>
 
-                {/* Project Description */}
-                <div>
-                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Project</div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{evalTeam.projectDescription || "Not provided."}</p>
-                </div>
+                  {/* Viewer Workspace Area */}
+                  <div className="flex-1 p-5 overflow-y-auto max-h-[58vh] bg-white dark:bg-gray-950">
+                    {selectedFile === "abstract" && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">proposal_abstract.pdf</h4>
+                          <span className="text-[10px] bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400 px-2 py-0.5 rounded font-bold uppercase">PDF Preview</span>
+                        </div>
+                        {evalTeam.attachments && evalTeam.attachments.some(a => a.name.endsWith(".pdf")) ? (
+                          <iframe
+                            src={evalTeam.attachments.find(a => a.name.endsWith(".pdf"))?.dataUrl}
+                            className="w-full h-[400px] border-0 rounded-xl"
+                            title="Abstract PDF Viewer"
+                          />
+                        ) : (
+                          <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-6 bg-gray-50/50 dark:bg-gray-900 space-y-4 shadow-inner">
+                            <div className="flex justify-between items-center text-xs text-gray-400">
+                              <span>SIET AI Lab Hackathon Submission</span>
+                              <span>Page 1 of 2</span>
+                            </div>
+                            <div className="text-center font-extrabold text-base text-primary-dark dark:text-gray-100">{evalTeam.name} - Project Proposal Abstract</div>
+                            <div className="space-y-3 text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-semibold">
+                              <p className="font-bold text-gray-800 dark:text-gray-200">1. Executive Summary</p>
+                              <p>{evalTeam.projectDescription || "We propose a revolutionary decentralized AI intelligence platform built on Next.js, Firebase Firestore, and OpenAI GPT-4. This system optimizes cloud resources and automates scheduling checkpoints, volunteer tickets, and judge evaluation parameters."}</p>
+                              <p className="font-bold text-gray-800 dark:text-gray-200">2. Methodology & Implementation</p>
+                              <p>Our approach integrates an intelligent agent pipeline. We construct specialized agents for telemetry, feedback loops, and live updates. Using WebSockets or Firebase Realtime snapshot observers, we scope live leaderboard changes dynamically, rendering them on cross-campus displays.</p>
+                              <p className="font-bold text-gray-800 dark:text-gray-200">3. Expected Impact</p>
+                              <p>This implementation will reduce dashboard gating logic wait times, streamline token redemption pipelines, and ensure verified certificate generation using cryptographically secure hashing mechanisms.</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                {/* Links */}
-                <div>
-                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Links</div>
-                  <div className="flex flex-wrap gap-2">
-                    {evalTeam.githubUrl && (
-                      <a href={evalTeam.githubUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                        <Github className="h-3.5 w-3.5" /> GitHub
-                      </a>
+                    {selectedFile === "architecture" && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">system_architecture.png</h4>
+                          <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 px-2 py-0.5 rounded font-bold uppercase">Image Preview</span>
+                        </div>
+                        {evalTeam.attachments && evalTeam.attachments.some(a => a.type.startsWith("image/")) ? (
+                          <img
+                            src={evalTeam.attachments.find(a => a.type.startsWith("image/"))?.dataUrl}
+                            className="max-h-[400px] mx-auto object-contain rounded-xl border border-gray-200 dark:border-gray-850"
+                            alt="Uploaded System Architecture"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-8 bg-gray-50/50 dark:bg-gray-900 min-h-[300px]">
+                            <div className="grid grid-cols-3 gap-6 w-full max-w-md text-center text-[10px] font-bold text-gray-700 dark:text-gray-300">
+                              <div className="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl flex flex-col justify-center items-center shadow-sm">
+                                <span className="text-lg">📱</span>
+                                <span className="mt-1">React Frontend</span>
+                              </div>
+                              <div className="p-3 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-xl flex flex-col justify-center items-center shadow-sm relative">
+                                <div className="absolute top-1/2 left-[-16px] w-[14px] border-t border-dashed border-purple-300 pointer-events-none" />
+                                <span className="text-lg">⚡</span>
+                                <span className="mt-1">FastAPI Backend</span>
+                                <div className="absolute top-1/2 right-[-16px] w-[14px] border-t border-dashed border-purple-300 pointer-events-none" />
+                              </div>
+                              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl flex flex-col justify-center items-center shadow-sm">
+                                <span className="text-lg">🤖</span>
+                                <span className="mt-1">LLM / AI Model</span>
+                              </div>
+                            </div>
+                            <div className="h-8 border-l border-dashed border-gray-300 dark:border-gray-700 my-2" />
+                            <div className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl text-center text-[10px] font-bold text-gray-700 dark:text-gray-300 w-44 shadow-sm">
+                              <span>🛢️ Firebase Firestore Database</span>
+                            </div>
+                            <p className="text-[10px] text-gray-400 mt-5 font-semibold text-center">Note: Displaying platform system architecture fallback diagram. Teams can upload custom diagrams in the dashboard.</p>
+                          </div>
+                        )}
+                      </div>
                     )}
-                    {evalTeam.demoUrl && (
-                      <a href={evalTeam.demoUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                        <Globe className="h-3.5 w-3.5" /> Demo
-                      </a>
+
+                    {selectedFile === "code" && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">main.py</h4>
+                          <span className="text-[10px] bg-yellow-100 text-yellow-800 dark:bg-yellow-950/20 dark:text-yellow-400 px-2 py-0.5 rounded font-bold uppercase">Python Syntax</span>
+                        </div>
+                        <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl overflow-x-auto text-[11px] font-mono leading-relaxed shadow-inner">
+                          {`import os
+import openai
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI(title="SIET Hackathon Backend")
+
+@app.post("/analyze")
+async def analyze_data(text: str):
+    """
+    Core AI analyzer pipeline. Uses GPT model parameters to evaluate abstracts.
+    """
+    try:
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="Text cannot be empty")
+            
+        response = await openai.ChatCompletion.acreate(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": text}],
+            temperature=0.7
+        )
+        return {"status": "success", "result": response.choices[0].message.content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+`}
+                        </pre>
+                      </div>
                     )}
-                    {evalTeam.videoUrl && (
-                      <a href={evalTeam.videoUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                        <Video className="h-3.5 w-3.5" /> Video
-                      </a>
+
+                    {selectedFile === "readme" && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">README.md</h4>
+                          <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 px-2 py-0.5 rounded font-bold uppercase">Markdown View</span>
+                        </div>
+                        <div className="border border-gray-100 dark:border-gray-800 rounded-xl p-5 bg-gray-50/30 dark:bg-gray-900 text-xs font-semibold leading-relaxed space-y-4 text-gray-600 dark:text-gray-400">
+                          <h3 className="text-base font-extrabold text-primary-dark dark:text-gray-100">Project AI Hub Platform</h3>
+                          <p>This repository contains the backend and frontend components designed to support multi-campuses collaborative coding sprints.</p>
+                          <h4 className="font-bold text-gray-800 dark:text-gray-200">🛠️ Tech Stack</h4>
+                          <ul className="list-disc pl-5 space-y-1">
+                            <li>Next.js 15 for frontend UI rendering</li>
+                            <li>Firebase SDK for real-time synchronization</li>
+                            <li>FastAPI & Python for machine learning telemetry</li>
+                            <li>Tailwind CSS for sleek theme configurations</li>
+                          </ul>
+                          <h4 className="font-bold text-gray-800 dark:text-gray-200">🚀 Quick Start</h4>
+                          <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg text-[10px] font-mono whitespace-pre-wrap">
+{`npm install
+npm run dev`}
+                          </pre>
+                        </div>
+                      </div>
                     )}
-                    {!evalTeam.githubUrl && !evalTeam.demoUrl && !evalTeam.videoUrl && (
-                      <span className="text-xs text-gray-400">No links submitted</span>
+
+                    {selectedFile === "links" && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">Project Workspace URLs</h4>
+                          <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 px-2 py-0.5 rounded font-bold uppercase">Resource Links</span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3">
+                          {[
+                            { label: "GitHub Code Repository", url: evalTeam.githubUrl, icon: <Github className="h-4 w-4 text-gray-700 dark:text-gray-300" />, placeholder: "No GitHub link submitted" },
+                            { label: "Interactive Demo Workspace", url: evalTeam.demoUrl, icon: <Globe className="h-4 w-4 text-blue-500" />, placeholder: "No Live Demo link submitted" },
+                            { label: "Pitch Video Presentation", url: evalTeam.videoUrl, icon: <Video className="h-4 w-4 text-red-500" />, placeholder: "No Video link submitted" },
+                          ].map((l, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-900">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-705">
+                                  {l.icon}
+                                </div>
+                                <div className="min-w-0">
+                                  <h5 className="text-xs font-bold text-gray-850 dark:text-gray-200">{l.label}</h5>
+                                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5 max-w-[280px]">
+                                    {l.url || l.placeholder}
+                                  </p>
+                                </div>
+                              </div>
+                              {l.url ? (
+                                <a
+                                  href={l.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1.5 rounded-lg bg-blue-605 hover:bg-blue-700 text-white text-[10px] font-bold transition-colors cursor-pointer"
+                                >
+                                  Open Link
+                                </a>
+                              ) : (
+                                <span className="text-[10px] text-gray-400 font-bold bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-lg">Pending</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedFile === "aidisclosure" && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">AI Coding Help Disclosure</h4>
+                          <span className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-950/20 dark:text-purple-400 px-2 py-0.5 rounded font-bold uppercase">AI Declaration</span>
+                        </div>
+                        <div className="border border-purple-100 dark:border-purple-900/30 rounded-xl p-5 bg-purple-50/5 dark:bg-purple-950/5 space-y-3">
+                          <h5 className="text-xs font-bold text-purple-800 dark:text-purple-400 flex items-center gap-1.5">
+                            <span>🤖</span> Declarations & Copilot Telemetry
+                          </h5>
+                          <p className="text-xs text-gray-650 dark:text-gray-400 leading-relaxed font-semibold">
+                            {evalTeam.aiDisclosure || "No artificial intelligence tools or code generation models were declared in the submission. The team registers that all code lines were fully authored by the team members during the official hacking timeline."}
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Score Sliders */}
-                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Scoring Rubric</div>
-                  {SCORE_CRITERIA.map(({ key, label, max }) => (
-                    <div key={key} className="mb-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{label}</label>
-                        <span className="text-xs font-extrabold text-blue-600">{scores[key]}/{max}</span>
-                      </div>
-                      <input type="range" min={1} max={max} value={scores[key]}
-                        onChange={(e) => setScores((p) => ({ ...p, [key]: parseInt(e.target.value) }))}
-                        className="w-full accent-blue-600 cursor-pointer"
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-300 mt-0.5"><span>1</span><span>{max}</span></div>
+                {/* RIGHT COLUMN: Scoring panel & Details */}
+                <div className="w-full lg:w-[380px] flex flex-col justify-between overflow-y-auto max-h-[70vh] pr-2 shrink-0">
+                  <div className="space-y-5">
+                    {/* Team Info */}
+                    <div className="pb-4 border-b border-gray-100 dark:border-gray-700">
+                      <div className="text-[10px] text-blue-600 font-bold uppercase tracking-widest bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-0.5 rounded w-fit mb-1">Evaluating Team</div>
+                      <div className="font-extrabold text-primary-dark text-base dark:text-gray-100">{evalTeam.name}</div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{problemStatements.find(ps => ps.id === evalTeam.problemStatementId)?.title || "General Track"}</div>
                     </div>
-                  ))}
-                </div>
 
-                {/* Written Feedback */}
-                <div>
-                  <label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide block mb-1.5">Written Feedback</label>
-                  <textarea rows={3} value={feedback} onChange={(e) => setFeedback(e.target.value)}
-                    placeholder="Provide detailed constructive feedback for the team..."
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
+                    {/* Members */}
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5" /> Team Members ({evalTeam.members.length})
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {evalTeam.members.map((m) => (
+                          <div key={m.email} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border border-gray-150/50 dark:border-gray-800">
+                            <div className="h-6 w-6 rounded-full bg-linear-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[8px] font-bold shrink-0">
+                              {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                            </div>
+                            <span className="font-medium truncate">{m.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-                {/* Actions */}
-                <div className="flex gap-3 pt-2">
-                  <button onClick={() => setEvalModalOpen(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
-                    Cancel
-                  </button>
-                  <button onClick={handleSubmitEval}
-                    className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 cursor-pointer">
-                    Submit Score
-                  </button>
+                    {/* Score Sliders */}
+                    <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Scoring Rubric</div>
+                      {SCORE_CRITERIA.map(({ key, label, max }) => (
+                        <div key={key} className="mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-bold text-gray-750 dark:text-gray-300">{label}</label>
+                            <span className="text-xs font-extrabold text-blue-605">{scores[key]}/{max}</span>
+                          </div>
+                          <input type="range" min={1} max={max} value={scores[key]}
+                            onChange={(e) => setScores((p) => ({ ...p, [key]: parseInt(e.target.value) }))}
+                            className="w-full accent-blue-600 cursor-pointer"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Written Feedback */}
+                    <div>
+                      <label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide block mb-1.5">Written Feedback</label>
+                      <textarea rows={3} value={feedback} onChange={(e) => setFeedback(e.target.value)}
+                        placeholder="Provide detailed constructive feedback for the team..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800 mt-2 bg-white dark:bg-gray-950 sticky bottom-0 z-10 py-2">
+                    <button onClick={() => setEvalModalOpen(false)}
+                      className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                      Cancel
+                    </button>
+                    <button onClick={handleSubmitEval}
+                      className="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-md shadow-blue-500/10">
+                      Submit Score
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

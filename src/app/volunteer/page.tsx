@@ -184,7 +184,7 @@ export default function VolunteerDashboard() {
     <PageWrapper className="flex min-h-screen bg-gray-50/50 dark:bg-gray-950">
       <Sidebar activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as TabType)} />
 
-      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-screen">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-screen pt-20 md:pt-10">
         {/* Mobile Nav */}
         <div className="md:hidden flex overflow-x-auto pb-3 mb-6 border-b border-gray-150 gap-2 scrollbar-none shrink-0">
           {[

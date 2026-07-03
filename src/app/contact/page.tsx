@@ -12,7 +12,7 @@ import { Mail, Phone, MapPin, Send, MessageSquare, Compass, ShieldAlert, Clock }
 
 export default function Contact() {
   const { toast } = useToast();
-  const { volunteers, userProfiles } = useAppState();
+  const { volunteers, userProfiles, hackathons } = useAppState();
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [errors, setErrors] = useState({ name: "", email: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -39,27 +39,40 @@ export default function Contact() {
     });
 
   const supportStaff = [
-    ...organizersList.map((org) => ({
-      name: org.name || org.displayName || "Organizer",
-      role: "Organizer / Coordinator",
-      email: org.email,
-      phone: org.phone || "",
-      isOrganizer: true,
-    })),
-    ...volunteersList.map((vol) => ({
-      name: vol.name,
-      role: `Volunteer (${vol.assignedArea || "General Support"})`,
-      email: vol.email,
-      phone: vol.phone || "",
-      isOrganizer: false,
-    })),
+    ...organizersList.map((org) => {
+      const matchedHacks = (org.hackathonIds || (org.currentHackathonId ? [org.currentHackathonId] : []))
+        .map(id => hackathons.find(h => h.id === id)?.name)
+        .filter(Boolean) as string[];
+      return {
+        name: org.name || org.displayName || "Organizer",
+        role: "Organizer / Coordinator",
+        email: org.email,
+        phone: org.phone || "",
+        isOrganizer: true,
+        assignedHackathons: matchedHacks.length > 0 ? matchedHacks : ["All Events"],
+      };
+    }),
+    ...volunteersList.map((vol) => {
+      const prof = userProfiles.find(u => u.email.toLowerCase() === vol.email.toLowerCase());
+      const matchedHacks = (prof?.hackathonIds || (prof?.currentHackathonId ? [prof.currentHackathonId] : []))
+        .map(id => hackathons.find(h => h.id === id)?.name)
+        .filter(Boolean) as string[];
+      return {
+        name: vol.name,
+        role: `Volunteer (${vol.assignedArea || "General Support"})`,
+        email: vol.email,
+        phone: vol.phone || "",
+        isOrganizer: false,
+        assignedHackathons: matchedHacks.length > 0 ? matchedHacks : ["General Support"],
+      };
+    }),
   ];
 
   const fallbackStaff = [
-    { name: "Prof. Suresh Kumar", role: "Organizer / Coordinator", email: "organizer@college.edu", isOrganizer: true },
-    { name: "Dr. A. Rajesh", role: "Organizer / Lab Coordinator", email: "rajesh@college.edu", isOrganizer: true },
-    { name: "Riya Verma", role: "Volunteer (AI Research Lab)", email: "riya@college.edu", isOrganizer: false },
-    { name: "Arjun Nair", role: "Volunteer (Logistics Support)", email: "arjun@college.edu", isOrganizer: false }
+    { name: "Prof. Suresh Kumar", role: "Organizer / Coordinator", email: "organizer@college.edu", isOrganizer: true, assignedHackathons: ["SIET AI Lab Hackathon 2026"] },
+    { name: "Dr. A. Rajesh", role: "Organizer / Lab Coordinator", email: "rajesh@college.edu", isOrganizer: true, assignedHackathons: ["SIET AI Lab Hackathon 2026"] },
+    { name: "Riya Verma", role: "Volunteer (AI Research Lab)", email: "riya@college.edu", isOrganizer: false, assignedHackathons: ["SIET AI Lab Hackathon 2026"] },
+    { name: "Arjun Nair", role: "Volunteer (Logistics Support)", email: "arjun@college.edu", isOrganizer: false, assignedHackathons: ["SIET AI Lab Hackathon 2026"] }
   ];
 
   const finalStaff = supportStaff.length > 0 ? supportStaff : fallbackStaff;
@@ -207,7 +220,12 @@ export default function Contact() {
                       <div className="min-w-0 flex-1 pr-3">
                         <p className="font-bold text-gray-800 dark:text-gray-200 truncate">{staff.name}</p>
                         <p className="text-[10px] text-gray-400 font-semibold dark:text-gray-500 truncate">{staff.role}</p>
-                        <p className="text-[9px] text-gray-400 dark:text-gray-500 truncate">{staff.email}</p>
+                        {staff.assignedHackathons && staff.assignedHackathons.map((hName, hIdx) => (
+                          <span key={hIdx} className="inline-block text-[8px] bg-blue-500/10 text-blue-600 dark:bg-blue-955/40 dark:text-blue-400 px-1.5 py-0.5 rounded-md font-bold mt-1 mr-1">
+                            🏷️ {hName}
+                          </span>
+                        ))}
+                        <p className="text-[9px] text-gray-405 dark:text-gray-500 truncate mt-0.5">{staff.email}</p>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 ${
                         staff.isOrganizer
@@ -225,7 +243,12 @@ export default function Contact() {
                       <div className="min-w-0 flex-1 pr-3">
                         <p className="font-bold text-gray-800 dark:text-gray-200 truncate">{staff.name}</p>
                         <p className="text-[10px] text-gray-400 font-semibold dark:text-gray-500 truncate">{staff.role}</p>
-                        <p className="text-[9px] text-gray-400 dark:text-gray-500 truncate">{staff.email}</p>
+                        {staff.assignedHackathons && staff.assignedHackathons.map((hName, hIdx) => (
+                          <span key={hIdx} className="inline-block text-[8px] bg-blue-500/10 text-blue-600 dark:bg-blue-955/40 dark:text-blue-400 px-1.5 py-0.5 rounded-md font-bold mt-1 mr-1">
+                            🏷️ {hName}
+                          </span>
+                        ))}
+                        <p className="text-[9px] text-gray-405 dark:text-gray-500 truncate mt-0.5">{staff.email}</p>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 ${
                         staff.isOrganizer

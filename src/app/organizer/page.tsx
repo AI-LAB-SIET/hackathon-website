@@ -398,7 +398,7 @@ export default function OrganizerDashboard() {
     <PageWrapper>
       <div className="flex min-h-screen bg-[#f8fafb] dark:bg-gray-950">
         <Sidebar activeTab={activeTab} onTabChange={(id) => setActiveTab(id as TabType)} />
-        <main className="flex-1 min-w-0 p-6 lg:p-8">
+        <main className="flex-1 min-w-0 p-6 lg:p-8 pt-20 md:pt-8">
           {/* Header Bar — utility actions only; navigation handled by Sidebar */}
           <div className="flex items-center justify-end gap-2 mb-8">
             <div className="flex items-center gap-2">

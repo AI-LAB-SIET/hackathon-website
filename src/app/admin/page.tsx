@@ -713,7 +713,7 @@ export default function AdminDashboard() {
     <PageWrapper className="flex min-h-screen bg-gray-50/50 dark:bg-gray-950">
       <Sidebar activeTab={activeTab} onTabChange={(t) => setActiveTab(t as TabType)} />
 
-      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-screen">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-h-screen pt-20 md:pt-10">
         {/* Mobile Nav */}
         <div className="md:hidden flex overflow-x-auto pb-3 mb-6 border-b border-gray-150 gap-2 scrollbar-none shrink-0">
           {(Object.keys(tabLabels) as TabType[]).map((id) => (
@@ -1002,7 +1002,7 @@ export default function AdminDashboard() {
                               </h4>
                               <span className="text-[10px] text-gray-400 font-mono">ID: {h.id}</span>
                             </div>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${h.status === "active" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400" : h.status === "upcoming" ? "bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400" : "bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-450"}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${h.status === "active" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400" : h.status === "upcoming" ? "bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400" : h.status === "ended" ? "bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400" : "bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-450"}`}>
                               {h.status}
                             </span>
                           </div>
@@ -2189,6 +2189,7 @@ export default function AdminDashboard() {
               >
                 <option value="upcoming">Upcoming</option>
                 <option value="active">Active</option>
+                <option value="ended">Ended</option>
                 <option value="completed">Completed</option>
                 <option value="archived">Archived</option>
               </select>

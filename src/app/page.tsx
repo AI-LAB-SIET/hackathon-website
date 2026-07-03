@@ -23,10 +23,66 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
+  const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const [isLive, setIsLive] = useState(false);
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const diff = new Date(targetDate).getTime() - Date.now();
+      if (diff <= 0) {
+        clearInterval(timer);
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        setIsLive(true);
+      } else {
+        setTimeLeft({
+          d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          h: Math.floor((diff / (1000 * 60 * 60)) % 24),
+          m: Math.floor((diff / 1000 / 60) % 60),
+          s: Math.floor((diff / 1000) % 60),
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  if (isLive) {
+    return (
+      <span className="text-emerald-500 font-extrabold flex items-center gap-1 text-[10px] animate-pulse">
+        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> LIVE NOW
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex gap-1.5 text-[10px] font-bold text-gray-300">
+      <span>Starts in:</span>
+      {timeLeft.d > 0 && <span>{timeLeft.d}d</span>}
+      <span>{timeLeft.h.toString().padStart(2, "0")}h</span>
+      <span>{timeLeft.m.toString().padStart(2, "0")}m</span>
+      <span>{timeLeft.s.toString().padStart(2, "0")}s</span>
+    </div>
+  );
+};
+
 export default function Home() {
-  const { session, hackathons } = useAppState();
+  const { session, hackathons, teams } = useAppState();
   const [stats, setStats] = useState({ events: 0, participants: 0, projects: 0, prizePool: 0 });
   const [activeStep, setActiveStep] = useState(0);
+
+  const getTopThreeTeams = (hackathonId: string) => {
+    const filtered = teams.filter((t) => t.hackathonId === hackathonId && t.status === "APPROVED");
+    const scored = filtered.map((t) => {
+      const evals = t.evaluations || [];
+      if (evals.length === 0) return { ...t, avgScore: 0 };
+      const sum = evals.reduce((acc, ev) => {
+        const scoreSum = ev.innovation + ev.feasibility + ev.presentation + (ev.technicalDepth ?? 0) + (ev.aiUsage ?? 0);
+        return acc + scoreSum / 5;
+      }, 0);
+      return { ...t, avgScore: Math.round((sum / evals.length) * 10) / 10 };
+    });
+    return scored.sort((a, b) => b.avgScore - a.avgScore).slice(0, 3);
+  };
 
   // Stagger stats counting upwards
   useEffect(() => {
@@ -157,38 +213,85 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-            {hackathons.filter(h => h.status === 'active' || h.status === 'upcoming').slice(0, 3).map((hackathon, idx) => (
-              <motion.div
-                key={hackathon.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
-                whileHover={{ y: -4, border: "1px solid rgba(88,204,2,0.3)", backgroundColor: "rgba(255,255,255,0.08)", boxShadow: "0 12px 40px rgba(88,204,2,0.12)" }}
-                className="bg-white/5 rounded-3xl border border-white/5 p-6 flex flex-col gap-4 shadow-lg transition-all duration-300"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary-green/10 flex items-center justify-center shrink-0 border border-primary-green/10">
-                    <Calendar className="h-5 w-5 text-primary-green" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-extrabold text-white text-sm leading-tight mb-1">{hackathon.name}</h3>
-                    <p className="text-[10px] text-primary-green font-bold uppercase tracking-wide">
-                      {new Date(hackathon.startDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-400 leading-relaxed flex-1 line-clamp-3">
-                  {hackathon.description}
-                </p>
-                <Link
-                  href={`/register?h=${hackathon.slug}`}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-primary-green hover:text-white transition-colors mt-auto"
+            {hackathons.filter(h => h.status === 'active' || h.status === 'upcoming').slice(0, 3).map((hackathon, idx) => {
+              const isLive = hackathon.status === 'active';
+              const topTeams = isLive ? getTopThreeTeams(hackathon.id) : [];
+              return (
+                <motion.div
+                  key={hackathon.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.4, delay: idx * 0.1 }}
+                  whileHover={{ y: -4, border: "1px solid rgba(88,204,2,0.3)", backgroundColor: "rgba(255,255,255,0.08)", boxShadow: "0 12px 40px rgba(88,204,2,0.12)" }}
+                  className="bg-white/5 rounded-3xl border border-white/5 p-6 flex flex-col gap-4 shadow-lg transition-all duration-300 min-h-[340px]"
                 >
-                  Register Now <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
-              </motion.div>
-            ))}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-xl bg-primary-green/10 flex items-center justify-center shrink-0 border border-primary-green/10">
+                        <Calendar className="h-5 w-5 text-primary-green" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-extrabold text-white text-sm leading-tight mb-1 truncate">{hackathon.name}</h3>
+                        <p className="text-[10px] text-primary-green font-bold uppercase tracking-wide">
+                          {new Date(hackathon.startDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    {isLive ? (
+                      <span className="shrink-0 text-[9px] font-bold text-white bg-red-600 px-2 py-0.5 rounded uppercase animate-pulse flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white" /> LIVE
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-[9px] font-bold text-blue-400 border border-blue-500/30 bg-blue-900/20 px-2 py-0.5 rounded uppercase">
+                        UPCOMING
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">
+                    {hackathon.description}
+                  </p>
+
+                  {/* Dynamic Content Pane: Countdown vs Live Leaderboard */}
+                  <div className="flex-1 flex flex-col justify-center py-2">
+                    {!isLive ? (
+                      <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col items-center justify-center gap-1.5">
+                        <CountdownTimer targetDate={hackathon.startDate} />
+                      </div>
+                    ) : (
+                      <div className="bg-white/5 border border-white/5 p-3 rounded-2xl space-y-2">
+                        <h4 className="text-[10px] text-primary-green font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                          🏆 Live Leaderboard (Top 3)
+                        </h4>
+                        {topTeams.length === 0 ? (
+                          <p className="text-[10px] text-gray-400 font-semibold italic">Leaderboard updating live...</p>
+                        ) : (
+                          <div className="space-y-1.5 text-xs">
+                            {topTeams.map((team, rankIndex) => {
+                              const badge = rankIndex === 0 ? "🥇" : rankIndex === 1 ? "🥈" : "🥉";
+                              return (
+                                <div key={team.id} className="flex justify-between items-center bg-white/5 px-2 py-1.5 rounded-xl border border-white/5">
+                                  <span className="truncate font-semibold max-w-[130px]">{badge} {team.name}</span>
+                                  <span className="font-extrabold text-primary-green text-[10px]">{team.avgScore > 0 ? `${team.avgScore}/10` : "Unevaluated"}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <Link
+                    href={`/register?h=${hackathon.slug}`}
+                    className="inline-flex items-center justify-center gap-1 text-xs font-bold text-white bg-primary-green hover:bg-primary-dark transition-colors py-2 rounded-xl text-center w-full shadow-md shadow-primary-green/10 mt-auto"
+                  >
+                    {isLive ? "View Live Workspace" : "Register Now"} <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
 
           <div className="text-center">

@@ -9,11 +9,12 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  maxWidth?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, maxWidth }: ModalProps) {
   return (
-    <Dialog open={isOpen} onClose={onClose} ariaLabel={title}>
+    <Dialog open={isOpen} onClose={onClose} ariaLabel={title} maxWidth={maxWidth}>
       <div
         role="dialog"
         aria-modal="true"
