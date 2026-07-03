@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -21,7 +21,7 @@ import {
   ChevronRight,
   Calendar,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 
 const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -84,12 +84,18 @@ export default function Home() {
     return scored.sort((a, b) => b.avgScore - a.avgScore).slice(0, 3);
   };
 
+  const statsRef = useRef(null);
+  const isInView = useInView(statsRef, { once: true, margin: "-100px" });
+
   // Stagger stats counting upwards
   useEffect(() => {
+    if (!isInView) return;
+
     const duration = 1200; // ms
-    const startTime = performance.now();
+    let startTime: number;
 
     const animateStats = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       // Ease out quad
@@ -108,7 +114,7 @@ export default function Home() {
     };
 
     requestAnimationFrame(animateStats);
-  }, []);
+  }, [isInView]);
 
   const features = [
     {
@@ -141,7 +147,7 @@ export default function Home() {
       <CinematicHero session={session} />
 
       {/* Statistics Section */}
-      <section className="py-12 bg-white/5 backdrop-blur-md border-y border-white/10 relative">
+      <section ref={statsRef} className="py-12 bg-white/5 backdrop-blur-md border-y border-white/10 relative">
         <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
             { value: `${stats.events}+`, label: "Events Hosted", icon: <Users className="h-5 w-5" /> },

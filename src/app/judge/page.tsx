@@ -29,6 +29,43 @@ const SCORE_CRITERIA = [
   { key: "aiUsage" as const, label: "AI/ML Integration", max: 10 },
 ];
 
+const PDFViewer = ({ dataUrl, title }: { dataUrl: string; title: string }) => {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!dataUrl) return;
+    try {
+      const parts = dataUrl.split(',');
+      if (parts.length !== 2) return;
+      const contentTypeMatch = parts[0].match(/:(.*?);/);
+      const contentType = contentTypeMatch ? contentTypeMatch[1] : 'application/pdf';
+      const raw = window.atob(parts[1]);
+      const rawLength = raw.length;
+      const uInt8Array = new Uint8Array(rawLength);
+      for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+      }
+      const blob = new Blob([uInt8Array], { type: contentType });
+      const url = URL.createObjectURL(blob);
+      setBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Error creating blob URL", e);
+    }
+  }, [dataUrl]);
+
+  if (!blobUrl) {
+    return (
+      <div className="h-[400px] flex items-center justify-center text-gray-500 text-sm border border-gray-100 dark:border-gray-800 rounded-xl">
+        Loading PDF...
+      </div>
+    );
+  }
+
+  return <iframe src={blobUrl} className="w-full h-[400px] border-0 rounded-xl bg-white" title={title} />;
+};
+
+
 export default function JudgeDashboard() {
   const router = useRouter();
   const { session, teams, notifications, problemStatements, evaluateProject, markNotificationRead, markAllNotificationsRead, addProblemStatement, updateProblemStatement, archiveProblemStatement, addAnnouncement } = useAppState();
@@ -135,7 +172,7 @@ export default function JudgeDashboard() {
     }
     setEvalModalOpen(true);
     setSelectedTeam(null);
-    setSelectedFile("abstract");
+    setSelectedFile(team.attachments && team.attachments.length > 0 ? `file-${team.attachments[0].id}` : "links");
   };
 
   const handleSubmitEval = () => {
@@ -731,162 +768,92 @@ export default function JudgeDashboard() {
                 <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl overflow-hidden min-h-[450px]">
                   {/* File Tabs */}
                   <div className="flex bg-gray-100 dark:bg-gray-850 p-2 gap-1 border-b border-gray-150 dark:border-gray-800 flex-wrap">
-                    {[
-                      { id: "abstract", name: "Abstract PDF", icon: "📄" },
-                      { id: "architecture", name: "Architecture.png", icon: "🖼️" },
-                      { id: "code", name: "main.py", icon: "🐍" },
-                      { id: "readme", name: "README.md", icon: "📝" },
-                      { id: "links", name: "Project Links", icon: "🔗" },
-                      { id: "aidisclosure", name: "AI Disclosure", icon: "🤖" },
-                    ].map((f) => (
-                      <button
-                        key={f.id}
-                        onClick={() => setSelectedFile(f.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          selectedFile === f.id
-                            ? "bg-white dark:bg-gray-700 text-blue-605 dark:text-blue-400 shadow-sm"
-                            : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"
-                        }`}
-                      >
-                        <span>{f.icon}</span>
-                        <span>{f.name}</span>
-                      </button>
-                    ))}
+                    {(() => {
+                      const fileTabs = (evalTeam.attachments || []).map(a => {
+                        let icon = "📄";
+                        if (a.type.startsWith("image/")) icon = "🖼️";
+                        else if (a.name.endsWith(".pdf")) icon = "📑";
+                        else if (a.name.endsWith(".md") || a.name.endsWith(".txt")) icon = "📝";
+                        else if (a.name.endsWith(".py") || a.name.endsWith(".js") || a.name.endsWith(".tsx")) icon = "💻";
+                        
+                        return { id: `file-${a.id}`, name: a.name, icon, type: "file", attachment: a };
+                      });
+                      
+                      const allTabs = [
+                        ...fileTabs,
+                        { id: "links", name: "Project Links", icon: "🔗", type: "metadata" },
+                        { id: "aidisclosure", name: "AI Disclosure", icon: "🤖", type: "metadata" },
+                      ];
+
+                      return allTabs.map((f) => (
+                        <button
+                          key={f.id}
+                          onClick={() => setSelectedFile(f.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            selectedFile === f.id
+                              ? "bg-white dark:bg-gray-700 text-blue-605 dark:text-blue-400 shadow-sm"
+                              : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"
+                          }`}
+                        >
+                          <span>{f.icon}</span>
+                          <span className="max-w-[150px] truncate">{f.name}</span>
+                        </button>
+                      ));
+                    })()}
                   </div>
 
                   {/* Viewer Workspace Area */}
                   <div className="flex-1 p-5 overflow-y-auto max-h-[58vh] bg-white dark:bg-gray-950">
-                    {selectedFile === "abstract" && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
-                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">proposal_abstract.pdf</h4>
-                          <span className="text-[10px] bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400 px-2 py-0.5 rounded font-bold uppercase">PDF Preview</span>
-                        </div>
-                        {evalTeam.attachments && evalTeam.attachments.some(a => a.name.endsWith(".pdf")) ? (
-                          <iframe
-                            src={evalTeam.attachments.find(a => a.name.endsWith(".pdf"))?.dataUrl}
-                            className="w-full h-[400px] border-0 rounded-xl"
-                            title="Abstract PDF Viewer"
-                          />
-                        ) : (
-                          <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-6 bg-gray-50/50 dark:bg-gray-900 space-y-4 shadow-inner">
-                            <div className="flex justify-between items-center text-xs text-gray-400">
-                              <span>SIET AI Lab Hackathon Submission</span>
-                              <span>Page 1 of 2</span>
+                     {(() => {
+                      if (selectedFile.startsWith("file-")) {
+                        const fileId = selectedFile.replace("file-", "");
+                        const attachment = evalTeam.attachments?.find(a => a.id === fileId);
+                        
+                        if (!attachment) {
+                           return <div className="p-4 text-center text-gray-500">File not found.</div>;
+                        }
+                        
+                        const isImage = attachment.type.startsWith("image/");
+                        const isPdf = attachment.name.endsWith(".pdf");
+                        
+                        return (
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
+                              <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">{attachment.name}</h4>
+                              <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 px-2 py-0.5 rounded font-bold uppercase">
+                                {isImage ? "Image Preview" : isPdf ? "PDF Preview" : "File Viewer"}
+                              </span>
                             </div>
-                            <div className="text-center font-extrabold text-base text-primary-dark dark:text-gray-100">{evalTeam.name} - Project Proposal Abstract</div>
-                            <div className="space-y-3 text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-semibold">
-                              <p className="font-bold text-gray-800 dark:text-gray-200">1. Executive Summary</p>
-                              <p>{evalTeam.projectDescription || "We propose a revolutionary decentralized AI intelligence platform built on Next.js, Firebase Firestore, and OpenAI GPT-4. This system optimizes cloud resources and automates scheduling checkpoints, volunteer tickets, and judge evaluation parameters."}</p>
-                              <p className="font-bold text-gray-800 dark:text-gray-200">2. Methodology & Implementation</p>
-                              <p>Our approach integrates an intelligent agent pipeline. We construct specialized agents for telemetry, feedback loops, and live updates. Using WebSockets or Firebase Realtime snapshot observers, we scope live leaderboard changes dynamically, rendering them on cross-campus displays.</p>
-                              <p className="font-bold text-gray-800 dark:text-gray-200">3. Expected Impact</p>
-                              <p>This implementation will reduce dashboard gating logic wait times, streamline token redemption pipelines, and ensure verified certificate generation using cryptographically secure hashing mechanisms.</p>
-                            </div>
+                            
+                            {isImage ? (
+                              <img
+                                src={attachment.dataUrl}
+                                className="max-h-[400px] mx-auto object-contain rounded-xl border border-gray-200 dark:border-gray-850"
+                                alt={attachment.name}
+                              />
+                            ) : isPdf ? (
+                              <PDFViewer dataUrl={attachment.dataUrl} title={attachment.name} />
+                            ) : (
+                              <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-6 bg-gray-50/50 dark:bg-gray-900 flex flex-col items-center justify-center text-center space-y-4 shadow-inner min-h-[300px]">
+                                <FileText className="h-12 w-12 text-gray-400" />
+                                <div>
+                                  <div className="font-extrabold text-base text-primary-dark dark:text-gray-100">{attachment.name}</div>
+                                  <div className="text-xs text-gray-500 mt-1">{(attachment.size / 1024).toFixed(2)} KB</div>
+                                </div>
+                                <a
+                                  href={attachment.dataUrl}
+                                  download={attachment.name}
+                                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-2"
+                                >
+                                  <Download className="h-4 w-4" /> Download File
+                                </a>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedFile === "architecture" && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
-                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">system_architecture.png</h4>
-                          <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 px-2 py-0.5 rounded font-bold uppercase">Image Preview</span>
-                        </div>
-                        {evalTeam.attachments && evalTeam.attachments.some(a => a.type.startsWith("image/")) ? (
-                          <img
-                            src={evalTeam.attachments.find(a => a.type.startsWith("image/"))?.dataUrl}
-                            className="max-h-[400px] mx-auto object-contain rounded-xl border border-gray-200 dark:border-gray-850"
-                            alt="Uploaded System Architecture"
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-8 bg-gray-50/50 dark:bg-gray-900 min-h-[300px]">
-                            <div className="grid grid-cols-3 gap-6 w-full max-w-md text-center text-[10px] font-bold text-gray-700 dark:text-gray-300">
-                              <div className="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl flex flex-col justify-center items-center shadow-sm">
-                                <span className="text-lg">📱</span>
-                                <span className="mt-1">React Frontend</span>
-                              </div>
-                              <div className="p-3 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-xl flex flex-col justify-center items-center shadow-sm relative">
-                                <div className="absolute top-1/2 left-[-16px] w-[14px] border-t border-dashed border-purple-300 pointer-events-none" />
-                                <span className="text-lg">⚡</span>
-                                <span className="mt-1">FastAPI Backend</span>
-                                <div className="absolute top-1/2 right-[-16px] w-[14px] border-t border-dashed border-purple-300 pointer-events-none" />
-                              </div>
-                              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl flex flex-col justify-center items-center shadow-sm">
-                                <span className="text-lg">🤖</span>
-                                <span className="mt-1">LLM / AI Model</span>
-                              </div>
-                            </div>
-                            <div className="h-8 border-l border-dashed border-gray-300 dark:border-gray-700 my-2" />
-                            <div className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl text-center text-[10px] font-bold text-gray-700 dark:text-gray-300 w-44 shadow-sm">
-                              <span>🛢️ Firebase Firestore Database</span>
-                            </div>
-                            <p className="text-[10px] text-gray-400 mt-5 font-semibold text-center">Note: Displaying platform system architecture fallback diagram. Teams can upload custom diagrams in the dashboard.</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedFile === "code" && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
-                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">main.py</h4>
-                          <span className="text-[10px] bg-yellow-100 text-yellow-800 dark:bg-yellow-950/20 dark:text-yellow-400 px-2 py-0.5 rounded font-bold uppercase">Python Syntax</span>
-                        </div>
-                        <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl overflow-x-auto text-[11px] font-mono leading-relaxed shadow-inner">
-                          {`import os
-import openai
-from fastapi import FastAPI, HTTPException
-
-app = FastAPI(title="SIET Hackathon Backend")
-
-@app.post("/analyze")
-async def analyze_data(text: str):
-    """
-    Core AI analyzer pipeline. Uses GPT model parameters to evaluate abstracts.
-    """
-    try:
-        if not text.strip():
-            raise HTTPException(status_code=400, detail="Text cannot be empty")
-            
-        response = await openai.ChatCompletion.acreate(
-            model="gpt-4-turbo",
-            messages=[{"role": "user", "content": text}],
-            temperature=0.7
-        )
-        return {"status": "success", "result": response.choices[0].message.content}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-`}
-                        </pre>
-                      </div>
-                    )}
-
-                    {selectedFile === "readme" && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
-                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">README.md</h4>
-                          <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 px-2 py-0.5 rounded font-bold uppercase">Markdown View</span>
-                        </div>
-                        <div className="border border-gray-100 dark:border-gray-800 rounded-xl p-5 bg-gray-50/30 dark:bg-gray-900 text-xs font-semibold leading-relaxed space-y-4 text-gray-600 dark:text-gray-400">
-                          <h3 className="text-base font-extrabold text-primary-dark dark:text-gray-100">Project AI Hub Platform</h3>
-                          <p>This repository contains the backend and frontend components designed to support multi-campuses collaborative coding sprints.</p>
-                          <h4 className="font-bold text-gray-800 dark:text-gray-200">🛠️ Tech Stack</h4>
-                          <ul className="list-disc pl-5 space-y-1">
-                            <li>Next.js 15 for frontend UI rendering</li>
-                            <li>Firebase SDK for real-time synchronization</li>
-                            <li>FastAPI & Python for machine learning telemetry</li>
-                            <li>Tailwind CSS for sleek theme configurations</li>
-                          </ul>
-                          <h4 className="font-bold text-gray-800 dark:text-gray-200">🚀 Quick Start</h4>
-                          <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg text-[10px] font-mono whitespace-pre-wrap">
-{`npm install
-npm run dev`}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
+                        );
+                      }
+                      return null;
+                    })()}
 
                     {selectedFile === "links" && (
                       <div className="space-y-4">
@@ -948,6 +915,7 @@ npm run dev`}
                     )}
                   </div>
                 </div>
+
 
                 {/* RIGHT COLUMN: Scoring panel & Details */}
                 <div className="w-full lg:w-[380px] flex flex-col justify-between overflow-y-auto max-h-[70vh] pr-2 shrink-0">
