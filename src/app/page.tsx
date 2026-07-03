@@ -284,10 +284,10 @@ export default function Home() {
                   </div>
 
                   <Link
-                    href={`/register?h=${hackathon.slug}`}
+                    href={isLive ? `/results?h=${hackathon.slug}` : `/register?h=${hackathon.slug}`}
                     className="inline-flex items-center justify-center gap-1 text-xs font-bold text-white bg-primary-green hover:bg-primary-dark transition-colors py-2 rounded-xl text-center w-full shadow-md shadow-primary-green/10 mt-auto"
                   >
-                    {isLive ? "View Live Workspace" : "Register Now"} <ChevronRight className="h-3.5 w-3.5" />
+                    {isLive ? "View Full Standings" : "Register Now"} <ChevronRight className="h-3.5 w-3.5" />
                   </Link>
                 </motion.div>
               );
