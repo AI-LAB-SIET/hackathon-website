@@ -15,7 +15,7 @@ import {
   Github, Video, Globe, Plus, Trash2, Send, Download,
   AlertTriangle, Info, X,
   Layers, ChevronDown,
-  BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Code2, LogOut, QrCode, Paperclip, FileText
+  BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Code2, LogOut, QrCode, Paperclip, FileText, Lock
 } from "lucide-react";
 import { FileAttachment, Participant, Notification, SupportTicket, ProblemStatement } from "@/types";
 type SupportTicketCategory = SupportTicket["category"];
@@ -137,10 +137,23 @@ export default function ParticipantDashboard() {
     }
   }, [session, router, mounted]);
 
-  const team = teams.find((t) => t.id === session.teamId);
+  const actualTeam = teams.find((t) => t.id === session.teamId);
+  const isMemberStillInTeam = actualTeam ? actualTeam.members.some(m => m.email === session.email) : false;
+  const team = isMemberStillInTeam ? actualTeam : undefined;
+
   const isTeamLocked = team 
     ? hackathons.find((h) => h.id === team.hackathonId)?.teamsLocked === true
     : activeHackathon?.teamsLocked === true;
+
+  // Auto-sync for kicked members
+  useEffect(() => {
+    if (session.teamId && session.email && teams.length > 0) {
+      if (actualTeam && !isMemberStillInTeam) {
+        updateProfile(session.email, { teamId: null, teamSetupDone: false });
+        toast("You have been removed from the team.", "info");
+      }
+    }
+  }, [actualTeam, isMemberStillInTeam, session.teamId, session.email, updateProfile, toast, teams.length]);
 
   // Keep project edit in sync with team data — must be before any early returns
   useEffect(() => {
@@ -1523,30 +1536,51 @@ export default function ParticipantDashboard() {
                     </span>
                   </div>
 
-                  {publishedProblemStatements.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-5 text-center text-sm text-gray-400 dark:text-gray-500">
-                      On-spot materials will appear here after organizers publish them.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {publishedProblemStatements.map((ps) => {
+                  {(() => {
+                    const isRevealed = !activeHackathon?.problemStatementRevealTime || new Date().getTime() >= new Date(activeHackathon.problemStatementRevealTime).getTime();
+                    
+                    if (!isRevealed) {
+                      return (
+                        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-8 flex flex-col items-center justify-center text-center space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
+                          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-2">
+                            <Lock className="h-6 w-6 text-primary-green" />
+                          </div>
+                          <h3 className="font-extrabold text-primary-dark dark:text-gray-100">Problem Statements Locked</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+                            Problem statements will be revealed at <strong className="text-gray-700 dark:text-gray-300">{new Date(activeHackathon!.problemStatementRevealTime!).toLocaleString()}</strong>.
+                          </p>
+                        </div>
+                      );
+                    }
 
-                        return (
-                          <button
-                            key={ps.id}
-                            onClick={() => setSelectedProblem(ps)}
-                            className="text-left w-full rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer flex items-center justify-between group"
-                          >
-                            <div>
-                              <h3 className="font-extrabold text-primary-dark dark:text-gray-100 text-sm group-hover:text-primary-green transition-colors">{ps.title}</h3>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{ps.description}</p>
-                            </div>
-                            <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-primary-green transition-colors shrink-0" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                    if (publishedProblemStatements.length === 0) {
+                      return (
+                        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-5 text-center text-sm text-gray-400 dark:text-gray-500">
+                          On-spot materials will appear here after organizers publish them.
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {publishedProblemStatements.map((ps) => {
+                          return (
+                            <button
+                              key={ps.id}
+                              onClick={() => setSelectedProblem(ps)}
+                              className="text-left w-full rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer flex items-center justify-between group"
+                            >
+                              <div>
+                                <h3 className="font-extrabold text-primary-dark dark:text-gray-100 text-sm group-hover:text-primary-green transition-colors">{ps.title}</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{ps.description}</p>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-primary-green transition-colors shrink-0" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Sub-category pills */}

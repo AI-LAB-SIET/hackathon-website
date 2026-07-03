@@ -103,6 +103,7 @@ export default function AdminDashboard() {
     minTeamSize: 1,
     maxTeamSize: 4,
     status: "upcoming" as Hackathon["status"],
+    problemStatementRevealTime: "",
   });
 
   // Food Meal form states
@@ -337,7 +338,8 @@ export default function AdminDashboard() {
       registrationOpen: true,
       minTeamSize: 1,
       maxTeamSize: 4,
-      status: "upcoming"
+      status: "upcoming",
+      problemStatementRevealTime: ""
     });
     setHackathonModalOpen(true);
   };
@@ -354,7 +356,8 @@ export default function AdminDashboard() {
       registrationOpen: h.registrationOpen,
       minTeamSize: h.minTeamSize || 1,
       maxTeamSize: h.maxTeamSize || 4,
-      status: h.status
+      status: h.status,
+      problemStatementRevealTime: h.problemStatementRevealTime ? new Date(h.problemStatementRevealTime).toISOString().slice(0, 16) : ""
     });
     setHackathonModalOpen(true);
   };
@@ -371,7 +374,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const data = {
+      const data: Omit<Hackathon, "id" | "createdAt"> = {
         name: hackathonForm.name,
         slug: hackathonForm.slug,
         description: hackathonForm.description,
@@ -383,6 +386,7 @@ export default function AdminDashboard() {
         maxTeamSize: Number(hackathonForm.maxTeamSize),
         status: hackathonForm.status,
         createdBy: session.email || "admin@siet.edu",
+        problemStatementRevealTime: hackathonForm.problemStatementRevealTime ? new Date(hackathonForm.problemStatementRevealTime).toISOString() : "",
       };
 
       if (editingHackathon) {
@@ -2199,6 +2203,12 @@ export default function AdminDashboard() {
               onChange={(e) => setHackathonForm((p) => ({ ...p, maxTeamSize: Number(e.target.value) }))}
             />
           </div>
+          <Input
+            label="Problem Statement Reveal Time (Optional)"
+            type="datetime-local"
+            value={hackathonForm.problemStatementRevealTime}
+            onChange={(e) => setHackathonForm((p) => ({ ...p, problemStatementRevealTime: e.target.value }))}
+          />
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide block mb-1.5">

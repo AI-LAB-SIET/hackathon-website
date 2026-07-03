@@ -30,6 +30,7 @@ export interface Hackathon {
   createdBy: string;          // admin email
   registrationLink?: string;  // computed: /register?h=slug
   teamsLocked?: boolean;      // NEW — permanently locks all teams under this hackathon
+  problemStatementRevealTime?: string; // ISO datetime for revealing problem statements
 }
 
 // ─── Team ─────────────────────────────────────────────────────────────────────
@@ -221,7 +222,7 @@ export interface UserProfile {
   skills?: string[];
   socialLinks?: { platform: string; url: string }[];
   role: "participant" | "admin" | "judge" | "organizer" | "volunteer";
-  teamId?: string;
+  teamId?: string | null;
   currentHackathonId?: string;     // NEW — participant's selected hackathon
   hackathonIds?: string[];         // NEW — staff assignment: which hackathons they manage
   onboarded?: boolean;             // NEW
