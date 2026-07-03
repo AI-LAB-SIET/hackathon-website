@@ -1090,8 +1090,7 @@ export default function ParticipantDashboard() {
                                       <span className="text-[10px] text-emerald-600 font-bold">Joined</span>
                                     ) : alreadyRequested ? (
                                       <span className="text-[10px] text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-md">Pending Approval</span>
-                                    ) : (
-                                      {!isTeamLocked ? (
+                                    ) : !isTeamLocked ? (
                                         <button
                                           onClick={() => handleJoinRequest(t.id)}
                                           className="px-3.5 py-1.5 bg-primary-green hover:bg-primary-dark text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
@@ -1100,7 +1099,6 @@ export default function ParticipantDashboard() {
                                         </button>
                                       ) : (
                                         <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">Locked</span>
-                                      )}
                                     )}
                                   </div>
                                 </div>
