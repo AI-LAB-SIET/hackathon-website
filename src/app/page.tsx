@@ -146,79 +146,25 @@ export default function Home() {
       {/* Hero Section — cinematic looping video background */}
       <CinematicHero session={session} />
 
-      {/* Statistics Section */}
-      <section ref={statsRef} className="py-12 bg-white/5 backdrop-blur-md border-y border-white/10 relative">
-        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { value: `${stats.events}+`, label: "Events Hosted", icon: <Users className="h-5 w-5" /> },
-            { value: `${stats.participants}+`, label: "Active Hackers", icon: <Award className="h-5 w-5" /> },
-            { value: `${stats.projects}`, label: "Projects Built", icon: <Clock className="h-5 w-5" /> },
-            { value: `₹${stats.prizePool}L+`, label: "Cash Prizes", icon: <Cpu className="h-5 w-5" /> },
-          ].map((item, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, scale: 0.9, y: 15 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.4, delay: idx * 0.08 }}
-              whileHover={{ y: -6, scale: 1.03, boxShadow: "0 8px 30px rgba(88,204,2,0.15)", borderColor: "rgba(88,204,2,0.3)" }}
-              className="flex flex-col items-center gap-1 p-6 rounded-3xl border border-white/5 transition-all duration-300 bg-white/5 hover:bg-white/10"
-            >
-              <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 text-primary-green flex items-center justify-center shadow-sm">
-                {item.icon}
-              </div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-2">
-                {item.value}
-              </span>
-              <span className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">
-                {item.label}
-              </span>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-16 md:py-24 max-w-[1440px] mx-auto px-6 relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary-green/5 blur-[120px] pointer-events-none" />
-        <div className="text-center flex flex-col items-center gap-3 mb-12 sm:mb-16 relative z-10">
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-            The Premier Hackathon Ecosystem
-          </h2>
-          <p className="max-w-2xl text-xs sm:text-sm text-gray-400 leading-relaxed">
-            SIET_HACKATHONS powers student innovations and collaborative coding challenges across the engineering community.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((f, index) => (
-            <FeatureCard
-              key={index}
-              title={f.title}
-              description={f.description}
-              icon={f.icon}
-              delay={index * 0.1}
-            />
-          ))}
-        </div>
-      </section>
+      {/* <section ref={statsRef} className="py-12 bg-white/5 backdrop-blur-md border-y border-white/10 relative"> ... </section> */}
+      {/* <section className="py-16 md:py-24 max-w-[1440px] mx-auto px-6 relative"> ... </section> */}
 
       {/* Featured Hackathons Section */}
-      <section className="py-16 bg-white/2 backdrop-blur-md border-y border-white/5 relative">
+      <section className="py-24 bg-background relative z-10">
         <div className="max-w-[1440px] mx-auto px-6">
-          <div className="text-center flex flex-col items-center gap-3 mb-10">
-            <span className="px-3 py-1.5 rounded-full bg-primary-green/10 border border-primary-green/20 text-primary-green text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" /> Active Events
+          <div className="text-center flex flex-col items-center gap-4 mb-16">
+            <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" /> Events
             </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+            <h2 className="text-4xl sm:text-6xl font-normal text-foreground tracking-tight" style={{ fontFamily: "'Instrument Serif', serif" }}>
               Featured Hackathons
             </h2>
-            <p className="max-w-2xl text-xs sm:text-sm text-gray-400 leading-relaxed">
-              Explore current and upcoming developer sprints hosted on SIET_HACKATHONS. Register, join a team, and showcase your solutions.
+            <p className="max-w-2xl text-base text-muted-foreground leading-relaxed">
+              Explore current and upcoming developer sprints. Register, join a team, and showcase your solutions.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+          <div className="flex flex-wrap justify-center gap-5 mb-8">
             {hackathons.filter(h => h.status === 'active' || h.status === 'upcoming').slice(0, 3).map((hackathon, idx) => {
               const isLive = hackathon.status === 'active';
               const topTeams = isLive ? getTopThreeTeams(hackathon.id) : [];
@@ -229,57 +175,57 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.4, delay: idx * 0.1 }}
-                  whileHover={{ y: -4, border: "1px solid rgba(88,204,2,0.3)", backgroundColor: "rgba(255,255,255,0.08)", boxShadow: "0 12px 40px rgba(88,204,2,0.12)" }}
-                  className="bg-white/5 rounded-3xl border border-white/5 p-6 flex flex-col gap-4 shadow-lg transition-all duration-300 min-h-[340px]"
+                  whileHover={{ y: -4, border: "1px solid rgba(255,255,255,0.2)" }}
+                  className="liquid-glass rounded-[2rem] p-8 flex flex-col gap-5 transition-all duration-300 min-h-[360px] w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="h-10 w-10 rounded-xl bg-primary-green/10 flex items-center justify-center shrink-0 border border-primary-green/10">
-                        <Calendar className="h-5 w-5 text-primary-green" />
+                     <div className="flex items-start gap-4 min-w-0">
+                      <div className="h-12 w-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
+                        <Calendar className="h-5 w-5 text-foreground" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-extrabold text-white text-sm leading-tight mb-1 truncate">{hackathon.name}</h3>
-                        <p className="text-[10px] text-primary-green font-bold uppercase tracking-wide">
+                      <div className="flex-1 min-w-0 flex flex-col justify-center h-12">
+                        <h3 className="font-medium text-foreground text-base leading-tight mb-0.5 truncate">{hackathon.name}</h3>
+                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
                           {new Date(hackathon.startDate).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     {isLive ? (
-                      <span className="shrink-0 text-[9px] font-bold text-white bg-red-600 px-2 py-0.5 rounded uppercase animate-pulse flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-white" /> LIVE
+                      <span className="shrink-0 text-[10px] font-medium text-red-400 bg-red-400/10 border border-red-400/20 px-2.5 py-1 rounded-full uppercase flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE
                       </span>
                     ) : (
-                      <span className="shrink-0 text-[9px] font-bold text-blue-400 border border-blue-500/30 bg-blue-900/20 px-2 py-0.5 rounded uppercase">
+                      <span className="shrink-0 text-[10px] font-medium text-muted-foreground bg-white/5 border border-white/10 px-2.5 py-1 rounded-full uppercase">
                         UPCOMING
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
                     {hackathon.description}
                   </p>
 
                   {/* Dynamic Content Pane: Countdown vs Live Leaderboard */}
                   <div className="flex-1 flex flex-col justify-center py-2">
                     {!isLive ? (
-                      <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col items-center justify-center gap-1.5">
+                      <div className="bg-white/5 border border-white/5 p-5 rounded-2xl flex flex-col items-center justify-center gap-1.5">
                         <CountdownTimer targetDate={hackathon.startDate} />
                       </div>
                     ) : (
-                      <div className="bg-white/5 border border-white/5 p-3 rounded-2xl space-y-2">
-                        <h4 className="text-[10px] text-primary-green font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
-                          🏆 Live Leaderboard (Top 3)
+                      <div className="bg-white/5 border border-white/5 p-4 rounded-2xl space-y-3">
+                        <h4 className="text-xs text-foreground font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
+                          🏆 Live Leaderboard
                         </h4>
                         {topTeams.length === 0 ? (
-                          <p className="text-[10px] text-gray-400 font-semibold italic">Leaderboard updating live...</p>
+                          <p className="text-[11px] text-muted-foreground italic">Leaderboard updating live...</p>
                         ) : (
-                          <div className="space-y-1.5 text-xs">
+                          <div className="space-y-2 text-sm">
                             {topTeams.map((team, rankIndex) => {
                               const badge = rankIndex === 0 ? "🥇" : rankIndex === 1 ? "🥈" : "🥉";
                               return (
-                                <div key={team.id} className="flex justify-between items-center bg-white/5 px-2 py-1.5 rounded-xl border border-white/5">
-                                  <span className="truncate font-semibold max-w-[130px]">{badge} {team.name}</span>
-                                  <span className="font-extrabold text-primary-green text-[10px]">{team.avgScore > 0 ? `${team.avgScore}/10` : "Unevaluated"}</span>
+                                <div key={team.id} className="flex justify-between items-center bg-white/5 px-3 py-2 rounded-xl border border-white/5">
+                                  <span className="truncate font-medium max-w-[130px] text-foreground">{badge} {team.name}</span>
+                                  <span className="font-medium text-muted-foreground text-xs">{team.avgScore > 0 ? `${team.avgScore}/10` : "Unevaluated"}</span>
                                 </div>
                               );
                             })}
@@ -291,9 +237,9 @@ export default function Home() {
 
                   <Link
                     href={isLive ? `/results?h=${hackathon.slug}` : `/register?h=${hackathon.slug}`}
-                    className="inline-flex items-center justify-center gap-1 text-xs font-bold text-white bg-primary-green hover:bg-primary-dark transition-colors py-2 rounded-xl text-center w-full shadow-md shadow-primary-green/10 mt-auto"
+                    className="inline-flex items-center justify-center gap-2 text-sm font-medium text-foreground bg-white/5 hover:bg-white/10 border border-white/10 transition-colors py-3.5 rounded-full text-center w-full mt-auto"
                   >
-                    {isLive ? "View Full Standings" : "Register Now"} <ChevronRight className="h-3.5 w-3.5" />
+                    {isLive ? "View Full Standings" : "Register Now"} <ChevronRight className="h-4 w-4" />
                   </Link>
                 </motion.div>
               );
