@@ -55,11 +55,11 @@ export default function ParticipantDashboard() {
     registerTeam, deleteTeam, leaveTeam, sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest, teamRequests, activeHackathonId, hackathons,
     foodTokens, foodMeals, userProfiles, templates
   } = useAppState();
-  
-  const activeHackathon = hackathons.find((h) => h.id === activeHackathonId);
+
+  const currentHackathonId = session.currentHackathonId || activeHackathonId;
+  const activeHackathon = hackathons.find((h) => h.id === currentHackathonId);
   const maxTeamSize = activeHackathon?.maxTeamSize || 4;
   const minTeamSize = activeHackathon?.minTeamSize || 1;
-  const isTeamLocked = activeHackathon?.teamsLocked === true;
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -138,6 +138,9 @@ export default function ParticipantDashboard() {
   }, [session, router, mounted]);
 
   const team = teams.find((t) => t.id === session.teamId);
+  const isTeamLocked = team 
+    ? hackathons.find((h) => h.id === team.hackathonId)?.teamsLocked === true
+    : activeHackathon?.teamsLocked === true;
 
   // Keep project edit in sync with team data — must be before any early returns
   useEffect(() => {
@@ -169,10 +172,10 @@ export default function ParticipantDashboard() {
       const now = new Date().getTime();
       const start = new Date(activeHackathon.startDate).getTime();
       const end = new Date(activeHackathon.endDate).getTime();
-      
+
       let targetTime = start;
       let status: "upcoming" | "active" | "ended" = "upcoming";
-      
+
       if (now >= end) {
         status = "ended";
         targetTime = now;
@@ -180,7 +183,7 @@ export default function ParticipantDashboard() {
         status = "active";
         targetTime = end;
       }
-      
+
       const diff = targetTime - now;
       if (diff <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, status: "ended" });
@@ -297,6 +300,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleRemoveMember = (email: string) => {
+    if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     if (!team) return;
     if (team.members.length <= minTeamSize) { toast(`Team must have at least ${minTeamSize} member(s).`, "error"); return; }
     updateTeamMembers(team.id, team.members.filter((m) => m.email !== email));
@@ -304,6 +308,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleSaveProject = () => {
+    if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     if (!team) return;
     updateProjectDetails(team.id, {
       projectDescription: projectEdit.projectDescription || team.projectDescription,
@@ -390,6 +395,7 @@ export default function ParticipantDashboard() {
   const needsRegistration = team ? (team.status === "PENDING" || (!team.problemStatementId)) : false;
 
   const handleSaveRegistration = () => {
+    if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     if (!team) return;
     if (!regTeamName.trim()) { toast("Please enter a team name.", "error"); return; }
     if (!regProblemStatementId) { toast("Please select a problem statement.", "error"); return; }
@@ -403,6 +409,7 @@ export default function ParticipantDashboard() {
 
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     if (!createTeamName.trim()) {
       toast("Please enter a team name.", "error");
       return;
@@ -440,6 +447,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleLeaveTeam = async () => {
+    if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     if (!team) return;
     if (confirm("Are you sure you want to leave this team?")) {
       try {
@@ -452,6 +460,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleSendInviteToUser = async (userEmail: string, userName: string) => {
+    if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     if (!team) return;
     try {
       await sendTeamInvite(userEmail, userName, team.id, "Please join my team!");
@@ -462,6 +471,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleJoinRequest = async (teamId: string) => {
+    if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     try {
       await sendJoinRequest(teamId, "I'd love to join your team!");
       toast("Join request sent successfully!", "success");
@@ -480,6 +490,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleRespondInvite = async (reqId: string, accept: boolean) => {
+    if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     try {
       await respondToRequest(reqId, accept);
       toast(accept ? "Accepted team invitation!" : "Declined team invitation.", accept ? "success" : "info");
@@ -583,7 +594,7 @@ export default function ParticipantDashboard() {
                 {/* Dynamic Hackathon Timer */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 text-center">
                   <h2 className="font-bold text-primary-dark mb-4 flex items-center justify-center gap-2 dark:text-gray-100">
-                    <Clock className="h-5 w-5 text-primary-green" /> 
+                    <Clock className="h-5 w-5 text-primary-green" />
                     {timeLeft?.status === "upcoming" ? "Time to Hackathon" : timeLeft?.status === "active" ? "Hacking Ends In" : "Hackathon Concluded"}
                   </h2>
                   <div className="flex justify-center items-center gap-4">
@@ -821,11 +832,10 @@ export default function ParticipantDashboard() {
                                     <button
                                       onClick={() => handleSendInviteToUser(u.email, u.name || "Participant")}
                                       disabled={isAlreadyInTeam || isInvitePending}
-                                      className={`shrink-0 px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 ${
-                                        isAlreadyInTeam ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400" :
-                                        isInvitePending ? "bg-amber-100 text-amber-700 cursor-not-allowed dark:bg-amber-900/30" :
-                                        "bg-primary-green text-white hover:bg-primary-dark cursor-pointer"
-                                      }`}
+                                      className={`shrink-0 px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 ${isAlreadyInTeam ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400" :
+                                          isInvitePending ? "bg-amber-100 text-amber-700 cursor-not-allowed dark:bg-amber-900/30" :
+                                            "bg-primary-green text-white hover:bg-primary-dark cursor-pointer"
+                                        }`}
                                     >
                                       {isAlreadyInTeam ? "In Team" : isInvitePending ? "Pending" : <><Send className="h-3 w-3" /> Invite</>}
                                     </button>
@@ -838,7 +848,7 @@ export default function ParticipantDashboard() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Sent Invites Status */}
                       {team.members.find(m => m.email === session.email)?.isLeader && teamRequests.filter(r => r.direction === "invite" && r.teamId === team.id && r.status === "pending").length > 0 && (
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-3">
@@ -941,43 +951,43 @@ export default function ParticipantDashboard() {
                       {!isTeamLocked && (
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 space-y-4">
                           <h3 className="font-extrabold text-primary-dark text-lg dark:text-gray-100 flex items-center gap-1.5">
-                          <Plus className="h-5 w-5 text-primary-green" /> Create a New Team
-                        </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Create a team to begin participating. You will automatically become the Team Leader.
-                        </p>
+                            <Plus className="h-5 w-5 text-primary-green" /> Create a New Team
+                          </h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Create a team to begin participating. You will automatically become the Team Leader.
+                          </p>
 
-                        <form onSubmit={handleCreateTeam} className="space-y-4">
-                          <div>
-                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Team Name</label>
-                            <input
-                              type="text"
-                              placeholder="e.g. Cyber Ninjas"
-                              value={createTeamName}
-                              onChange={(e) => setCreateTeamName(e.target.value)}
-                              className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
-                            />
-                          </div>
+                          <form onSubmit={handleCreateTeam} className="space-y-4">
+                            <div>
+                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Team Name</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Cyber Ninjas"
+                                value={createTeamName}
+                                onChange={(e) => setCreateTeamName(e.target.value)}
+                                className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                              />
+                            </div>
 
-                          <div>
-                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Project Idea Description</label>
-                            <textarea
-                              rows={3}
-                              placeholder="Describe your solution brief..."
-                              value={createTeamDescription}
-                              onChange={(e) => setCreateTeamDescription(e.target.value)}
-                              className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 resize-none"
-                            />
-                          </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Project Idea Description</label>
+                              <textarea
+                                rows={3}
+                                placeholder="Describe your solution brief..."
+                                value={createTeamDescription}
+                                onChange={(e) => setCreateTeamDescription(e.target.value)}
+                                className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-805 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 resize-none"
+                              />
+                            </div>
 
-                          <button
-                            type="submit"
-                            className="w-full py-2.5 bg-primary-green text-white font-bold text-xs rounded-xl hover:bg-primary-dark transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                          >
-                            Create Team
-                          </button>
-                        </form>
-                      </div>
+                            <button
+                              type="submit"
+                              className="w-full py-2.5 bg-primary-green text-white font-bold text-xs rounded-xl hover:bg-primary-dark transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              Create Team
+                            </button>
+                          </form>
+                        </div>
                       )}
 
                       {/* Requests Status */}
@@ -1090,15 +1100,17 @@ export default function ParticipantDashboard() {
                                       <span className="text-[10px] text-emerald-600 font-bold">Joined</span>
                                     ) : alreadyRequested ? (
                                       <span className="text-[10px] text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-md">Pending Approval</span>
-                                    ) : !isTeamLocked ? (
-                                        <button
-                                          onClick={() => handleJoinRequest(t.id)}
-                                          className="px-3.5 py-1.5 bg-primary-green hover:bg-primary-dark text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-                                        >
-                                          Request to Join
-                                        </button>
-                                      ) : (
-                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">Locked</span>
+                                    ) : (
+                                      !isTeamLocked ? (
+                                    <button
+                                      onClick={() => handleJoinRequest(t.id)}
+                                      className="px-3.5 py-1.5 bg-primary-green hover:bg-primary-dark text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                                    >
+                                      Request to Join
+                                    </button>
+                                    ) : (
+                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">Locked</span>
+                                      )
                                     )}
                                   </div>
                                 </div>
@@ -1141,11 +1153,10 @@ export default function ParticipantDashboard() {
                             return (
                               <div
                                 key={t.id}
-                                className={`p-5 rounded-2xl border flex flex-col justify-between gap-4 transition-all ${
-                                  isServing
+                                className={`p-5 rounded-2xl border flex flex-col justify-between gap-4 transition-all ${isServing
                                     ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/10 dark:border-emerald-900 hover:shadow-md"
                                     : "bg-white border-gray-150 dark:bg-gray-800 dark:border-gray-700 hover:shadow-sm"
-                                }`}
+                                  }`}
                               >
                                 <div className="space-y-2">
                                   <div className="flex justify-between items-center">
@@ -1253,11 +1264,10 @@ export default function ParticipantDashboard() {
                           return (
                             <div
                               key={m.id}
-                              className={`p-3.5 rounded-xl border flex flex-col gap-1.5 ${
-                                isServing
+                              className={`p-3.5 rounded-xl border flex flex-col gap-1.5 ${isServing
                                   ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/10 dark:border-emerald-900"
                                   : "bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700"
-                              }`}
+                                }`}
                             >
                               <div className="flex justify-between items-center">
                                 <span className="font-extrabold text-xs text-primary-dark dark:text-gray-150">{m.name}</span>
@@ -1397,7 +1407,7 @@ export default function ParticipantDashboard() {
                           </div>
                           <p className="text-xs text-gray-600 dark:text-gray-300">Upload your 2-page idea abstract PDF, system architecture diagrams, or source code entrypoints.</p>
                         </div>
-                        
+
                         {/* Custom Uploader Input */}
                         <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center bg-gray-50/20 dark:bg-gray-900/20">
                           <input type="file" onChange={handleFileUpload} className="hidden" id="participant-file-upload" disabled={uploadingFile} />
@@ -1573,7 +1583,7 @@ export default function ParticipantDashboard() {
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex-1">{tpl.description}</p>
-                        
+
                         {tpl.attachments && tpl.attachments.length > 0 && (
                           <div className="flex flex-col gap-2 mt-auto pt-3 border-t border-gray-100 dark:border-gray-800">
                             {tpl.attachments.map((file, idx) => (
