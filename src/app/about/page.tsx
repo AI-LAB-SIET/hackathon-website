@@ -29,7 +29,7 @@ export default function About() {
       try {
         const logins = ["NITISH-R-G", "bala-2305", "PRABHUSIDDARTH", "bsrikumar855-dot", "Siva9664"];
         const promises = logins.map(login => 
-          fetch(`https://api.github.com/users/${login}`).then(res => res.json())
+          fetch(`https://api.github.com/users/${login}`, { cache: "no-store" }).then(res => res.json())
         );
         const results = await Promise.all(promises);
         setDevProfiles(results);
@@ -89,7 +89,7 @@ export default function About() {
     {
       name: "Prabhu Siddarth A V",
       login: "PRABHUSIDDARTH",
-      role: "UI/UX Engineer & Frontend Developer",
+      role: "Backend Engineer",
       bio: "Designing elite, dark-themed responsive dashboards and smooth framer-motion micro-animations.",
       avatar: "https://avatars.githubusercontent.com/u/89624285?v=4",
       github: "https://github.com/PRABHUSIDDARTH",
