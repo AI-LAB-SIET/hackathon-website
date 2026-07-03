@@ -59,7 +59,7 @@ export default function AdminDashboard() {
     updateProfile, getProfile, updateTeamMembers, addProfile, deleteProfile,
     approveTeam, rejectTeam, deleteTeam,
     hackathons, createHackathon, updateHackathon, deleteHackathon, setActiveHackathon, activeHackathonId,
-    foodMeals, createMeal, updateMeal, deleteMeal, issueMealTokens, foodTokens, revokeToken,
+    foodMeals, createMeal, deleteMeal, issueMealTokens, foodTokens, revokeToken,
     templates, addTemplate, deleteTemplate
   } = useAppState();
   const { toast } = useToast();
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
     scheduledAt: "",
     windowMinutes: 120,
   });
-  const [mealSearch, setMealSearch] = useState("");
+
   const [tokenSearch, setTokenSearch] = useState("");
 
   const [annForm, setAnnForm] = useState({ title: "", content: "", type: "info" as "info" | "warning" | "success", scheduleDate: "" });

@@ -19,7 +19,7 @@ import {
 
 export default function About() {
   const [mounted, setMounted] = useState(false);
-  const [devProfiles, setDevProfiles] = useState<any[]>([]);
+  const [devProfiles, setDevProfiles] = useState<{ login: string; name?: string; bio?: string; avatar_url?: string }[]>([]);
 
   useEffect(() => {
     setMounted(true);
