@@ -21,6 +21,7 @@ import {
 export default function About() {
   const [mounted, setMounted] = useState(false);
   const [devProfiles, setDevProfiles] = useState<{ login: string; name?: string; bio?: string; avatar_url?: string }[]>([]);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -283,7 +284,7 @@ export default function About() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-row gap-6 w-full items-stretch justify-center">
             {developers.map((member, idx) => {
               const liveProfile = devProfiles.find(p => p.login === member.login);
               const displayName = liveProfile?.name || member.name;
@@ -297,54 +298,70 @@ export default function About() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: idx * 0.08 }}
-                  whileHover={{ y: -6, borderColor: "rgba(88,204,2,0.25)" }}
-                  className="p-5 rounded-3xl border border-input-border/30 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-300 shadow-2xs flex flex-col justify-between"
+                  className="xl:h-auto"
+                  style={{
+                    flex: hoveredIdx === null ? "1 1 0%" : hoveredIdx === idx ? "1.5 1 0%" : "0.87 1 0%",
+                    minWidth: "0",
+                    transition: "all 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
+                  }}
                 >
-                  <div>
-                    <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-4 border border-input-border/20 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={displayAvatar}
-                        alt={displayName}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      />
+                  <div
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    onMouseLeave={() => setHoveredIdx(null)}
+                    className="p-5 rounded-3xl border border-input-border/30 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-300 shadow-2xs flex flex-col justify-between cursor-pointer relative h-full w-full animate-none"
+                    style={{
+                      opacity: hoveredIdx === null ? 1 : hoveredIdx === idx ? 1 : 0.7,
+                      zIndex: hoveredIdx === idx ? 10 : 1,
+                      borderColor: hoveredIdx === idx ? "rgba(88,204,2,0.35)" : undefined,
+                      transform: hoveredIdx === idx ? "translateY(-6px)" : "translateY(0)",
+                    }}
+                  >
+                    <div>
+                      <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-4 border border-input-border/20 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={displayAvatar}
+                          alt={displayName}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      </div>
+                      <h3 className="text-sm sm:text-base font-extrabold text-primary-dark dark:text-white truncate">
+                        {displayName}
+                      </h3>
+                      <span className="text-[10px] text-primary-green font-extrabold uppercase tracking-wide block mb-1">
+                        {member.role}
+                      </span>
+                      <div className="text-[9px] text-gray-400 dark:text-gray-500 font-bold tracking-tight mb-3">
+                        @{member.login}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-normal font-medium mb-5">
+                        {displayBio}
+                      </p>
                     </div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-primary-dark dark:text-white truncate">
-                      {displayName}
-                    </h3>
-                    <span className="text-[10px] text-primary-green font-extrabold uppercase tracking-wide block mb-1">
-                      {member.role}
-                    </span>
-                    <div className="text-[9px] text-gray-400 dark:text-gray-500 font-bold tracking-tight mb-3">
-                      @{member.login}
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-normal font-medium mb-5">
-                      {displayBio}
-                    </p>
-                  </div>
 
-                  <div className="flex gap-2.5 border-t border-input-border/20 dark:border-gray-800/80 pt-4 mt-auto">
-                    <a
-                      href={member.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="h-7 w-7 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-black hover:text-white dark:hover:bg-black dark:hover:text-white transition-colors duration-250 cursor-pointer"
-                      title="GitHub Profile"
-                    >
-                      <Github className="h-3.5 w-3.5" />
-                    </a>
-                    {member.Linkedin && (
+                    <div className="flex gap-2.5 border-t border-input-border/20 dark:border-gray-800/80 pt-4 mt-auto">
                       <a
-                        href={member.Linkedin}
+                        href={member.github}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="h-7 w-7 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-[#0077b5] hover:text-white dark:hover:bg-[#0077b5] dark:hover:text-white transition-colors duration-250 cursor-pointer"
-                        title="LinkedIn Profile"
+                        className="h-7 w-7 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-black hover:text-white dark:hover:bg-black dark:hover:text-white transition-colors duration-250 cursor-pointer"
+                        title="GitHub Profile"
                       >
-                        <Linkedin className="h-3.5 w-3.5" />
+                        <Github className="h-3.5 w-3.5" />
                       </a>
-                    )}
+                      {member.Linkedin && (
+                        <a
+                          href={member.Linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-7 w-7 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-[#0077b5] hover:text-white dark:hover:bg-[#0077b5] dark:hover:text-white transition-colors duration-250 cursor-pointer"
+                          title="LinkedIn Profile"
+                        >
+                          <Linkedin className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               );
