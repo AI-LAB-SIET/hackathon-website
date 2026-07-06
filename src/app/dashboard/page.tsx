@@ -141,6 +141,8 @@ export default function ParticipantDashboard() {
     ? hackathons.find((h) => h.id === team.hackathonId)?.teamsLocked === true
     : activeHackathon?.teamsLocked === true;
 
+  const isProblemStatementRevealed = !activeHackathon?.problemStatementRevealTime || new Date().getTime() >= new Date(activeHackathon.problemStatementRevealTime).getTime();
+
   // Auto-sync for kicked members
   useEffect(() => {
     if (session.teamId && session.email && teams.length > 0) {
@@ -406,12 +408,17 @@ export default function ParticipantDashboard() {
     if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     if (!team) return;
     if (!regTeamName.trim()) { toast("Please enter a team name.", "error"); return; }
-    if (!regProblemStatementId) { toast("Please select a problem statement.", "error"); return; }
-    updateProjectDetails(team.id, {
+    if (isProblemStatementRevealed && !regProblemStatementId) { toast("Please select a problem statement.", "error"); return; }
+    
+    const updateDetails: Partial<Team> = {
       name: regTeamName.trim(),
-      problemStatementId: regProblemStatementId,
       projectDescription: regProjectBrief.trim(),
-    });
+    };
+    if (isProblemStatementRevealed) {
+      updateDetails.problemStatementId = regProblemStatementId;
+    }
+    
+    updateProjectDetails(team.id, updateDetails);
     toast("Registration details saved.", "success");
   };
 
@@ -732,14 +739,26 @@ export default function ParticipantDashboard() {
                                 placeholder="e.g. Neural Knights"
                                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                             </div>
-                            <div>
-                              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Problem Statement</label>
-                              <select value={regProblemStatementId} onChange={(e) => setRegProblemStatementId(e.target.value)}
-                                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                                <option value="">Select a problem statement...</option>
-                                {publishedProblemStatements.map((ps) => <option key={ps.id} value={ps.id}>{ps.title}</option>)}
-                              </select>
-                            </div>
+                            {!isProblemStatementRevealed ? (
+                              <div className="flex flex-col justify-end">
+                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Problem Statement</label>
+                                <div className="w-full px-3 py-2.5 rounded-xl border border-dashed border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 text-sm flex items-center gap-2 h-[42px]">
+                                  <Lock className="h-4 w-4 shrink-0" />
+                                  <span className="text-xs font-semibold">
+                                    Locked until reveal time
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Problem Statement</label>
+                                <select value={regProblemStatementId} onChange={(e) => setRegProblemStatementId(e.target.value)}
+                                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                  <option value="">Select a problem statement...</option>
+                                  {publishedProblemStatements.map((ps) => <option key={ps.id} value={ps.id}>{ps.title}</option>)}
+                                </select>
+                              </div>
+                            )}
                           </div>
 
                           <div>
