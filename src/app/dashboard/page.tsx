@@ -17,7 +17,7 @@ import {
   Layers, ChevronDown,
   BookOpen, LifeBuoy, MessageCircle, ExternalLink, Database, Code2, LogOut, QrCode, Paperclip, FileText, Lock
 } from "lucide-react";
-import { FileAttachment, Participant, Notification, SupportTicket, ProblemStatement } from "@/types";
+import { FileAttachment, Participant, Notification, SupportTicket, ProblemStatement, Team } from "@/types";
 type SupportTicketCategory = SupportTicket["category"];
 type SupportTicketPriority = SupportTicket["priority"];
 import { INITIAL_FAQS } from "@/lib/mockData";
