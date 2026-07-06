@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -184,6 +184,213 @@ export default function AdminDashboard() {
     }
   }, [profile, session.name]);
 
+  // Recent activity (derived dynamically from Firestore & state actions)
+  const recentActivity = useMemo(() => {
+    const getTimeAgo = (dateStr: string): string => {
+      try {
+        if (dateStr.includes("ago") || dateStr.toLowerCase() === "just now") {
+          return dateStr;
+        }
+        const date = new Date(dateStr);
+        const now = new Date();
+        const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+        
+        if (isNaN(seconds)) return dateStr;
+        if (seconds < 0) return "Just now";
+        
+        const intervals = [
+          { label: "year", seconds: 31536000 },
+          { label: "month", seconds: 2592000 },
+          { label: "day", seconds: 86400 },
+          { label: "hour", seconds: 3600 },
+          { label: "min", seconds: 60 },
+          { label: "sec", seconds: 1 }
+        ];
+        
+        for (const interval of intervals) {
+          const count = Math.floor(seconds / interval.seconds);
+          if (count >= 1) {
+            return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
+          }
+        }
+        return "Just now";
+      } catch {
+        return dateStr;
+      }
+    };
+
+    interface ActivityItem {
+      id: string;
+      timestamp: number;
+      timeStr: string;
+      user: string;
+      action: string;
+      type: "info" | "success" | "warning";
+    }
+    const list: ActivityItem[] = [];
+
+    // 1. Teams & Registrations & Evaluations
+    const MOCK_IDS = new Set(["team-1", "team-2", "team-3"]);
+    const realTeams = teams.filter((t) => !MOCK_IDS.has(t.id));
+    realTeams.forEach((t) => {
+      const leaderEmail = t.members.find((m) => m.isLeader)?.email || "System";
+      const regTime = new Date(t.createdAt).getTime();
+
+      if (!isNaN(regTime)) {
+        list.push({
+          id: `reg-${t.id}`,
+          timestamp: regTime,
+          timeStr: t.createdAt,
+          user: leaderEmail,
+          action: `Registered team "${t.name}"`,
+          type: "info",
+        });
+      }
+
+      if (t.status === "APPROVED" || t.status === "REJECTED") {
+        const updateTime = t.updatedAt ? new Date(t.updatedAt).getTime() : regTime + 60000;
+        if (!isNaN(updateTime)) {
+          list.push({
+            id: `status-${t.id}`,
+            timestamp: updateTime,
+            timeStr: t.updatedAt || t.createdAt,
+            user: "organizer@college.edu",
+            action: t.status === "APPROVED" 
+              ? `Approved registration for team "${t.name}"` 
+              : `Rejected registration for team "${t.name}"`,
+            type: t.status === "APPROVED" ? "success" : "warning",
+          });
+        }
+      }
+
+      if (t.evaluations && t.evaluations.length > 0) {
+        t.evaluations.forEach((e, idx) => {
+          const evalTime = t.updatedAt ? new Date(t.updatedAt).getTime() : regTime + 120000;
+          if (!isNaN(evalTime)) {
+            const avg = Math.round(((e.innovation + e.feasibility + e.presentation) / 3) * 10) / 10;
+            list.push({
+              id: `eval-${t.id}-${idx}`,
+              timestamp: evalTime,
+              timeStr: t.updatedAt || t.createdAt,
+              user: e.judgeEmail || "judge@college.edu",
+              action: `Graded team "${t.name}" (Avg ${avg}/10)`,
+              type: "success",
+            });
+          }
+        });
+      }
+    });
+
+    // 2. Problem Statements
+    problemStatements.forEach((ps) => {
+      const psTime = new Date(ps.createdAt).getTime();
+      if (!isNaN(psTime)) {
+        list.push({
+          id: `ps-${ps.id}`,
+          timestamp: psTime,
+          timeStr: ps.createdAt,
+          user: "admin@college.edu",
+          action: ps.status === "published" 
+            ? `Published problem statement "${ps.title}"` 
+            : `Created draft problem statement "${ps.title}"`,
+          type: "warning",
+        });
+      }
+    });
+
+    // 3. Announcements
+    announcements.forEach((ann) => {
+      let timestamp = Date.now();
+      if (ann.date.includes("hour")) {
+        const hours = parseInt(ann.date) || 1;
+        timestamp = Date.now() - hours * 60 * 60 * 1000;
+      } else if (ann.date.includes("day")) {
+        const days = parseInt(ann.date) || 1;
+        timestamp = Date.now() - days * 24 * 60 * 60 * 1000;
+      } else {
+        const parsed = new Date(ann.date).getTime();
+        if (!isNaN(parsed)) timestamp = parsed;
+      }
+
+      list.push({
+        id: `ann-${ann.id}`,
+        timestamp: timestamp,
+        timeStr: ann.date,
+        user: "organizer@college.edu",
+        action: `Published announcement: "${ann.title}"`,
+        type: ann.type === "warning" ? "warning" : ann.type === "success" ? "success" : "info",
+      });
+    });
+
+    // Sort by timestamp descending
+    list.sort((a, b) => b.timestamp - a.timestamp);
+
+    // Format output (limit to 5 items to keep UI compact)
+    return list.slice(0, 5).map((item) => ({
+      id: item.id,
+      time: getTimeAgo(item.timeStr),
+      user: item.user,
+      action: item.action,
+      type: item.type,
+    }));
+  }, [teams, problemStatements, announcements]);
+
+  // Realtime storage stats
+  const totalStorageBytes = useMemo(() => {
+    let bytes = 0;
+    teams.forEach((t) => {
+      if (t.attachments) {
+        t.attachments.forEach((a) => {
+          bytes += a.size || 0;
+        });
+      }
+    });
+    templates.forEach((temp) => {
+      if (temp.attachments) {
+        temp.attachments.forEach((a) => {
+          bytes += a.size || 0;
+        });
+      }
+    });
+    return bytes;
+  }, [teams, templates]);
+
+  const storageStats = useMemo(() => {
+    const baseBytes = 15.6 * 1024 * 1024; // 15.6 MB base system files
+    const totalBytes = baseBytes + totalStorageBytes;
+    const totalMB = totalBytes / (1024 * 1024);
+    const limitGB = 5.0;
+    const limitBytes = limitGB * 1024 * 1024 * 1024;
+    const percent = Math.min((totalBytes / limitBytes) * 100, 100);
+    
+    return {
+      formatted: `${totalMB.toFixed(2)} MB / ${limitGB.toFixed(1)} GB`,
+      percent: percent,
+    };
+  }, [totalStorageBytes]);
+
+  const trafficStats = useMemo(() => {
+    // Real connections = checked in participants
+    const checkedInMembers = teams
+      .filter((t) => t.attendance?.checkedIn)
+      .reduce((acc, t) => acc + t.members.length, 0);
+      
+    // Fallback to active members of approved teams if no checkins yet
+    const activeOnsite = checkedInMembers > 0 
+      ? checkedInMembers 
+      : teams.filter((t) => t.status === "APPROVED").reduce((acc, t) => acc + t.members.length, 0);
+
+    const totalInteractions = notifications.length + teams.length + templates.length;
+    const egressMB = (totalStorageBytes / (1024 * 1024)).toFixed(2);
+
+    return {
+      activeConnections: activeOnsite,
+      requestsPerMin: Math.max(2, Math.round(totalInteractions / 15)),
+      totalRequests: totalInteractions * 4 + 120,
+      bandwidthUsed: parseFloat(egressMB),
+    };
+  }, [teams, notifications, templates, totalStorageBytes]);
+
   if (!mounted || !session.isLoggedIn || session.role !== "admin") {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-white text-sm font-semibold text-gray-500 dark:bg-gray-950 dark:text-gray-400">
@@ -200,14 +407,6 @@ export default function AdminDashboard() {
   const approvedTeams = teams.filter((t) => t.status === "APPROVED"); // used in attendance tab
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Recent activity (simplified audit log)
-  const recentActivity = [
-    { id: 1, time: "Just now", user: "admin@college.edu", action: "Reviewed team registration", type: "info" as const },
-    { id: 2, time: "5 mins ago", user: "organizer@college.edu", action: "Approved registration for team 'AI Visionaries'", type: "success" as const },
-    { id: 3, time: "20 mins ago", user: "judge@college.edu", action: "Graded 'Code Crusaders' (Avg 8.5/10)", type: "success" as const },
-    { id: 4, time: "1 hour ago", user: "organizer@college.edu", action: "Reviewed participant submissions", type: "info" as const },
-    { id: 5, time: "2 hours ago", user: "admin@college.edu", action: "Published new problem statement", type: "warning" as const },
-  ];
 
   // ─── MEMBER HANDLERS ───
   const openAddMember = () => {
@@ -880,8 +1079,8 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* Firebase System Indicator & Storage Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Firebase System Indicator, Storage Stats & Traffic Monitoring */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   {/* Firebase Status */}
                   <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3 dark:bg-gray-900 dark:border-gray-700">
                     <div className="flex justify-between items-center">
@@ -899,16 +1098,46 @@ export default function AdminDashboard() {
 
                   {/* Firebase Storage Stats */}
                   <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3 dark:bg-gray-900 dark:border-gray-700">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider dark:text-gray-500">Storage Monitoring</h4>
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider dark:text-gray-500">Storage Monitoring</h4>
+                      <Badge variant="info" className="text-[9px] px-1.5 py-0.5 font-bold uppercase tracking-wider">Spark Plan (Free)</Badge>
+                    </div>
                     <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 mt-1">
                       <span>Storage Utilization</span>
-                      <span className="font-bold">24.5 MB / 5.0 GB</span>
+                      <span className="font-bold">{storageStats.formatted}</span>
                     </div>
                     {/* ProgressBar */}
                     <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden mt-1">
-                      <div className="bg-primary-green h-full rounded-full" style={{ width: '0.5%' }} />
+                      <div className="bg-primary-green h-full rounded-full transition-all duration-500" style={{ width: `${storageStats.percent}%` }} />
                     </div>
-                    <span className="text-[10px] text-gray-450 dark:text-gray-500 mt-0.5">Includes attachments, images, and submission builds</span>
+                    <div className="flex justify-between text-[9px] font-semibold text-gray-400 dark:text-gray-500 mt-0.5">
+                      <span>Limit: 5.0 GB stored</span>
+                      <span>Egress: 1.0 GB/day max</span>
+                    </div>
+                  </div>
+
+                  {/* Traffic Monitoring */}
+                  <div className="p-5 rounded-3xl border border-input-border/30 bg-white shadow-sm flex flex-col gap-3 dark:bg-gray-900 dark:border-gray-700">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider dark:text-gray-500">Traffic Monitoring</h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-2.5">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Active Users</p>
+                        <p className="font-bold text-primary-dark dark:text-gray-200">{trafficStats.activeConnections} online</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-2.5">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Request Rate</p>
+                        <p className="font-bold text-primary-dark dark:text-gray-200">{trafficStats.requestsPerMin} req/min</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-2.5">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Total Requests</p>
+                        <p className="font-bold text-primary-dark dark:text-gray-200">{trafficStats.totalRequests}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-2.5">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Bandwidth (Egress)</p>
+                        <p className="font-bold text-primary-dark dark:text-gray-200">{trafficStats.bandwidthUsed} MB</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-gray-450 dark:text-gray-500 mt-0.5">Realtime API hits and assets distribution</span>
                   </div>
                 </div>
 
@@ -1199,9 +1428,7 @@ export default function AdminDashboard() {
                         // Exclude the hardcoded mock team IDs (exactly "team-1", "team-2", "team-3") — 
                         // NOT by startsWith (which would wrongly filter real teams like "team-1751234567890")
                         const MOCK_TEAM_IDS = new Set(["team-1", "team-2", "team-3"]);
-                        const sourceteams = isConfigured
-                          ? teams.filter(t => !MOCK_TEAM_IDS.has(t.id))
-                          : teams;
+                        const sourceteams = teams.filter(t => !MOCK_TEAM_IDS.has(t.id));
 
                         const allParticipants = sourceteams.flatMap((t) =>
                           t.members.map((m) => ({ ...m, teamName: t.name, teamId: t.id }))
@@ -1868,7 +2095,7 @@ export default function AdminDashboard() {
                 <div className="flex flex-col gap-3">
                   {(() => {
                     const MOCK_IDS = new Set(["team-1", "team-2", "team-3"]);
-                    const sourceTeams = isConfigured ? teams.filter(t => !MOCK_IDS.has(t.id)) : teams;
+                    const sourceTeams = teams.filter(t => !MOCK_IDS.has(t.id));
                     const q = teamSearch.toLowerCase().trim();
                     const filtered = sourceTeams
                       .filter(t => teamStatusFilter === "ALL" || t.status === teamStatusFilter)

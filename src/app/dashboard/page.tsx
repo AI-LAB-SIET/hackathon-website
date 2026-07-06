@@ -549,9 +549,17 @@ export default function ParticipantDashboard() {
                   onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-card-bg dark:bg-gray-800 border border-input-border/30 dark:border-gray-700 text-primary-dark dark:text-gray-100 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-colors cursor-pointer"
                 >
-                  <div className="h-7 w-7 rounded-lg bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs">
-                    {(session.name || session.email || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-                  </div>
+                  {(() => {
+                    const currentProfile = getProfile(session.email || "");
+                    const pic = currentProfile?.profilePicture;
+                    return pic ? (
+                      <img src={pic} alt={session.name || "Profile"} className="h-7 w-7 rounded-lg object-cover shrink-0 border border-gray-200 dark:border-gray-750" />
+                    ) : (
+                      <div className="h-7 w-7 rounded-lg bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                        {(session.name || session.email || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                    );
+                  })()}
                   <span className="text-sm font-bold hidden sm:inline">{session.name?.split(" ")[0] || "Profile"}</span>
                   <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`} />
                 </button>
@@ -806,28 +814,34 @@ export default function ParticipantDashboard() {
                       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 dark:bg-gray-900 dark:border-gray-700 space-y-4">
                         <h4 className="font-bold text-sm text-primary-dark dark:text-gray-150">Team Members ({team.members.length}/{maxTeamSize})</h4>
                         <div className="flex flex-col gap-3">
-                          {team.members.map((m) => {
-                            const isLeaderMember = m.isLeader;
-                            return (
-                              <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750">
-                                <div className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
-                                  {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                                </div>
-                                <div className="flex-1 min-w-0 text-xs">
-                                  <div className="font-bold text-primary-dark dark:text-gray-100 flex items-center gap-1.5 truncate">
-                                    {m.name}
-                                    {isLeaderMember && <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-1 rounded-full shrink-0">Leader</span>}
-                                  </div>
-                                  <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{m.email}</div>
-                                </div>
-                                {!isTeamLocked && !isLeaderMember && team.members.find(memb => memb.email === session.email)?.isLeader && (
-                                  <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
+                           {team.members.map((m) => {
+                             const isLeaderMember = m.isLeader;
+                             const memberProfile = userProfiles.find((u) => u.email === m.email);
+                             const profilePic = memberProfile?.profilePicture;
+                             return (
+                               <div key={m.email} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750">
+                                 {profilePic ? (
+                                   <img src={profilePic} alt={m.name} className="h-9 w-9 rounded-xl object-cover shrink-0 border border-gray-200 dark:border-gray-700" />
+                                 ) : (
+                                   <div className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                                     {m.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                                   </div>
+                                 )}
+                                 <div className="flex-1 min-w-0 text-xs">
+                                   <div className="font-bold text-primary-dark dark:text-gray-100 flex items-center gap-1.5 truncate">
+                                     {m.name}
+                                     {isLeaderMember && <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-1 rounded-full shrink-0">Leader</span>}
+                                   </div>
+                                   <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{m.email}</div>
+                                 </div>
+                                 {!isTeamLocked && !isLeaderMember && team.members.find(memb => memb.email === session.email)?.isLeader && (
+                                   <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
+                                     <Trash2 className="h-4 w-4" />
+                                   </button>
+                                 )}
+                               </div>
+                             );
+                           })}
                         </div>
                       </div>
 
@@ -852,9 +866,18 @@ export default function ParticipantDashboard() {
                                 const isInvitePending = teamRequests.some(r => r.direction === "invite" && r.toEmail === u.email && r.teamId === team.id && r.status === "pending");
                                 return (
                                   <div key={u.email} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750">
-                                    <div className="min-w-0">
-                                      <p className="text-xs font-bold text-primary-dark dark:text-gray-100 truncate">{u.name || "Unknown"}</p>
-                                      <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{u.email}</p>
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      {u.profilePicture ? (
+                                        <img src={u.profilePicture} alt={u.name} className="h-8 w-8 rounded-lg object-cover shrink-0 border border-gray-200 dark:border-gray-700" />
+                                      ) : (
+                                        <div className="h-8 w-8 rounded-lg bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-[10px] shrink-0">
+                                          {u.name?.split(" ").map(w => w[0]).join("").slice(0, 2) || "P"}
+                                        </div>
+                                      )}
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-bold text-primary-dark dark:text-gray-100 truncate">{u.name || "Unknown"}</p>
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{u.email}</p>
+                                      </div>
                                     </div>
                                     <button
                                       onClick={() => handleSendInviteToUser(u.email, u.name || "Participant")}
