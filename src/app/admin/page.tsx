@@ -1906,6 +1906,9 @@ export default function AdminDashboard() {
                                   {team.members.length} member{team.members.length !== 1 ? "s" : ""}
                                   {leader && ` · Leader: ${leader.name}`}
                                 </p>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                  <span className="font-bold">Problem:</span> {problemStatements.find(ps => ps.id === team.problemStatementId)?.title || "Not selected yet"}
+                                </p>
                                 <p className="text-[10px] text-gray-300 dark:text-gray-600">
                                   Registered: {new Date(team.createdAt).toLocaleDateString()}
                                 </p>
@@ -2014,7 +2017,7 @@ export default function AdminDashboard() {
                         { label: "Payment", val: managingTeam.paymentVerified ? "Verified ✅" : "Not Verified ❌" },
                         { label: "Check-in", val: managingTeam.attendance?.checkedIn ? "Checked In ✅" : "Not Arrived" },
                         { label: "Idea Submitted", val: managingTeam.ideaSubmitted ? "Yes ✅" : "No" },
-
+                        { label: "Problem Statement", val: problemStatements.find(ps => ps.id === managingTeam.problemStatementId)?.title || "Not selected yet" },
                       ].map(({label, val}) => (
                         <div key={label} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
