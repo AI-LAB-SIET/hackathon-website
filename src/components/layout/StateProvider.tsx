@@ -591,7 +591,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   const updateHackathon = useCallback(async (id: string, data: Partial<Hackathon>) => {
     if (isConfigured && db) {
-      await updateDoc(doc(db, "hackathons", id), data);
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter((entry) => entry[1] !== undefined)
+      );
+      await updateDoc(doc(db, "hackathons", id), cleanData);
     } else {
       setHackathons((prev) => prev.map((h) => h.id === id ? { ...h, ...data } : h));
     }
@@ -716,7 +719,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const updateProjectDetails = useCallback(async (teamId: string, details: Partial<Team>) => {
     if (isConfigured && db) {
-      await updateDoc(doc(db, "teams", teamId), details);
+      const cleanDetails = Object.fromEntries(
+        Object.entries(details).filter((entry) => entry[1] !== undefined)
+      );
+      await updateDoc(doc(db, "teams", teamId), cleanDetails);
     } else {
       setTeams((prev) => prev.map((t) => t.id === teamId ? { ...t, ...details } : t));
     }
@@ -990,7 +996,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       if (data.name) {
         updateData.displayName = data.name;
       }
-      await updateDoc(doc(db, "users", id), updateData);
+      const cleanUpdateData = Object.fromEntries(
+        Object.entries(updateData).filter((entry) => entry[1] !== undefined)
+      );
+      await updateDoc(doc(db, "users", id), cleanUpdateData);
     } else {
       setVolunteers((prev) => prev.map((v) => v.id === id ? { ...v, ...data } : v));
     }
@@ -1006,7 +1015,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = useCallback(async (email: string, data: Partial<UserProfile>) => {
     if (isConfigured && db && auth?.currentUser) {
-      await updateDoc(doc(db, "users", auth.currentUser.uid), data);
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter((entry) => entry[1] !== undefined)
+      );
+      await updateDoc(doc(db, "users", auth.currentUser.uid), cleanData);
     } else {
       setUserProfiles((prev) => {
         const idx = prev.findIndex((p) => p.email.toLowerCase() === email.toLowerCase());
@@ -1052,7 +1064,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   const updateProblemStatement = useCallback(async (id: string, data: Partial<ProblemStatement>) => {
     if (isConfigured && db) {
-      await updateDoc(doc(db, "problemStatements", id), data);
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter((entry) => entry[1] !== undefined)
+      );
+      await updateDoc(doc(db, "problemStatements", id), cleanData);
     } else {
       setProblemStatements((prev) => prev.map((ps) => ps.id === id ? { ...ps, ...data } : ps));
     }
@@ -1157,7 +1172,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   const updateMeal = useCallback(async (id: string, data: Partial<FoodMeal>) => {
     if (isConfigured && db) {
-      await updateDoc(doc(db, "foodMeals", id), data);
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter((entry) => entry[1] !== undefined)
+      );
+      await updateDoc(doc(db, "foodMeals", id), cleanData);
     } else {
       setFoodMeals((prev) => prev.map((m) => m.id === id ? { ...m, ...data } : m));
     }

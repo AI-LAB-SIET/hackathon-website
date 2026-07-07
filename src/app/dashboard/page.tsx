@@ -331,12 +331,11 @@ export default function ParticipantDashboard() {
     if (isTeamLocked) { toast("Teams are currently locked by administrators.", "error"); return; }
     if (!team) return;
     updateProjectDetails(team.id, {
-      projectDescription: projectEdit.projectDescription || team.projectDescription,
-      githubUrl: projectEdit.githubUrl || team.githubUrl,
-      videoUrl: projectEdit.videoUrl || team.videoUrl,
-      demoUrl: projectEdit.demoUrl || team.demoUrl,
-      aiDisclosure: projectEdit.aiDisclosure || team.aiDisclosure,
-
+      projectDescription: projectEdit.projectDescription || team.projectDescription || "",
+      githubUrl: projectEdit.githubUrl || team.githubUrl || "",
+      videoUrl: projectEdit.videoUrl || team.videoUrl || "",
+      demoUrl: projectEdit.demoUrl || team.demoUrl || "",
+      aiDisclosure: projectEdit.aiDisclosure || team.aiDisclosure || "",
     });
     toast("Project details saved.", "success");
   };
