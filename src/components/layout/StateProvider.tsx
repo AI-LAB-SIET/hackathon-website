@@ -986,7 +986,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   const updateVolunteer = useCallback(async (id: string, data: Partial<Volunteer>) => {
     if (isConfigured && db) {
-      const updateData: any = { ...data };
+      const updateData: Partial<Volunteer> & { displayName?: string } = { ...data };
       if (data.name) {
         updateData.displayName = data.name;
       }
