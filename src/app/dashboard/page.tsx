@@ -730,8 +730,6 @@ export default function ParticipantDashboard() {
                           </span>
                         </div>
 
-                        <p className="text-sm text-gray-650 dark:text-gray-400">{team.projectDescription || "No project description provided yet."}</p>
-
                         <div className="border-t border-gray-100 dark:border-gray-800 pt-4 flex justify-between items-center text-xs text-gray-450">
                           <span>Team Size: {team.members.length}/4 Members</span>
                           <span>Created: {new Date(team.createdAt).toLocaleDateString()}</span>
@@ -1398,6 +1396,14 @@ export default function ParticipantDashboard() {
                           <div className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                             {problemStatements.find(ps => ps.id === team?.problemStatementId)?.title || "Not set"}
                           </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Project Brief / Abstract</label>
+                          <textarea rows={3} value={projectEdit.projectDescription}
+                            onChange={(e) => setProjectEdit((p) => ({ ...p, projectDescription: e.target.value }))}
+                            placeholder="Briefly describe your AI project idea (this will be shown to the judge)..."
+                            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                          />
                         </div>
                         <div>
                           <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">AI Tool Disclosure</label>
