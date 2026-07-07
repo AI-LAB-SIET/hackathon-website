@@ -101,7 +101,6 @@ export default function OrganizerDashboard() {
   const rejectedTeams = teams.filter((t) => t.status === "REJECTED");
   const submittedProjects = teams.filter((t) => t.submitted);
   const checkedIn = teams.filter((t) => t.attendance?.checkedIn);
-  const openTickets = teams.flatMap((t) => t.supportTickets || []).filter((tk) => tk.status === "Open");
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const departments = useMemo(() => Array.from(new Set(teams.flatMap((t) => t.members.map((m) => m.department)))), [teams]);
@@ -126,6 +125,10 @@ export default function OrganizerDashboard() {
       ? tickets
       : teams.flatMap((t) => (t.supportTickets || []).map((tk) => ({ ...tk, teamName: t.name })));
   }, [tickets, teams]);
+
+  const openTickets = useMemo(() => {
+    return allTickets.filter((tk) => tk.status === "Open");
+  }, [allTickets]);
 
   const filteredTickets = useMemo(() => {
     return allTickets.filter((t) => ticketFilter === "all" || t.status === ticketFilter);

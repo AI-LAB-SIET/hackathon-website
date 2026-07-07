@@ -922,20 +922,35 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const raiseTicket = useCallback(async (ticket: Omit<SupportTicket, "id" | "createdAt" | "status">) => {
     const team = teamsRef.current.find((t) => t.id === ticket.teamId);
     if (!team) return;
-    const newTicket = { teamId: ticket.teamId, teamName: team.name, category: ticket.category, description: ticket.description, priority: ticket.priority, status: "Open" as const, createdAt: new Date().toISOString(), raisedBy: session.email || "", title: `${ticket.category} Request` };
+    const newTicket = {
+      hackathonId: team.hackathonId || activeHackathonId || "",
+      teamId: ticket.teamId,
+      teamName: team.name,
+      category: ticket.category,
+      description: ticket.description,
+      priority: ticket.priority,
+      status: "Open" as const,
+      createdAt: new Date().toISOString(),
+      raisedBy: session.email || "",
+      title: `${ticket.category} Request`
+    };
     if (isConfigured && db) {
       await addDoc(collection(db, "tickets"), newTicket);
     } else {
-      const updatedTickets = [{ ...newTicket, id: `sticket-${Date.now()}` }, ...(team.supportTickets || [])];
+      const ticketId = `sticket-${Date.now()}`;
+      const ticketWithId = { ...newTicket, id: ticketId };
+      const updatedTickets = [ticketWithId, ...(team.supportTickets || [])];
       setTeams((prev) => prev.map((t) => t.id === ticket.teamId ? { ...t, supportTickets: updatedTickets } : t));
+      setTickets((prev) => [ticketWithId, ...prev]);
     }
     addNotification({ userId: "organizer@college.edu", type: "action", title: `Support Ticket: ${ticket.category}`, body: ticket.description, priority: ticket.priority === "Critical" ? "high" : "normal", relatedTeamId: ticket.teamId });
-  }, [addNotification, session.email]);
+  }, [addNotification, session.email, activeHackathonId]);
 
   const resolveTicket = useCallback(async (ticketId: string) => {
     if (isConfigured && db) {
       await updateDoc(doc(db, "tickets", ticketId), { status: "Resolved" });
     } else {
+      setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, status: "Resolved" as const } : t));
       setTeams((prev) => prev.map((t) => ({ ...t, supportTickets: (t.supportTickets || []).map((tk) => tk.id === ticketId ? { ...tk, status: "Resolved" as const } : tk) })));
     }
   }, []);
@@ -1028,20 +1043,38 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const createTicket = useCallback(async (ticket: Omit<Ticket, "id" | "createdAt" | "status">) => {
-    const data = { title: `${ticket.category} Request`, description: ticket.description, category: ticket.category, priority: ticket.priority, status: "Open" as const, raisedBy: ticket.raisedBy, createdAt: new Date().toISOString() };
+    const data = {
+      hackathonId: ticket.hackathonId || activeHackathonId || "",
+      title: `${ticket.category} Request`,
+      description: ticket.description,
+      category: ticket.category,
+      priority: ticket.priority,
+      status: "Open" as const,
+      raisedBy: ticket.raisedBy,
+      createdAt: new Date().toISOString()
+    };
     if (isConfigured && db) {
       await addDoc(collection(db, "tickets"), data);
     } else {
       setTickets((prev) => [{ ...data, id: `ticket-${Date.now()}` }, ...prev]);
     }
     addNotification({ userId: "organizer@college.edu", type: "action", title: `New Ticket: ${ticket.category}`, body: ticket.description, priority: ticket.priority === "Critical" ? "high" : "normal" });
-  }, [addNotification]);
+  }, [addNotification, activeHackathonId]);
 
   const assignTicket = useCallback(async (ticketId: string, volunteerEmail: string) => {
     if (isConfigured && db) {
       await updateDoc(doc(db, "tickets", ticketId), { assignedTo: volunteerEmail, status: "Assigned", updatedAt: new Date().toISOString() });
     } else {
       setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, assignedTo: volunteerEmail, status: "Assigned" as const, updatedAt: new Date().toISOString() } : t));
+      setTeams((prev) => prev.map((t) => {
+        if (t.supportTickets && t.supportTickets.some((tk) => tk.id === ticketId)) {
+          return {
+            ...t,
+            supportTickets: t.supportTickets.map((tk) => tk.id === ticketId ? { ...tk, assignedTo: volunteerEmail, status: "Assigned" as const, updatedAt: new Date().toISOString() } : tk)
+          };
+        }
+        return t;
+      }));
     }
   }, []);
 
@@ -1050,6 +1083,15 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(doc(db, "tickets", ticketId), { status, updatedAt: new Date().toISOString() });
     } else {
       setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+      setTeams((prev) => prev.map((t) => {
+        if (t.supportTickets && t.supportTickets.some((tk) => tk.id === ticketId)) {
+          return {
+            ...t,
+            supportTickets: t.supportTickets.map((tk) => tk.id === ticketId ? { ...tk, status, updatedAt: new Date().toISOString() } : tk)
+          };
+        }
+        return t;
+      }));
     }
   }, []);
 

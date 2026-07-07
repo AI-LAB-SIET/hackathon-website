@@ -46,6 +46,7 @@ export interface SupportTicket {
   id: string;
   hackathonId?: string;       // NEW
   teamId?: string;
+  teamName?: string;          // Added teamName to SupportTicket
   category: "Internet" | "Power" | "Hardware" | "Food" | "Venue" | "Other" | "General";
   priority: "Low" | "Medium" | "High" | "Critical" | "Normal";
   status: "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";

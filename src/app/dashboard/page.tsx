@@ -50,7 +50,8 @@ export default function ParticipantDashboard() {
     markNotificationRead, markAllNotificationsRead,
     logout, raiseTicket, getProfile, updateProfile,
     registerTeam, deleteTeam, leaveTeam, sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest, teamRequests, activeHackathonId, hackathons,
-    foodTokens, foodMeals, userProfiles, templates
+    foodTokens, foodMeals, userProfiles, templates,
+    tickets
   } = useAppState();
 
   const currentHackathonId = session.currentHackathonId || activeHackathonId;
@@ -221,6 +222,13 @@ export default function ParticipantDashboard() {
       { label: "Idea Submitted", done: team ? !!team.ideaSubmitted : false },
     ];
   }, [team]);
+
+  const teamTickets = useMemo(() => {
+    if (!team) return [];
+    return tickets.length > 0
+      ? tickets.filter((t) => t.teamId === team.id)
+      : (team.supportTickets || []);
+  }, [tickets, team]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "participant") {
     return <div className="flex h-screen items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading your workspace...</div>;
@@ -1714,11 +1722,11 @@ export default function ParticipantDashboard() {
                   {/* Track Tickets */}
                   <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-3">
                     <div className="font-bold text-primary-dark dark:text-gray-100 text-sm">Your Tickets</div>
-                    {(!team || (team.supportTickets || []).length === 0) ? (
+                    {(!team || teamTickets.length === 0) ? (
                       <div className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">No tickets raised yet.</div>
                     ) : (
                       <div className="flex flex-col gap-2">
-                        {(team.supportTickets || []).map((tk) => (
+                        {teamTickets.map((tk) => (
                           <div key={tk.id} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <span className="text-xs font-bold text-primary-dark dark:text-gray-100">{tk.category}</span>
