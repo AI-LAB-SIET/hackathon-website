@@ -77,7 +77,7 @@ export default function Onboarding() {
           onboarded: true,
         });
       }
-      toast("Profile setup completed! Welcome to AI Hack Lab.", "success");
+      toast("Profile setup completed! Welcome to SIET HACKATHONS.", "success");
       router.push("/dashboard");
     } catch (err: unknown) {
       setSubmitting(false);

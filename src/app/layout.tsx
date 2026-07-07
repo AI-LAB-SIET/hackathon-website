@@ -27,7 +27,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "AI Hack Lab | College Hackathon Management Platform",
+  title: "SIET_HACKATHONS",
   description: "Join the premier College AI Lab Hackathon. Register your team, manage submissions, track milestones, and showcase your AI innovations.",
   keywords: ["hackathon", "AI Lab", "artificial intelligence", "college coding", "Next.js", "team management"],
 };

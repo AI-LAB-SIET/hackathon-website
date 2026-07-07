@@ -244,7 +244,7 @@ export default function Register() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-sm font-semibold mb-4">
-              <Sparkles className="h-4 w-4" /> AI Hack Lab 2026
+              <Sparkles className="h-4 w-4" /> SIET HACKATHONS
             </div>
             <h1 className="text-3xl font-extrabold text-primary-dark dark:text-gray-100">Create Account</h1>
             <p className="text-gray-400 text-sm mt-2 dark:text-gray-500">

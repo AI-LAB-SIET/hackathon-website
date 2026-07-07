@@ -80,7 +80,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       return errorResponse("Request body must be valid JSON.", "INVALID_REQUEST", 400);
     }
 
-    const { message, role, sessionId } = body;
+    const { message, role, sessionId, liveDataContext } = body;
 
     if (!message || typeof message !== "string" || !message.trim()) {
       return errorResponse("'message' is required and must be a non-empty string.", "INVALID_REQUEST", 400);
@@ -160,7 +160,8 @@ export async function POST(req: NextRequest): Promise<Response> {
           const generator = chatService.streamResponse(
             sessionId,
             cleanMessage,
-            userRole
+            userRole,
+            liveDataContext as string
           );
 
           for await (const delta of generator) {

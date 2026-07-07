@@ -280,7 +280,7 @@ export default function About() {
               Core Platform Developers
             </h2>
             <p className="max-w-2xl text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-semibold">
-              Meet the engineering team who designed, developed, and maintained the SIET Hack Lab ecosystem.
+              Meet the engineering team who designed, developed, and maintained the SIET HACKATHONS ecosystem.
             </p>
           </div>
 

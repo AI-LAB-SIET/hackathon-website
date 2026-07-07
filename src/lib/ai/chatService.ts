@@ -14,17 +14,20 @@
  */
 
 import { conversationManager } from "./conversationManager";
-import type { UserRole } from "./types";
+import { getSystemPrompt } from "./promptManager";
+import { getNimClient } from "./nimClient";
+import type { UserRole, ChatMessage } from "./types";
 
 export class ChatService {
   /**
-   * Returns an AsyncIterable<string> of text deltas from a basic chatbot.
-   * Persists the full assistant reply to conversation history after streaming completes.
+   * Returns an AsyncIterable<string> of text deltas from NVIDIA NIM or fallback chatbot.
+   * Persists the full assistant reply to conversation history.
    */
   async *streamResponse(
     sessionId: string,
     userMessage: string,
-    role: UserRole
+    role: UserRole,
+    liveDataContext?: string
   ): AsyncIterable<string> {
     // Persist the user's message immediately
     conversationManager.appendMessage(sessionId, {
@@ -32,13 +35,48 @@ export class ChatService {
       content: userMessage,
     });
 
+    const apiKey = process.env.NVIDIA_NIM_API_KEY;
+    if (apiKey) {
+      try {
+        const systemPrompt = getSystemPrompt(role, liveDataContext);
+        const history = conversationManager.getHistory(sessionId);
+        const messages: ChatMessage[] = [
+          { role: "system" as const, content: systemPrompt },
+          ...history,
+        ];
+
+        const nimClient = getNimClient();
+        const responseStream = await nimClient.streamChat(messages);
+
+        let accumulated = "";
+        for await (const delta of responseStream) {
+          accumulated += delta;
+          yield delta;
+        }
+
+        // Persist the AI's response in history
+        conversationManager.appendMessage(sessionId, {
+          role: "assistant",
+          content: accumulated,
+        });
+        return;
+      } catch (err) {
+        console.error("[ChatService] NVIDIA NIM streaming error, falling back to rule-based response:", err);
+      }
+    }
+
+    // Fallback: rule-based responses
     const fullReply = this.generateBasicResponse(userMessage, role);
+    // Persist the AI's response in history
+    conversationManager.appendMessage(sessionId, {
+      role: "assistant",
+      content: fullReply,
+    });
 
     // Simulate streaming by yielding words one by one with small delays
     const words = fullReply.split(' ');
     for (let i = 0; i < words.length; i++) {
       yield words[i] + (i < words.length - 1 ? ' ' : '');
-      // Small delay to simulate streaming (optional, but makes it feel more realistic)
       await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
@@ -49,15 +87,39 @@ export class ChatService {
   async chatOnce(
     sessionId: string,
     userMessage: string,
-    role: UserRole
+    role: UserRole,
+    liveDataContext?: string
   ): Promise<string> {
     conversationManager.appendMessage(sessionId, {
       role: "user",
       content: userMessage,
     });
 
-    const reply = this.generateBasicResponse(userMessage, role);
+    const apiKey = process.env.NVIDIA_NIM_API_KEY;
+    if (apiKey) {
+      try {
+        const systemPrompt = getSystemPrompt(role, liveDataContext);
+        const history = conversationManager.getHistory(sessionId);
+        const messages: ChatMessage[] = [
+          { role: "system" as const, content: systemPrompt },
+          ...history,
+        ];
 
+        const nimClient = getNimClient();
+        const reply = await nimClient.chat(messages);
+
+        conversationManager.appendMessage(sessionId, {
+          role: "assistant",
+          content: reply,
+        });
+
+        return reply;
+      } catch (err) {
+        console.error("[ChatService] NVIDIA NIM chat error, falling back to rule-based response:", err);
+      }
+    }
+
+    const reply = this.generateBasicResponse(userMessage, role);
     conversationManager.appendMessage(sessionId, {
       role: "assistant",
       content: reply,
@@ -119,18 +181,32 @@ export class ChatService {
       }
     }
 
+    // Check if the query is unrelated to the hackathon
+    const hackathonKeywords = [
+      "hackathon", "siet", "schedule", "timeline", "agenda", "when", "time", "date",
+      "team", "join", "create", "member", "leader", "problem", "statement", "track",
+      "challenge", "brief", "abstract", "submission", "submit", "repo", "github",
+      "demo", "pitch", "video", "ticket", "support", "issue", "help", "announcement",
+      "news", "update", "resource", "api", "dataset", "template", "food", "meal",
+      "token", "breakfast", "lunch", "dinner", "snacks", "qr", "code", "scan",
+      "check", "register", "login", "about", "rule", "guideline", "score", "evaluate",
+      "judge", "feedback", "mentor", "hello", "hi", "hey", "thanks", "thank"
+    ];
+
+    const isRelated = hackathonKeywords.some(keyword => lowerMsg.includes(keyword));
+    if (!isRelated) {
+      return "I am sorry, but I can only assist you with queries related to SIET HACKATHONS. Please ask a hackathon-related question.";
+    }
+
     // General responses
     if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
-      return "Hello! Welcome to the AI Hack Lab 2026 assistant. How can I help you today?";
+      return "Hello! Welcome to the SIET HACKATHONS assistant. How can I help you today?";
     }
     if (lowerMsg.includes('help') || lowerMsg.includes('support')) {
       return "I'm here to help! You can ask about: hackathon schedule, team formation, problem statements, announcements, or general event information.";
     }
     if (lowerMsg.includes('thank') || lowerMsg.includes('thanks')) {
       return "You're welcome! Happy hacking!";
-    }
-    if (lowerMsg.includes('weather')) {
-      return "I don't have access to real-time weather data, but I hope it's a great day for hacking!";
     }
     if (lowerMsg.includes('food') || lowerMsg.includes('lunch') || lowerMsg.includes('dinner')) {
       return "Meals are provided during the event! Check the announcements for meal times and locations.";

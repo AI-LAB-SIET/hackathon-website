@@ -34,7 +34,8 @@ export interface AIService {
     message: string,
     role: "participant" | "admin" | "judge" | "organizer" | "volunteer" | null,
     onChunk?: (accumulatedText: string) => void,
-    sessionId?: string
+    sessionId?: string,
+    liveDataContext?: string
   ): Promise<AIResponse>;
   getSuggestions(
     role: "participant" | "admin" | "judge" | "organizer" | "volunteer" | null
@@ -96,7 +97,8 @@ export class FrontendAIService implements AIService {
     message: string,
     role: "participant" | "admin" | "judge" | "organizer" | "volunteer" | null,
     onChunk?: (accumulatedText: string) => void,
-    sessionId?: string
+    sessionId?: string,
+    liveDataContext?: string
   ): Promise<AIResponse> {
     const sid = sessionId ?? "default-session";
 
@@ -104,7 +106,7 @@ export class FrontendAIService implements AIService {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, role, sessionId: sid }),
+        body: JSON.stringify({ message, role, sessionId: sid, liveDataContext }),
       });
 
       // Handle non-SSE error responses (e.g. 400, 500 from validation)

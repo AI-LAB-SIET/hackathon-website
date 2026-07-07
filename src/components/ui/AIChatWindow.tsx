@@ -156,7 +156,9 @@ MarkdownRenderer.displayName = "MarkdownRenderer";
 // ── Main chat window ──────────────────────────────────────────────────────────
 
 export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps) {
-  const { session } = useAppState();
+  const {
+    session, teams, announcements, tickets, problemStatements, hackathons, foodMeals, foodTokens
+  } = useAppState();
 
   // Stable session ID — one per chat window mount
   const sessionId = useMemo(() => generateUUID(), []);
@@ -185,7 +187,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
       const welcome: AIMessage = {
         id: "welcome",
         sender: "ai",
-        text: `Welcome, **${session.name || "Guest"}**! 👋 I am your AI Hackathon assistant.\n\nHow can I assist you with your hackathon journey today? Ask me about rules, deadlines, check-ins, or submissions!`,
+        text: `Welcome, **${session.name || "Guest"}**! 👋 Welcome to **SIET HACKATHONS**. I am your AI assistant.\n\nHow can I assist you with your hackathon journey today? Ask me about rules, deadlines, check-ins, or submissions!`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages([welcome]);
@@ -218,6 +220,113 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
     });
   }, []);
 
+  // Serialize the live platform state to pass as context to the AI
+  const getLiveDataContext = useCallback(() => {
+    const lines: string[] = [];
+
+    // Current Origin
+    const currentOrigin = "http://ailabsiet.dpdns.org";
+    lines.push("## Platform URL Information");
+    lines.push(`- Current Website Origin URL: ${currentOrigin}`);
+
+    // User Profile context
+    lines.push("\n## User Info");
+    lines.push(`- Name: ${session.name || "Guest"}`);
+    lines.push(`- Email: ${session.email || "Guest"}`);
+    lines.push(`- Role: ${session.role || "Guest"}`);
+
+    // Active Hackathon details
+    const activeHackathon = hackathons.find(h => h.id === (session.currentHackathonId || ""));
+    if (activeHackathon) {
+      lines.push("\n## Active Hackathon");
+      lines.push(`- Name: ${activeHackathon.name}`);
+      lines.push(`- Status: ${activeHackathon.status}`);
+      lines.push(`- Dates: Starts ${new Date(activeHackathon.startDate).toLocaleString()}, Ends ${new Date(activeHackathon.endDate).toLocaleString()}`);
+      lines.push(`- Min Team Size: ${activeHackathon.minTeamSize || 2}`);
+      lines.push(`- Max Team Size: ${activeHackathon.maxTeamSize || 4}`);
+      lines.push(`- Rules/Description: ${activeHackathon.description}`);
+    }
+
+    // Team context
+    const myTeam = teams.find(t => t.id === session.teamId);
+    if (myTeam) {
+      lines.push("\n## My Team Info");
+      lines.push(`- Team Name: ${myTeam.name}`);
+      lines.push(`- Status: ${myTeam.status}`);
+      lines.push(`- Members:`);
+      myTeam.members.forEach(m => {
+        lines.push(`  * ${m.name} (${m.email}) - ${m.isLeader ? "Team Leader" : "Member"}`);
+      });
+      if (myTeam.projectDescription) {
+        lines.push(`- Project Brief / Abstract: ${myTeam.projectDescription}`);
+      }
+      if (myTeam.githubUrl) lines.push(`- GitHub: ${myTeam.githubUrl}`);
+      if (myTeam.demoUrl) lines.push(`- Live Demo: ${myTeam.demoUrl}`);
+      if (myTeam.videoUrl) lines.push(`- Video Pitch: ${myTeam.videoUrl}`);
+
+      // Team Milestones
+      if (myTeam.milestonesProgress && myTeam.milestonesProgress.length > 0) {
+        lines.push("- Milestones Progress:");
+        myTeam.milestonesProgress.forEach(ms => {
+          lines.push(`  * [${ms.completed ? "x" : " "}] ${ms.title}`);
+        });
+      }
+
+      // Team Tickets
+      const teamTickets = tickets.filter(t => t.teamId === myTeam.id);
+      if (teamTickets.length > 0) {
+        lines.push("- Support Tickets Raised:");
+        teamTickets.forEach(tk => {
+          lines.push(`  * [${tk.status}] ${tk.category} - ${tk.description} (Priority: ${tk.priority}, Created: ${new Date(tk.createdAt).toLocaleString()})`);
+        });
+      }
+      
+      // Team Evaluations
+      if (myTeam.evaluations && myTeam.evaluations.length > 0) {
+        lines.push("- Judge Evaluations:");
+        myTeam.evaluations.forEach(ev => {
+          lines.push(`  * Scores by ${ev.judgeEmail}: Innovation: ${ev.innovation}/10, Feasibility: ${ev.feasibility}/10, Presentation: ${ev.presentation}/10 - Feedback: "${ev.feedback}"`);
+        });
+      }
+    }
+
+    // Announcements context
+    if (announcements.length > 0) {
+      lines.push("\n## Latest Announcements");
+      announcements.slice(0, 5).forEach(ann => {
+        lines.push(`- [${ann.type.toUpperCase()}] ${ann.title}: "${ann.content}" (${ann.date})`);
+      });
+    }
+
+    // Problem Statements context
+    const publishedPs = problemStatements.filter(ps => ps.status === "published");
+    if (publishedPs.length > 0) {
+      lines.push("\n## Published Problem Statements / Tracks");
+      publishedPs.forEach(ps => {
+        lines.push(`- **${ps.title}**: ${ps.description}`);
+      });
+    }
+
+    // Food Schedule context
+    if (foodMeals.length > 0) {
+      lines.push("\n## Food Schedule / Menu");
+      foodMeals.forEach(m => {
+        lines.push(`- Meal: ${m.name} (${m.type}) - Scheduled at: ${new Date(m.scheduledAt).toLocaleString()}`);
+      });
+    }
+
+    // User's Food Tokens context
+    const myTokens = foodTokens.filter(t => t.participantEmail === session.email);
+    if (myTokens.length > 0) {
+      lines.push("\n## My Food Tokens");
+      myTokens.forEach(t => {
+        lines.push(`- Token for "${t.mealName}" (${t.mealType}): Code: ${t.tokenCode}, Status: ${t.status}`);
+      });
+    }
+
+    return lines.join("\n");
+  }, [session, teams, announcements, tickets, problemStatements, hackathons, foodMeals, foodTokens]);
+
   // Core send logic — single streaming call
   const handleSend = useCallback(async (textToSend: string) => {
     if (!textToSend.trim() || isTyping) return;
@@ -238,11 +347,13 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
     setStreamedText("");
 
     try {
+      const liveContext = getLiveDataContext();
       const result = await aiService.sendMessage(
         textToSend.trim(),
         session.role,
         (chunk) => setStreamedText(chunk),
-        sessionId
+        sessionId,
+        liveContext
       );
 
       const aiMsg: AIMessage = {
@@ -272,7 +383,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
     } finally {
       setIsTyping(false);
     }
-  }, [isTyping, session.role, sessionId]);
+  }, [isTyping, session.role, sessionId, getLiveDataContext]);
 
   // Regenerate last AI response
   const handleRegenerate = useCallback(() => {
@@ -355,7 +466,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
           </div>
           <div>
             <div className="text-sm font-bold leading-tight flex items-center gap-1.5">
-              <span>Hack Lab Copilot</span>
+              <span>SIET HACKATHONS Copilot</span>
               {session.role && (
                 <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-primary-green border border-primary-green/30 font-semibold uppercase tracking-wider">
                   {session.role}
@@ -432,7 +543,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
                 {showSenderHeader && (
                   <span className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 mb-1 px-1.5">
                     {isAI ? <Bot className="w-3 h-3 text-primary-green" /> : <User className="w-3 h-3" />}
-                    {isAI ? "Hack Lab Copilot" : session.name || "You"}
+                    {isAI ? "SIET HACKATHONS Copilot" : session.name || "You"}
                   </span>
                 )}
                 <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 shadow-sm text-sm ${
@@ -481,7 +592,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
           {isTyping && streamedText && (
             <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-start">
               <span className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 mb-1 px-1.5">
-                <Bot className="w-3 h-3 text-primary-green" /> Hack Lab Copilot
+                <Bot className="w-3 h-3 text-primary-green" /> SIET HACKATHONS Copilot
               </span>
               <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-3.5 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700/50 shadow-sm text-sm">
                 <MarkdownRenderer text={streamedText} />

@@ -30,6 +30,8 @@ export interface ChatRequest {
   role: UserRole;
   /** Client-generated session ID for conversation scoping */
   sessionId: string;
+  /** Optional live context of the platform state */
+  liveDataContext?: string;
 }
 
 /** A single SSE streaming chunk sent back to the client */
