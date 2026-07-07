@@ -1884,7 +1884,11 @@ export default function AdminDashboard() {
                               {t.attendance?.checkInBy || "-"}
                             </td>
                             <td className="py-3 px-4 text-gray-600 dark:text-gray-400 text-xs">
-                              {t.attendance?.checkInTime ? new Date(t.attendance.checkInTime).toLocaleString() : "-"}
+                              {t.attendance?.checkInTime ? (
+                                isNaN(new Date(t.attendance.checkInTime).getTime())
+                                  ? t.attendance.checkInTime
+                                  : new Date(t.attendance.checkInTime).toLocaleString()
+                              ) : "-"}
                             </td>
                           </tr>
                         ))}
