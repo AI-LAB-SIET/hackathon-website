@@ -395,7 +395,17 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
         const data = d.data();
         allProfiles.push({ id: d.id, ...data, name: data.name || data.displayName || "Unknown", email: data.email || "" } as unknown as UserProfile);
         if (data.role === "volunteer") {
-          vols.push({ id: d.id, name: data.displayName || "", email: data.email || "", status: data.status || "active", assignedTicketsCount: 0, createdAt: data.createdAt || "" } as Volunteer);
+          vols.push({
+            id: d.id,
+            name: data.displayName || data.name || "Unknown",
+            email: data.email || "",
+            phone: data.phone || "",
+            assignedArea: data.assignedArea || "",
+            assignedResponsibilities: data.assignedResponsibilities || "",
+            status: data.status || "active",
+            assignedTicketsCount: 0,
+            createdAt: data.createdAt || ""
+          } as Volunteer);
         }
       });
       setUserProfiles(allProfiles);
@@ -956,7 +966,17 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addVolunteer = useCallback(async (v: Omit<Volunteer, "id" | "createdAt">) => {
-    const profile = { email: v.email, displayName: v.name, role: "volunteer" as const, status: "active", createdAt: new Date().toISOString() };
+    const profile = {
+      email: v.email,
+      displayName: v.name,
+      name: v.name,
+      phone: v.phone || "",
+      assignedArea: v.assignedArea || "",
+      assignedResponsibilities: v.assignedResponsibilities || "",
+      role: "volunteer" as const,
+      status: "active",
+      createdAt: new Date().toISOString()
+    };
     if (isConfigured && db) {
       await addDoc(collection(db, "users"), profile);
     } else {
@@ -966,7 +986,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   const updateVolunteer = useCallback(async (id: string, data: Partial<Volunteer>) => {
     if (isConfigured && db) {
-      await updateDoc(doc(db, "users", id), data);
+      const updateData: any = { ...data };
+      if (data.name) {
+        updateData.displayName = data.name;
+      }
+      await updateDoc(doc(db, "users", id), updateData);
     } else {
       setVolunteers((prev) => prev.map((v) => v.id === id ? { ...v, ...data } : v));
     }
