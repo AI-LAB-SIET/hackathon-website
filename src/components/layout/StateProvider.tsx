@@ -151,8 +151,9 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       if (typeof window === "undefined") return;
       try {
         const storedTeams = localStorage.getItem("siet_teams_v2");
-        setTeams(storedTeams ? JSON.parse(storedTeams) : INITIAL_TEAMS);
-      } catch { setTeams(INITIAL_TEAMS); }
+        const loadedTeams = storedTeams ? JSON.parse(storedTeams) : INITIAL_TEAMS;
+        setTeams(loadedTeams.map((t: Team) => ({ ...t, hackathonId: t.hackathonId || "hackathon-1" })));
+      } catch { setTeams(INITIAL_TEAMS.map((t: Team) => ({ ...t, hackathonId: t.hackathonId || "hackathon-1" }))); }
       try {
         const storedSession = localStorage.getItem("siet_session");
         if (storedSession) {
@@ -199,7 +200,27 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       } catch { /* skip */ }
       try {
         const storedHackathons = localStorage.getItem("siet_hackathons");
-        if (storedHackathons) setHackathons(JSON.parse(storedHackathons));
+        if (storedHackathons) {
+          setHackathons(JSON.parse(storedHackathons));
+        } else {
+          setHackathons([
+            {
+              id: "hackathon-1",
+              name: "AI Lab Hackathon 2026",
+              slug: "ai-lab-2026",
+              description: "The premium AI & ML hackathon at SIET.",
+              startDate: "2026-07-01",
+              endDate: "2026-07-10",
+              registrationOpen: true,
+              maxTeamSize: 4,
+              minTeamSize: 2,
+              status: "active",
+              createdAt: new Date().toISOString(),
+              createdBy: "admin@college.edu",
+              teamsLocked: false
+            }
+          ]);
+        }
       } catch { /* skip */ }
       setInitialized(true);
     };
@@ -274,6 +295,13 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       unsubAuth();
     };
   }, []);
+
+  // Auto-select first hackathon if activeHackathonId is null
+  useEffect(() => {
+    if (!activeHackathonId && hackathons.length > 0) {
+      setActiveHackathonIdState(hackathons[0].id);
+    }
+  }, [hackathons, activeHackathonId]);
 
   // ── 1.1 Hackathon-scoped Firestore listeners ───────────────────────────────
   useEffect(() => {
@@ -938,8 +966,9 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const raiseTicket = useCallback(async (ticket: Omit<SupportTicket, "id" | "createdAt" | "status">) => {
     const team = teamsRef.current.find((t) => t.id === ticket.teamId);
     if (!team) return;
+    const targetHackathonId = team.hackathonId || activeHackathonId || (hackathons[0]?.id) || "hackathon-1";
     const newTicket = {
-      hackathonId: team.hackathonId || activeHackathonId || "",
+      hackathonId: targetHackathonId,
       teamId: ticket.teamId,
       teamName: team.name,
       category: ticket.category,
@@ -947,7 +976,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       priority: ticket.priority,
       status: "Open" as const,
       createdAt: new Date().toISOString(),
-      raisedBy: session.email || "",
+      raisedBy: ticket.raisedBy || session.email || "Organizer",
       title: `${ticket.category} Request`
     };
     if (isConfigured && db) {
@@ -960,7 +989,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       setTickets((prev) => [ticketWithId, ...prev]);
     }
     addNotification({ userId: "organizer@college.edu", type: "action", title: `Support Ticket: ${ticket.category}`, body: ticket.description, priority: ticket.priority === "Critical" ? "high" : "normal", relatedTeamId: ticket.teamId });
-  }, [addNotification, session.email, activeHackathonId]);
+  }, [addNotification, session.email, activeHackathonId, hackathons]);
 
   const resolveTicket = useCallback(async (ticketId: string) => {
     if (isConfigured && db) {
@@ -1083,13 +1112,13 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   const createTicket = useCallback(async (ticket: Omit<Ticket, "id" | "createdAt" | "status">) => {
     const data = {
-      hackathonId: ticket.hackathonId || activeHackathonId || "",
+      hackathonId: ticket.hackathonId || activeHackathonId || (hackathons[0]?.id) || "hackathon-1",
       title: `${ticket.category} Request`,
       description: ticket.description,
       category: ticket.category,
       priority: ticket.priority,
       status: "Open" as const,
-      raisedBy: ticket.raisedBy,
+      raisedBy: ticket.raisedBy || session.email || "Organizer",
       createdAt: new Date().toISOString()
     };
     if (isConfigured && db) {
@@ -1098,7 +1127,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       setTickets((prev) => [{ ...data, id: `ticket-${Date.now()}` }, ...prev]);
     }
     addNotification({ userId: "organizer@college.edu", type: "action", title: `New Ticket: ${ticket.category}`, body: ticket.description, priority: ticket.priority === "Critical" ? "high" : "normal" });
-  }, [addNotification, activeHackathonId]);
+  }, [addNotification, activeHackathonId, hackathons, session.email]);
 
   const assignTicket = useCallback(async (ticketId: string, volunteerEmail: string) => {
     if (isConfigured && db) {
