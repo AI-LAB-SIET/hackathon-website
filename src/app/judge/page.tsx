@@ -884,7 +884,7 @@ export default function JudgeDashboard() {
                                   href={l.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="px-3 py-1.5 rounded-lg bg-blue-605 hover:bg-blue-700 text-white text-[10px] font-bold transition-colors cursor-pointer"
+                                  className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold transition-colors cursor-pointer"
                                 >
                                   Open Link
                                 </a>
