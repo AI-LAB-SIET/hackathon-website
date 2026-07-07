@@ -1519,17 +1519,21 @@ export default function ParticipantDashboard() {
                         </div>
 
                         {/* Custom Uploader Input */}
-                        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center bg-gray-50/20 dark:bg-gray-900/20">
-                          <input type="file" onChange={handleFileUpload} className="hidden" id="participant-file-upload" disabled={uploadingFile} />
-                          <label htmlFor="participant-file-upload" className="cursor-pointer flex flex-col items-center">
-                            <div className="text-4xl mb-3">📁</div>
-                            <div className="font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                              {uploadingFile ? "Uploading File..." : "Click to select a file"}
-                            </div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500 mb-4">Supported formats: PDF, PNG, JPG, PY, JS, MD · Max 10MB</div>
-                            <span className="px-5 py-2 rounded-xl bg-primary-green hover:bg-primary-dark text-white font-bold text-sm transition-colors shadow-md shadow-primary-green/10">Select File</span>
-                          </label>
-                        </div>
+                        {!isTeamLocked ? (
+                          <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center bg-gray-50/20 dark:bg-gray-900/20">
+                            <input type="file" onChange={handleFileUpload} className="hidden" id="participant-file-upload" disabled={uploadingFile} />
+                            <label htmlFor="participant-file-upload" className="cursor-pointer flex flex-col items-center">
+                              <div className="text-4xl mb-3">📁</div>
+                              <div className="font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                {uploadingFile ? "Uploading File..." : "Click to select a file"}
+                              </div>
+                              <div className="text-xs text-gray-400 dark:text-gray-500 mb-4">Supported formats: PDF, PNG, JPG, PY, JS, MD · Max 10MB</div>
+                              <span className="px-5 py-2 rounded-xl bg-primary-green hover:bg-primary-dark text-white font-bold text-sm transition-colors shadow-md shadow-primary-green/10">Select File</span>
+                            </label>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 p-2.5 rounded-xl inline-block">🔒 Abstract submissions are locked</p>
+                        )}
 
                         {/* File Listings */}
                         <div>
@@ -1555,9 +1559,11 @@ export default function ParticipantDashboard() {
                                     <a href={att.dataUrl} download={att.name} className="p-1 text-gray-500 hover:text-primary-green dark:text-gray-400 dark:hover:text-white transition-colors">
                                       <Download className="h-4 w-4" />
                                     </a>
-                                    <button onClick={() => handleDeleteAttachment(att.id)} className="p-1 text-gray-550 hover:text-red-650 dark:text-gray-400 dark:hover:text-red-400 transition-colors cursor-pointer">
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    {!isTeamLocked && (
+                                      <button onClick={() => handleDeleteAttachment(att.id)} className="p-1 text-gray-550 hover:text-red-650 dark:text-gray-400 dark:hover:text-red-400 transition-colors cursor-pointer">
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               ))}

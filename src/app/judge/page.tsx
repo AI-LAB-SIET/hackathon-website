@@ -68,7 +68,7 @@ const PDFViewer = ({ dataUrl, title }: { dataUrl: string; title: string }) => {
 
 export default function JudgeDashboard() {
   const router = useRouter();
-  const { session, teams, notifications, problemStatements, evaluateProject, markNotificationRead, markAllNotificationsRead, addProblemStatement, updateProblemStatement, archiveProblemStatement, addAnnouncement } = useAppState();
+  const { session, teams, notifications, problemStatements, evaluateProject, markNotificationRead, markAllNotificationsRead, addProblemStatement, updateProblemStatement, archiveProblemStatement, addAnnouncement, hackathons, activeHackathonId, setActiveHackathon } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -310,6 +310,25 @@ export default function JudgeDashboard() {
           {/* Header Bar — utility actions only; navigation handled by Sidebar */}
           <div className="flex items-center justify-end gap-2 mb-8">
             <div className="flex items-center gap-2">
+              {/* Hackathon Switcher */}
+              <div className="flex items-center gap-1.5 mr-2">
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 whitespace-nowrap hidden md:inline">
+                  Active:
+                </span>
+                <select
+                  value={activeHackathonId || ""}
+                  onChange={(e) => setActiveHackathon(e.target.value || null)}
+                  className="text-xs border border-gray-200 dark:border-gray-700 rounded-xl px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-bold focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer"
+                >
+                  <option value="">No Active Hackathon</option>
+                  {hackathons.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <ThemeToggle />
               {activeTab === "problems" && (
                 <button
