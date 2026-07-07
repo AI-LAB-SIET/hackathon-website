@@ -49,7 +49,7 @@ export default function ParticipantDashboard() {
     updateProjectDetails, updateTeamMembers,
     markNotificationRead, markAllNotificationsRead,
     logout, raiseTicket, getProfile, updateProfile,
-    registerTeam, deleteTeam, leaveTeam, sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest, teamRequests, activeHackathonId, hackathons,
+    registerTeam, deleteTeam, leaveTeam, sendJoinRequest, sendTeamInvite, respondToRequest, cancelRequest, teamRequests, activeHackathonId, hackathons, setActiveHackathon,
     foodTokens, foodMeals, userProfiles, templates,
     tickets
   } = useAppState();
@@ -218,8 +218,6 @@ export default function ParticipantDashboard() {
       { label: "Account Created", done: true },
       { label: "Team Registered", done: team ? team.status !== "PENDING" : false },
       { label: "Members Added (2+)", done: team ? team.members.length >= 2 : false },
-
-      { label: "Idea Submitted", done: team ? !!team.ideaSubmitted : false },
     ];
   }, [team]);
 
@@ -623,6 +621,52 @@ export default function ParticipantDashboard() {
                     </div>
                   </div>
                 </div>
+
+                {/* Concluded Hackathon Banner */}
+                {timeLeft?.status === "ended" && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
+                    <div className="flex flex-col items-center text-center mb-6">
+                      <div className="h-16 w-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+                        <Clock className="h-8 w-8 text-red-500" />
+                      </div>
+                      <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">
+                        {activeHackathon?.name || "This Hackathon"} has Concluded!
+                      </h2>
+                      <p className="text-gray-500 dark:text-gray-400 max-w-lg">
+                        Thank you for participating. You can still view your team and project details. 
+                        Ready for your next challenge? Register for an active hackathon below!
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {hackathons.filter(h => h.status === "active" || h.status === "upcoming").length > 0 ? (
+                        hackathons.filter(h => h.status === "active" || h.status === "upcoming").map(h => (
+                          <div key={h.id} className="border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex flex-col justify-between hover:border-primary-green/50 transition-colors">
+                            <div>
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="font-bold text-gray-900 dark:text-white">{h.name}</h3>
+                                <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase ${h.status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"}`}>
+                                  {h.status}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 line-clamp-2 mb-4">{h.description || "Join this exciting hackathon!"}</p>
+                            </div>
+                            <button
+                              onClick={() => setActiveHackathon(h.id)}
+                              className="w-full py-2 bg-primary-dark hover:bg-primary-green text-white rounded-lg text-sm font-bold transition-colors"
+                            >
+                              Register / Switch
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-full text-center py-6 text-gray-500 text-sm">
+                          No active hackathons available at the moment. Please check back later.
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Dynamic Hackathon Timer */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 text-center">
