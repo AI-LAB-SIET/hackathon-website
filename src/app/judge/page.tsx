@@ -420,7 +420,14 @@ export default function JudgeDashboard() {
                             {t.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-primary-dark dark:text-gray-100">{t.name}</div>
+                            <div className="font-semibold text-sm text-primary-dark dark:text-gray-100 flex items-center gap-2">
+                              <span className="truncate">{t.name}</span>
+                              {t.submitted ? (
+                                <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" title="Project Submitted" />
+                              ) : t.ideaSubmitted ? (
+                                <span className="h-1.5 w-1.5 rounded-full bg-purple-500 shrink-0" title="Idea Submitted" />
+                              ) : null}
+                            </div>
                             <div className="text-xs text-gray-400 dark:text-gray-500">{problemStatements.find((ps) => ps.id === t.problemStatementId)?.title || "—"}</div>
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
@@ -485,7 +492,24 @@ export default function JudgeDashboard() {
                           </span>
                         </div>
 
-                        <p className="text-xs text-gray-500 line-clamp-2 dark:text-gray-400">{team.projectDescription}</p>
+                        <p className="text-xs text-gray-500 line-clamp-2 dark:text-gray-400">{team.projectDescription || "No description provided."}</p>
+
+                        {/* Submissions Indicator */}
+                        <div className="flex flex-wrap gap-2">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide flex items-center">Submissions:</span>
+                          {team.ideaSubmitted ? (
+                            <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[10px] font-bold px-2 py-0.5 rounded-sm">Idea</span>
+                          ) : null}
+                          {team.submitted ? (
+                            <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-sm">Project</span>
+                          ) : null}
+                          {team.attachments && team.attachments.length > 0 ? (
+                            <span className="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 text-[10px] font-bold px-2 py-0.5 rounded-sm">{team.attachments.length} Attachments</span>
+                          ) : null}
+                          {(!team.ideaSubmitted && !team.submitted && (!team.attachments || team.attachments.length === 0)) && (
+                            <span className="text-gray-400 dark:text-gray-500 text-[10px] font-bold px-2 py-0.5">None yet</span>
+                          )}
+                        </div>
 
                         {reviewed && teamAvgScore !== null && (
                           <div className="flex items-center gap-2">

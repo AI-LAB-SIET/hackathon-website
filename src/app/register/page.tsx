@@ -30,8 +30,8 @@ function RegisterForm() {
 
   const hParam = searchParams.get("h");
 
-  // Filter out archived hackathons for registration
-  const availableHackathons = hackathons.filter(h => h.status !== "archived");
+  // Filter out archived and closed/locked hackathons for registration
+  const availableHackathons = hackathons.filter(h => h.status !== "archived" && h.registrationOpen);
 
   useEffect(() => {
     if (hParam && availableHackathons.length > 0) {

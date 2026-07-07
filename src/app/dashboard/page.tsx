@@ -639,8 +639,8 @@ export default function ParticipantDashboard() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {hackathons.filter(h => h.status === "active" || h.status === "upcoming").length > 0 ? (
-                        hackathons.filter(h => h.status === "active" || h.status === "upcoming").map(h => (
+                      {hackathons.filter(h => (h.status === "active" || h.status === "upcoming") && h.registrationOpen).length > 0 ? (
+                        hackathons.filter(h => (h.status === "active" || h.status === "upcoming") && h.registrationOpen).map(h => (
                           <div key={h.id} className="border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex flex-col justify-between hover:border-primary-green/50 transition-colors">
                             <div>
                               <div className="flex justify-between items-start mb-2">
