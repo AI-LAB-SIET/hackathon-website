@@ -32,7 +32,8 @@ const DEPT_OPTIONS = [
   "Computer Science & Engineering",
   "Electronics & Communication",
   "Information Technology",
-  "Artificial Intelligence & Data Science",
+  "Artificial Intelligence and Machine Learning",
+  "Artificial Intelligence and Data Science",
   "Mechanical Engineering",
   "Electrical Engineering",
   "Biotechnology",
@@ -73,7 +74,7 @@ export default function ParticipantDashboard() {
   const [profileNewSkill, setProfileNewSkill] = useState("");
   const [memberNewSkill, setMemberNewSkill] = useState("");
   const [profileEdit, setProfileEdit] = useState({
-    college: "", bio: "", skills: [] as string[], socialLinks: [] as { platform: string; url: string }[], profilePicture: "",
+    college: "", bio: "", skills: [] as string[], socialLinks: [] as { platform: string; url: string }[], profilePicture: "", department: "",
   });
   const [newSocialPlatform, setNewSocialPlatform] = useState("");
   const [newSocialUrl, setNewSocialUrl] = useState("");
@@ -119,6 +120,7 @@ export default function ParticipantDashboard() {
           skills: profile.skills || [],
           socialLinks: profile.socialLinks || [],
           profilePicture: profile.profilePicture || "",
+          department: profile.department || "",
         });
       }
     }
@@ -389,6 +391,7 @@ export default function ParticipantDashboard() {
         skills: profileEdit.skills,
         socialLinks: profileEdit.socialLinks,
         profilePicture: profileEdit.profilePicture,
+        department: profileEdit.department,
       });
       toast("Profile saved.", "success");
     }
@@ -1815,6 +1818,23 @@ export default function ParticipantDashboard() {
                       placeholder="e.g. SIET"
                       className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                     />
+                  </div>
+
+                  {/* Department */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Department</label>
+                    <select
+                      value={profileEdit.department}
+                      onChange={(e) => setProfileEdit((p) => ({ ...p, department: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Select department</option>
+                      {DEPT_OPTIONS.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Profile Picture URL */}

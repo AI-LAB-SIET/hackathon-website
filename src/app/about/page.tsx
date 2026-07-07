@@ -284,7 +284,10 @@ export default function About() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-row gap-6 w-full items-stretch justify-center">
+          <div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-row gap-6 w-full items-stretch justify-center"
+            onMouseLeave={() => setHoveredIdx(null)}
+          >
             {developers.map((member, idx) => {
               const liveProfile = devProfiles.find(p => p.login === member.login);
               const displayName = liveProfile?.name || member.name;
@@ -299,21 +302,21 @@ export default function About() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: idx * 0.08 }}
                   className="xl:h-auto"
+                  onMouseEnter={() => setHoveredIdx(idx)}
                   style={{
-                    flex: hoveredIdx === null ? "1 1 0%" : hoveredIdx === idx ? "1.5 1 0%" : "0.87 1 0%",
+                    flex: hoveredIdx === null ? "1 1 0%" : hoveredIdx === idx ? "1.8 1 0%" : "0.8 1 0%",
                     minWidth: "0",
-                    transition: "all 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
+                    transition: "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
                 >
                   <div
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                    className="p-5 rounded-3xl border border-input-border/30 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-300 shadow-2xs flex flex-col justify-between cursor-pointer relative h-full w-full animate-none"
+                    className="p-5 rounded-3xl border border-input-border/30 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs flex flex-col justify-between cursor-pointer relative h-full w-full animate-none"
                     style={{
                       opacity: hoveredIdx === null ? 1 : hoveredIdx === idx ? 1 : 0.7,
                       zIndex: hoveredIdx === idx ? 10 : 1,
                       borderColor: hoveredIdx === idx ? "rgba(88,204,2,0.35)" : undefined,
                       transform: hoveredIdx === idx ? "translateY(-6px)" : "translateY(0)",
+                      transition: "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
                     }}
                   >
                     <div>

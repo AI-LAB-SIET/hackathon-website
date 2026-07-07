@@ -18,6 +18,7 @@ const STEPS = [
 
 const DEPARTMENTS = [
   "Computer Science", "Information Technology", "Electronics & Communication",
+  "Artificial Intelligence and Machine Learning", "Artificial Intelligence and Data Science",
   "Electrical", "Mechanical", "Civil", "Chemical", "Biotechnology", "Other"
 ];
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
