@@ -83,6 +83,7 @@ const DocxViewer = ({ dataUrl, title }: { dataUrl: string; title: string }) => {
         uInt8Array[i] = raw.charCodeAt(i);
       }
       
+      // @ts-ignore
       import("mammoth").then(mammoth => {
         mammoth.convertToHtml({ arrayBuffer: uInt8Array.buffer })
           .then((result) => {
