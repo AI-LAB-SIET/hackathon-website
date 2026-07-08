@@ -270,3 +270,7 @@ export interface ProblemStatement {
 }
 
 export type Ticket = SupportTicket;
+
+declare module "mammoth" {
+  export function convertToHtml(input: { arrayBuffer: ArrayBuffer }): Promise<{ value: string; messages: any[] }>;
+}

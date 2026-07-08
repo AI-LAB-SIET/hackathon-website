@@ -66,6 +66,55 @@ const PDFViewer = ({ dataUrl, title }: { dataUrl: string; title: string }) => {
 };
 
 
+
+const DocxViewer = ({ dataUrl, title }: { dataUrl: string; title: string }) => {
+  const [html, setHtml] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!dataUrl) return;
+    try {
+      const parts = dataUrl.split(',');
+      if (parts.length !== 2) return;
+      const raw = window.atob(parts[1]);
+      const rawLength = raw.length;
+      const uInt8Array = new Uint8Array(rawLength);
+      for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+      }
+      
+      import("mammoth").then(mammoth => {
+        mammoth.convertToHtml({ arrayBuffer: uInt8Array.buffer })
+          .then((result) => {
+            setHtml(result.value);
+          })
+          .catch((err) => {
+            console.error(err);
+            setError("Failed to parse DOCX file");
+          });
+      });
+    } catch (e) {
+      console.error("Error decoding DOCX", e);
+      setError("Failed to decode DOCX file");
+    }
+  }, [dataUrl]);
+
+  if (error) {
+    return <div className="h-[400px] flex items-center justify-center text-red-500 text-sm border border-red-100 rounded-xl bg-red-50">{error}</div>;
+  }
+
+  if (!html) {
+    return <div className="h-[400px] flex items-center justify-center text-gray-500 text-sm border border-gray-100 dark:border-gray-800 rounded-xl">Loading DOCX...</div>;
+  }
+
+  return (
+    <div className="w-full h-[400px] border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 p-6 overflow-y-auto docx-preview-content">
+      <div dangerouslySetInnerHTML={{ __html: html }} className="prose prose-sm dark:prose-invert max-w-none" />
+    </div>
+  );
+};
+
+
 export default function JudgeDashboard() {
   const router = useRouter();
   const { session, teams, notifications, problemStatements, evaluateProject, markNotificationRead, markAllNotificationsRead, addProblemStatement, updateProblemStatement, archiveProblemStatement, addAnnouncement, hackathons, activeHackathonId, setActiveHackathon, updateHackathon } = useAppState();
@@ -868,6 +917,8 @@ export default function JudgeDashboard() {
                         else if (a.name.endsWith(".pdf")) icon = "📑";
                         else if (a.name.endsWith(".md") || a.name.endsWith(".txt")) icon = "📝";
                         else if (a.name.endsWith(".py") || a.name.endsWith(".js") || a.name.endsWith(".tsx")) icon = "💻";
+                        else if (a.name.endsWith(".doc") || a.name.endsWith(".docx")) icon = "📝";
+                        else if (a.name.endsWith(".ppt") || a.name.endsWith(".pptx")) icon = "📊";
                         
                         return { id: `file-${a.id}`, name: a.name, icon, type: "file", attachment: a };
                       });
@@ -908,13 +959,15 @@ export default function JudgeDashboard() {
                         
                         const isImage = attachment.type.startsWith("image/");
                         const isPdf = attachment.name.endsWith(".pdf");
+                        const isDocx = attachment.name.endsWith(".docx") || attachment.name.endsWith(".doc");
+                        const isPpt = attachment.name.endsWith(".pptx") || attachment.name.endsWith(".ppt");
                         
                         return (
                           <div className="space-y-4">
                             <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
                               <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">{attachment.name}</h4>
                               <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 px-2 py-0.5 rounded font-bold uppercase">
-                                {isImage ? "Image Preview" : isPdf ? "PDF Preview" : "File Viewer"}
+                                {isImage ? "Image Preview" : isPdf ? "PDF Preview" : isDocx ? "DOCX Preview" : isPpt ? "PPT Preview" : "File Viewer"}
                               </span>
                             </div>
                             
@@ -926,6 +979,8 @@ export default function JudgeDashboard() {
                               />
                             ) : isPdf ? (
                               <PDFViewer dataUrl={attachment.dataUrl} title={attachment.name} />
+                            ) : isDocx ? (
+                              <DocxViewer dataUrl={attachment.dataUrl} title={attachment.name} />
                             ) : (
                               <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-6 bg-gray-50/50 dark:bg-gray-900 flex flex-col items-center justify-center text-center space-y-4 shadow-inner min-h-[300px]">
                                 <FileText className="h-12 w-12 text-gray-400" />
