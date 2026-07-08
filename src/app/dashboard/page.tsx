@@ -140,9 +140,14 @@ export default function ParticipantDashboard() {
   const isMemberStillInTeam = actualTeam ? actualTeam.members.some(m => m.email === session.email) : false;
   const team = isMemberStillInTeam ? actualTeam : undefined;
 
-  const isTeamLocked = team 
-    ? hackathons.find((h) => h.id === team.hackathonId)?.teamsLocked === true
-    : activeHackathon?.teamsLocked === true;
+  const teamHackathon = team 
+    ? hackathons.find((h) => h.id === team.hackathonId)
+    : activeHackathon;
+
+  const isTeamLocked = teamHackathon?.teamsLocked === true || 
+                       teamHackathon?.status === "ended" || 
+                       teamHackathon?.status === "completed" || 
+                       teamHackathon?.status === "archived";
 
   const isProblemStatementRevealed = !activeHackathon?.problemStatementRevealTime || new Date().getTime() >= new Date(activeHackathon.problemStatementRevealTime).getTime();
 
