@@ -150,6 +150,7 @@ export default function ParticipantDashboard() {
                        teamHackathon?.status === "archived";
 
   const isProblemStatementRevealed = !activeHackathon?.problemStatementRevealTime || new Date().getTime() >= new Date(activeHackathon.problemStatementRevealTime).getTime();
+  const isResultRevealed = activeHackathon?.resultsRevealTime ? new Date().getTime() >= new Date(activeHackathon.resultsRevealTime).getTime() : false;
 
   // Auto-sync for kicked members
   useEffect(() => {
@@ -240,7 +241,7 @@ export default function ParticipantDashboard() {
   const leader = team ? (team.members.find((m) => m.isLeader) || team.members[0]) : null;
   const currentUser = team ? (team.members.find((m) => m.email === session.email) || leader) : null;
   const problemStatement = team ? problemStatements.find((t) => t.id === team.problemStatementId) : null;
-  const avgScore = team && team.evaluations && team.evaluations.length > 0
+  const avgScore = isResultRevealed && team && team.evaluations && team.evaluations.length > 0
     ? Math.round(team.evaluations.reduce((acc, e) => acc + (e.innovation + e.feasibility + e.presentation) / 3, 0) / team.evaluations.length)
     : null;
   const regPercent = regChecklist.length > 0
@@ -621,7 +622,7 @@ export default function ParticipantDashboard() {
                     <div className="flex items-center gap-3">
                       {team && team.status === "APPROVED" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/30 border border-emerald-400/30 text-xs font-bold text-emerald-100"><CheckCircle className="h-3.5 w-3.5" /> Approved</span>}
                       {team && team.status === "PENDING" && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/30 text-xs font-bold text-amber-100"><Clock className="h-3.5 w-3.5" /> Pending Approval</span>}
-                      {avgScore !== null && isProblemStatementRevealed && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-xs font-bold text-blue-100">Score: {avgScore}/10</span>}
+                      {avgScore !== null && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-xs font-bold text-blue-100">Score: {avgScore}/10</span>}
                       {!team && <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/20 border border-red-400/30 text-xs font-bold text-red-100"><Info className="h-3.5 w-3.5" /> No Team</span>}
                     </div>
                   </div>
@@ -1468,7 +1469,7 @@ export default function ParticipantDashboard() {
                         )}
 
                         {/* Judge Feedback */}
-                        {(team.evaluations || []).length > 0 && (
+                        {isResultRevealed && (team.evaluations || []).length > 0 && (
                           <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4">
                             <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Judge Evaluations</div>
                             {team.evaluations!.map((ev, i) => {
