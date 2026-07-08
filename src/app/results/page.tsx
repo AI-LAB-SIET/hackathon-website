@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 function ResultsContent() {
-  const { hackathons, teams, problemStatements } = useAppState();
+  const { hackathons, teams, problemStatements, session } = useAppState();
   const searchParams = useSearchParams();
   const hParam = searchParams.get("h");
 
@@ -50,6 +50,17 @@ function ResultsContent() {
   const selectedHackathon = useMemo(() => {
     return eligibleHackathons.find((h) => h.id === selectedHackId);
   }, [selectedHackId, eligibleHackathons]);
+
+  const isResultsVisible = useMemo(() => {
+    if (!selectedHackathon) return false;
+    if (session?.role === "admin" || session?.role === "judge") return true;
+    
+    // Do not fallback to endDate, it must be explicitly configured
+    const revealTimeStr = selectedHackathon.resultsRevealTime;
+    if (!revealTimeStr) return false;
+    
+    return new Date().getTime() >= new Date(revealTimeStr).getTime();
+  }, [selectedHackathon, session]);
 
   // Calculate scores and ranks
   const rankedTeams = useMemo(() => {
@@ -147,7 +158,7 @@ function ResultsContent() {
             </p>
             {selectedHackathon && (
               <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 font-bold">
-                Results Reveal Time: {selectedHackathon.resultsRevealTime ? new Date(selectedHackathon.resultsRevealTime).toLocaleString() : new Date(selectedHackathon.endDate).toLocaleString()}
+                Results Reveal Time: {selectedHackathon.resultsRevealTime ? new Date(selectedHackathon.resultsRevealTime).toLocaleString() : "Pending"}
               </p>
             )}
           </div>
@@ -183,6 +194,14 @@ function ResultsContent() {
             <h3 className="font-extrabold text-gray-700 dark:text-gray-300">No Results Available</h3>
             <p className="text-xs text-gray-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">
               Leaderboards are only rendered for active or completed hackathons. Check back once a sprint goes live!
+            </p>
+          </div>
+        ) : !isResultsVisible ? (
+          <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <h3 className="font-extrabold text-gray-700 dark:text-gray-300">Results Hidden</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">
+              The results for this hackathon will be revealed {selectedHackathon?.resultsRevealTime ? `on ${new Date(selectedHackathon.resultsRevealTime).toLocaleString()}` : "soon"}. Please check back later!
             </p>
           </div>
         ) : (
