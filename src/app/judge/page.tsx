@@ -522,10 +522,15 @@ export default function JudgeDashboard() {
                           {team.submitted ? (
                             <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-sm">Project</span>
                           ) : null}
+                          {team.githubUrl ? (
+                            <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-sm">GitHub</span>
+                          ) : (
+                            <span className="bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-sm">No GitHub</span>
+                          )}
                           {team.attachments && team.attachments.length > 0 ? (
                             <span className="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 text-[10px] font-bold px-2 py-0.5 rounded-sm">{team.attachments.length} Attachments</span>
                           ) : null}
-                          {(!team.ideaSubmitted && !team.submitted && (!team.attachments || team.attachments.length === 0)) && (
+                          {(!team.ideaSubmitted && !team.submitted && !team.githubUrl && (!team.attachments || team.attachments.length === 0)) && (
                             <span className="text-gray-400 dark:text-gray-500 text-[10px] font-bold px-2 py-0.5">None yet</span>
                           )}
                         </div>
@@ -1093,9 +1098,12 @@ export default function JudgeDashboard() {
                     {/* Previous Feedback */}
                     {(selectedTeam.evaluations || []).length > 0 && (
                       <div>
-                        <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Previous Feedback</div>
+                        <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Previous Feedback & Scores</div>
                         {selectedTeam.evaluations!.map((ev, i) => (
-                          <div key={i} className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-200">{ev.feedback}</div>
+                          <div key={i} className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-200">
+                            <div className="font-bold mb-1">Score: {ev.innovation + ev.feasibility + ev.presentation + (ev.technicalDepth || 0) + (ev.aiUsage || 0)}/50</div>
+                            <div>{ev.feedback}</div>
+                          </div>
                         ))}
                       </div>
                     )}
