@@ -145,6 +145,11 @@ function ResultsContent() {
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-semibold">
               Live standings for active sprints and final podium records for completed events.
             </p>
+            {selectedHackathon && (
+              <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 font-bold">
+                Results Reveal Time: {selectedHackathon.resultsRevealTime ? new Date(selectedHackathon.resultsRevealTime).toLocaleString() : new Date(selectedHackathon.endDate).toLocaleString()}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {selectedHackathon && (

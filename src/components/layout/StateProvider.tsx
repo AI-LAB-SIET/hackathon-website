@@ -766,7 +766,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       if (teamSnap.exists()) {
         const teamData = teamSnap.data();
         const evals = teamData.evaluations || [];
-        const idx = evals.findIndex((e: any) => e.judgeEmail === evaluation.judgeEmail);
+        const idx = evals.findIndex((e: { judgeEmail: string }) => e.judgeEmail === evaluation.judgeEmail);
         const updatedEvals = [...evals];
         if (idx > -1) updatedEvals[idx] = evaluation;
         else updatedEvals.push(evaluation);

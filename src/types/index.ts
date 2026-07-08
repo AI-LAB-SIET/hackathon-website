@@ -31,6 +31,7 @@ export interface Hackathon {
   registrationLink?: string;  // computed: /register?h=slug
   teamsLocked?: boolean;      // NEW — permanently locks all teams under this hackathon
   problemStatementRevealTime?: string; // ISO datetime for revealing problem statements
+  resultsRevealTime?: string; // ISO datetime for revealing results
 }
 
 // ─── Team ─────────────────────────────────────────────────────────────────────

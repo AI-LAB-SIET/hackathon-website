@@ -105,6 +105,7 @@ export default function AdminDashboard() {
     maxTeamSize: 4,
     status: "upcoming" as Hackathon["status"],
     problemStatementRevealTime: "",
+    resultsRevealTime: "",
   });
 
   // Food Meal form states
@@ -539,7 +540,8 @@ export default function AdminDashboard() {
       minTeamSize: 1,
       maxTeamSize: 4,
       status: "upcoming",
-      problemStatementRevealTime: ""
+      problemStatementRevealTime: "",
+      resultsRevealTime: ""
     });
     setHackathonModalOpen(true);
   };
@@ -557,7 +559,8 @@ export default function AdminDashboard() {
       minTeamSize: h.minTeamSize || 1,
       maxTeamSize: h.maxTeamSize || 4,
       status: h.status,
-      problemStatementRevealTime: h.problemStatementRevealTime ? new Date(h.problemStatementRevealTime).toISOString().slice(0, 16) : ""
+      problemStatementRevealTime: h.problemStatementRevealTime ? new Date(h.problemStatementRevealTime).toISOString().slice(0, 16) : "",
+      resultsRevealTime: h.resultsRevealTime ? new Date(h.resultsRevealTime).toISOString().slice(0, 16) : ""
     });
     setHackathonModalOpen(true);
   };
@@ -587,6 +590,7 @@ export default function AdminDashboard() {
         status: hackathonForm.status,
         createdBy: session.email || "admin@siet.edu",
         problemStatementRevealTime: hackathonForm.problemStatementRevealTime ? new Date(hackathonForm.problemStatementRevealTime).toISOString() : "",
+        resultsRevealTime: hackathonForm.resultsRevealTime ? new Date(hackathonForm.resultsRevealTime).toISOString() : "",
       };
 
       if (editingHackathon) {
@@ -1592,6 +1596,51 @@ export default function AdminDashboard() {
                              onClick={() => {
                                updateHackathon(activeHackathon.id, { problemStatementRevealTime: "" });
                                toast("Problem statements revealed immediately.", "success");
+                             }}
+                             className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs font-bold whitespace-nowrap cursor-pointer"
+                           >
+                             Reveal Now
+                           </button>
+                        )}
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase ${isRevealed ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'}`}>
+                          {isRevealed ? 'Revealed' : 'Locked'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── Results Reveal Settings ── */}
+                {(() => {
+                  const activeHackathon = hackathons.find(h => h.id === activeHackathonId);
+                  if (!activeHackathon) return null;
+                  const isRevealed = activeHackathon.resultsRevealTime && new Date().getTime() >= new Date(activeHackathon.resultsRevealTime).getTime();
+                  return (
+                    <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-primary-dark dark:text-gray-100 flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-primary-green" /> Results Reveal Time
+                        </h3>
+                        <p className="text-[10px] text-gray-500 mt-1 max-w-md">Set a specific date & time to automatically reveal the hackathon results (leaderboard standings) to all participants.</p>
+                      </div>
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <input
+                          type="datetime-local"
+                          className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-primary-green"
+                          value={activeHackathon.resultsRevealTime ? new Date(new Date(activeHackathon.resultsRevealTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateHackathon(activeHackathon.id, { 
+                              resultsRevealTime: val ? new Date(val).toISOString() : "" 
+                            });
+                            toast(val ? "Results reveal time updated." : "Results reveal time cleared.", "success");
+                          }}
+                        />
+                        {activeHackathon.resultsRevealTime && (
+                           <button
+                             onClick={() => {
+                               updateHackathon(activeHackathon.id, { resultsRevealTime: new Date().toISOString() });
+                               toast("Results revealed immediately.", "success");
                              }}
                              className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs font-bold whitespace-nowrap cursor-pointer"
                            >
