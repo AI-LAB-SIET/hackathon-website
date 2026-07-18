@@ -287,7 +287,7 @@ export default function Contact() {
 
             <Input
               label="College Email ID"
-              placeholder="email@college.edu"
+              placeholder="email@srishakthi.ac.in"
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}

@@ -197,7 +197,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input
               label="Email"
-              placeholder="e.g. name@college.edu"
+              placeholder="e.g. name@srishakthi.ac.in"
               type="text"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setFirebaseError(""); setError(""); setIsUnverified(false); }}

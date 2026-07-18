@@ -2422,7 +2422,7 @@ export default function AdminDashboard() {
             type="email"
             value={memberForm.email}
             onChange={(e) => setMemberForm((p) => ({ ...p, email: e.target.value }))}
-            placeholder="email@college.edu"
+            placeholder="email@srishakthi.ac.in"
           />
           <Input
             label={editingMember ? "Change Password (optional)" : "Password *"}
@@ -2658,7 +2658,7 @@ export default function AdminDashboard() {
             type="email"
             value={participantForm.email}
             onChange={(e) => setParticipantForm((p) => ({ ...p, email: e.target.value }))}
-            placeholder="email@college.edu"
+            placeholder="email@srishakthi.ac.in"
           />
           <div className="flex items-center gap-3">
             <input

@@ -50,7 +50,16 @@ function RegisterForm() {
     if (!account.name.trim()) errs.name = "Full name is required";
     if (!account.college.trim()) errs.college = "College name is required";
     if (!account.hostelStatus) errs.hostelStatus = "Hosteller/Dayscholar status is required";
-    if (!account.email.includes("@")) errs.email = "Valid email is required";
+
+    // Validate email format and restrict to college domains
+    const emailLower = account.email.toLowerCase().trim();
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@(srishakthi\.ac\.in|siet\.ac\.in)$/i;
+    if (!emailLower) {
+      errs.email = "College email is required";
+    } else if (!emailPattern.test(emailLower)) {
+      errs.email = "Please use a valid college email (@srishakthi.ac.in or @siet.ac.in)";
+    }
+
     if (account.password.length < 6) errs.password = "Must be at least 6 characters";
     if (account.password !== account.confirm) errs.confirm = "Passwords do not match";
     if (!selectedHackathonId) errs.hackathonId = "Selecting a hackathon is required";
@@ -148,10 +157,9 @@ function RegisterForm() {
               value={account.hostelStatus}
               onChange={(e) => setAccount((p) => ({ ...p, hostelStatus: e.target.value as "hosteller" | "dayscholar" }))}
               className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-900 focus:outline-none transition-all duration-200 text-sm dark:bg-gray-900 dark:text-gray-100
-                ${
-                  errors.hostelStatus
-                    ? "border-red-500 focus:ring-1 focus:ring-red-500"
-                    : "border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green shadow-[0_2px_4px_rgba(0,100,0,0.02)] dark:border-gray-700 dark:hover:border-primary-green"
+                ${errors.hostelStatus
+                  ? "border-red-500 focus:ring-1 focus:ring-red-500"
+                  : "border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green shadow-[0_2px_4px_rgba(0,100,0,0.02)] dark:border-gray-700 dark:hover:border-primary-green"
                 }`}
             >
               <option value="">Select status</option>
@@ -171,7 +179,7 @@ function RegisterForm() {
             </div>
             <Input
               label="College Email"
-              placeholder="you@college.edu"
+              placeholder="you@srishakthi.ac.in"
               type="email"
               value={account.email}
               onChange={(e) => setAccount((p) => ({ ...p, email: e.target.value }))}
