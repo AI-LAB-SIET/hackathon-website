@@ -10,6 +10,7 @@ export interface Participant {
   skills: string[];
   github?: string;
   isLeader?: boolean;
+  hostelStatus?: "hosteller" | "dayscholar";
 }
 
 // ─── Hackathon ────────────────────────────────────────────────────────────────
@@ -238,6 +239,7 @@ export interface UserProfile {
   registerNumber?: string;
   teamSetupDone?: boolean;
   assignedArea?: string;
+  hostelStatus?: "hosteller" | "dayscholar";
 }
 
 export interface FileAttachment {
@@ -433,6 +435,7 @@ export interface UserProfile {
   registerNumber?: string;
   teamSetupDone?: boolean;
   assignedArea?: string;
+  hostelStatus?: "hosteller" | "dayscholar";
 }
 
 export interface FileAttachment {

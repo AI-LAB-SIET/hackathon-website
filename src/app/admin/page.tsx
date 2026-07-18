@@ -163,6 +163,7 @@ export default function AdminDashboard() {
   const [profileForm, setProfileForm] = useState({
     name: profile?.name || session.name || "",
     college: profile?.college || "",
+    hostelStatus: (profile?.hostelStatus || "") as "hosteller" | "dayscholar" | "",
     bio: profile?.bio || "",
     skills: profile?.skills?.join(", ") || "",
     socialLinks: profile?.socialLinks || [] as { platform: string; url: string }[],
@@ -178,6 +179,7 @@ export default function AdminDashboard() {
       setProfileForm({
         name: profile.name || session.name || "",
         college: profile.college || "",
+        hostelStatus: profile.hostelStatus || "",
         bio: profile.bio || "",
         skills: profile.skills?.join(", ") || "",
         socialLinks: profile.socialLinks || [],
@@ -884,9 +886,12 @@ export default function AdminDashboard() {
   // ─── PROFILE ───
   const handleSaveProfile = () => {
     if (session.email) {
+      if (!profileForm.college.trim()) { toast("College Name is required.", "error"); return; }
+      if (!profileForm.hostelStatus) { toast("Please select whether you are a Hosteller or Dayscholar.", "error"); return; }
       updateProfile(session.email, {
         name: profileForm.name,
         college: profileForm.college,
+        hostelStatus: profileForm.hostelStatus,
         bio: profileForm.bio,
         skills: profileForm.skills.split(",").map((s) => s.trim()).filter(Boolean),
         socialLinks: profileForm.socialLinks,
@@ -2363,6 +2368,20 @@ export default function AdminDashboard() {
                       placeholder="e.g. SIET"
                     />
                     <div>
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
+                        Hosteller / Dayscholar
+                      </label>
+                      <select
+                        value={profileForm.hostelStatus}
+                        onChange={(e) => setProfileForm((p) => ({ ...p, hostelStatus: e.target.value as "hosteller" | "dayscholar" }))}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:border-primary-green bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="">Select status</option>
+                        <option value="hosteller">Hosteller</option>
+                        <option value="dayscholar">Dayscholar</option>
+                      </select>
+                    </div>
+                    <div>
                       <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">Bio</label>
                       <textarea
                         rows={3}
@@ -2909,7 +2928,7 @@ export default function AdminDashboard() {
                     <Avatar name={m.name} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-primary-dark dark:text-gray-100">{m.name} {m.isLeader && <span className="text-[10px] text-amber-600 dark:text-amber-400">(Leader)</span>}</p>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{m.email} · {m.department}</p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{m.email} · {m.department} · {m.hostelStatus ? (m.hostelStatus === "hosteller" ? "Hosteller" : "Dayscholar") : "N/A"}</p>
                     </div>
                   </div>
                 ))}

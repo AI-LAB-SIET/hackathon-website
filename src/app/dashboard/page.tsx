@@ -75,7 +75,7 @@ export default function ParticipantDashboard() {
   const [profileNewSkill, setProfileNewSkill] = useState("");
   const [memberNewSkill, setMemberNewSkill] = useState("");
   const [profileEdit, setProfileEdit] = useState({
-    college: "", bio: "", skills: [] as string[], socialLinks: [] as { platform: string; url: string }[], profilePicture: "", department: "",
+    college: "", hostelStatus: "" as "hosteller" | "dayscholar" | "", bio: "", skills: [] as string[], socialLinks: [] as { platform: string; url: string }[], profilePicture: "", department: "",
   });
   const [newSocialPlatform, setNewSocialPlatform] = useState("");
   const [newSocialUrl, setNewSocialUrl] = useState("");
@@ -117,6 +117,7 @@ export default function ParticipantDashboard() {
       if (profile) {
         setProfileEdit({
           college: profile.college || "",
+          hostelStatus: profile.hostelStatus || "",
           bio: profile.bio || "",
           skills: profile.skills || [],
           socialLinks: profile.socialLinks || [],
@@ -396,8 +397,11 @@ export default function ParticipantDashboard() {
 
   const handleSaveProfile = () => {
     if (session.email) {
+      if (!profileEdit.college.trim()) { toast("College Name is required.", "error"); return; }
+      if (!profileEdit.hostelStatus) { toast("Please select whether you are a Hosteller or Dayscholar.", "error"); return; }
       updateProfile(session.email, {
         college: profileEdit.college,
+        hostelStatus: profileEdit.hostelStatus,
         bio: profileEdit.bio,
         skills: profileEdit.skills,
         socialLinks: profileEdit.socialLinks,
@@ -453,6 +457,7 @@ export default function ParticipantDashboard() {
       year: profile?.year || "",
       skills: profile?.skills || [],
       isLeader: true,
+      hostelStatus: profile?.hostelStatus || undefined,
     };
     const hackathonId = session.currentHackathonId || activeHackathonId || "";
     if (!hackathonId) {
@@ -890,7 +895,9 @@ export default function ParticipantDashboard() {
                                      {m.name}
                                      {isLeaderMember && <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-1 rounded-full shrink-0">Leader</span>}
                                    </div>
-                                   <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{m.email}</div>
+                                   <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                                     {m.email} · {memberProfile?.hostelStatus ? (memberProfile.hostelStatus === "hosteller" ? "Hosteller" : "Dayscholar") : m.hostelStatus ? (m.hostelStatus === "hosteller" ? "Hosteller" : "Dayscholar") : "N/A"}
+                                   </div>
                                  </div>
                                  {!isTeamLocked && !isLeaderMember && team.members.find(memb => memb.email === session.email)?.isLeader && (
                                    <button onClick={() => handleRemoveMember(m.email)} className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
@@ -1887,6 +1894,20 @@ export default function ParticipantDashboard() {
                       placeholder="e.g. SIET"
                       className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                     />
+                  </div>
+
+                  {/* Hosteller / Dayscholar */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5">Hosteller / Dayscholar</label>
+                    <select
+                      value={profileEdit.hostelStatus}
+                      onChange={(e) => setProfileEdit((p) => ({ ...p, hostelStatus: e.target.value as "hosteller" | "dayscholar" }))}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Select status</option>
+                      <option value="hosteller">Hosteller</option>
+                      <option value="dayscholar">Dayscholar</option>
+                    </select>
                   </div>
 
                   {/* Department */}

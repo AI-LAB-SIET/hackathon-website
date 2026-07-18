@@ -38,6 +38,7 @@ export default function Onboarding() {
     phone: "",
     department: "",
     year: "",
+    hostelStatus: "" as "hosteller" | "dayscholar" | "",
   });
 
   // Redirect if not logged in or already onboarded
@@ -55,6 +56,7 @@ export default function Onboarding() {
     if (!personal.phone.trim()) errs.phone = "Phone number is required";
     if (!personal.department) errs.department = "Department is required";
     if (!personal.year) errs.year = "Year of study is required";
+    if (!personal.hostelStatus) errs.hostelStatus = "Hosteller/Dayscholar status is required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -74,6 +76,7 @@ export default function Onboarding() {
           phone: personal.phone,
           department: personal.department,
           year: personal.year,
+          hostelStatus: personal.hostelStatus as "hosteller" | "dayscholar",
           onboarded: true,
         });
       }
@@ -189,6 +192,21 @@ export default function Onboarding() {
                       {errors.year && <p className="text-xs text-red-500 mt-1">{errors.year}</p>}
                     </div>
                   </div>
+
+                  {/* Hosteller / Dayscholar */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">Hosteller / Dayscholar</label>
+                    <select
+                      value={personal.hostelStatus}
+                      onChange={(e) => setPersonal((p) => ({ ...p, hostelStatus: e.target.value as "hosteller" | "dayscholar" }))}
+                      className={`w-full border rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/50 ${errors.hostelStatus ? "border-red-400" : "border-gray-200 dark:border-gray-600"}`}
+                    >
+                      <option value="">Select status</option>
+                      <option value="hosteller">Hosteller</option>
+                      <option value="dayscholar">Dayscholar</option>
+                    </select>
+                    {errors.hostelStatus && <p className="text-xs text-red-500 mt-1">{errors.hostelStatus}</p>}
+                  </div>
                 </motion.div>
               )}
 
@@ -209,6 +227,7 @@ export default function Onboarding() {
                         <p><strong>Register Number:</strong> {personal.registerNumber}</p>
                         <p><strong>Department:</strong> {personal.department}</p>
                         <p><strong>Year of Study:</strong> {personal.year}</p>
+                        <p><strong>Hosteller/Dayscholar:</strong> {personal.hostelStatus === "hosteller" ? "Hosteller" : "Dayscholar"}</p>
                         <p><strong>Phone Number:</strong> {personal.phone}</p>
                       </div>
                     </div>

@@ -63,6 +63,7 @@ export default function VolunteerDashboard() {
   // Profile form state
   const [profileName, setProfileName] = useState("");
   const [profileCollege, setProfileCollege] = useState("");
+  const [profileHostelStatus, setProfileHostelStatus] = useState<"hosteller" | "dayscholar" | "">("");
   const [profileBio, setProfileBio] = useState("");
   const [profileSkills, setProfileSkills] = useState("");
   const [profileSocialLinks, setProfileSocialLinks] = useState<{ platform: string; url: string }[]>([]);
@@ -80,6 +81,7 @@ export default function VolunteerDashboard() {
       if (profile) {
         setProfileName(profile.name || "");
         setProfileCollege(profile.college || "");
+        setProfileHostelStatus(profile.hostelStatus || "");
         setProfileBio(profile.bio || "");
         setProfileSkills((profile.skills || []).join(", "));
         setProfileSocialLinks(profile.socialLinks || []);
@@ -164,9 +166,12 @@ export default function VolunteerDashboard() {
 
   const handleSaveProfile = () => {
     if (!session.email) return;
+    if (!profileCollege.trim()) { toast("College Name is required.", "error"); return; }
+    if (!profileHostelStatus) { toast("Please select whether you are a Hosteller or Dayscholar.", "error"); return; }
     updateProfile(session.email, {
       name: profileName,
       college: profileCollege,
+      hostelStatus: profileHostelStatus,
       bio: profileBio,
       skills: profileSkills.split(",").map((s) => s.trim()).filter(Boolean),
       socialLinks: profileSocialLinks,
@@ -542,6 +547,20 @@ export default function VolunteerDashboard() {
                           placeholder="e.g. SIET"
                           className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                         />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">
+                          Hosteller / Dayscholar
+                        </label>
+                        <select
+                          value={profileHostelStatus}
+                          onChange={(e) => setProfileHostelStatus(e.target.value as "hosteller" | "dayscholar")}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                        >
+                          <option value="">Select status</option>
+                          <option value="hosteller">Hosteller</option>
+                          <option value="dayscholar">Dayscholar</option>
+                        </select>
                       </div>
                       <div>
                         <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">

@@ -185,6 +185,7 @@ export async function signUpWithEmail(
   password: string,
   name: string,
   college: string,
+  hostelStatus: "hosteller" | "dayscholar",
   currentHackathonId?: string
 ): Promise<FirebaseAuthResult> {
   if (!isConfigured || !auth || !db) {
@@ -209,6 +210,7 @@ export async function signUpWithEmail(
       email,
       displayName: name,
       college,
+      hostelStatus,
       role: 'participant' as AppRole,
       verified: false,
       teamSetupDone: false,
@@ -342,6 +344,7 @@ export async function writeUserProfile(
     college: string;
     department: string;
     year: number;
+    hostelStatus: "hosteller" | "dayscholar";
     createdBy: string;
     mustChangePassword: boolean;
     disabled: boolean;

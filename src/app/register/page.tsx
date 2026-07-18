@@ -20,7 +20,7 @@ function RegisterForm() {
   const { toast } = useToast();
   const { hackathons, addProfile } = useAppState();
 
-  const [account, setAccount] = useState({ name: "", email: "", college: "", password: "", confirm: "" });
+  const [account, setAccount] = useState({ name: "", email: "", college: "", hostelStatus: "" as "hosteller" | "dayscholar" | "", password: "", confirm: "" });
   const [selectedHackathonId, setSelectedHackathonId] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -49,6 +49,7 @@ function RegisterForm() {
     const errs: Record<string, string> = {};
     if (!account.name.trim()) errs.name = "Full name is required";
     if (!account.college.trim()) errs.college = "College name is required";
+    if (!account.hostelStatus) errs.hostelStatus = "Hosteller/Dayscholar status is required";
     if (!account.email.includes("@")) errs.email = "Valid email is required";
     if (account.password.length < 6) errs.password = "Must be at least 6 characters";
     if (account.password !== account.confirm) errs.confirm = "Passwords do not match";
@@ -63,7 +64,14 @@ function RegisterForm() {
     setSubmitting(true);
     try {
       if (isConfigured) {
-        await signUpWithEmail(account.email, account.password, account.name, account.college, selectedHackathonId);
+        await signUpWithEmail(
+          account.email,
+          account.password,
+          account.name,
+          account.college,
+          account.hostelStatus as "hosteller" | "dayscholar",
+          selectedHackathonId
+        );
       } else {
         // In local mock mode, simulate registration and save user profile
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -73,6 +81,7 @@ function RegisterForm() {
           email: account.email,
           name: account.name,
           college: account.college,
+          hostelStatus: account.hostelStatus as "hosteller" | "dayscholar",
           displayName: account.name,
           role: "participant" as const,
           currentHackathonId: selectedHackathonId,
@@ -129,6 +138,31 @@ function RegisterForm() {
               error={errors.college}
               className="pl-9"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-primary-dark select-none dark:text-gray-200 block mb-1.5">
+              Hosteller / Dayscholar
+            </label>
+            <select
+              value={account.hostelStatus}
+              onChange={(e) => setAccount((p) => ({ ...p, hostelStatus: e.target.value as "hosteller" | "dayscholar" }))}
+              className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-900 focus:outline-none transition-all duration-200 text-sm dark:bg-gray-900 dark:text-gray-100
+                ${
+                  errors.hostelStatus
+                    ? "border-red-500 focus:ring-1 focus:ring-red-500"
+                    : "border-input-border hover:border-primary-green focus:ring-2 focus:ring-primary-green focus:border-primary-green shadow-[0_2px_4px_rgba(0,100,0,0.02)] dark:border-gray-700 dark:hover:border-primary-green"
+                }`}
+            >
+              <option value="">Select status</option>
+              <option value="hosteller">Hosteller</option>
+              <option value="dayscholar">Dayscholar</option>
+            </select>
+            {errors.hostelStatus && (
+              <span className="text-xs text-red-600 font-medium mt-1 block" role="alert">
+                {errors.hostelStatus}
+              </span>
+            )}
           </div>
 
           <div className="relative">
