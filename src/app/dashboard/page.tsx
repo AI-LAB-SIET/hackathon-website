@@ -663,7 +663,7 @@ export default function ParticipantDashboard() {
                       </div>
                     </div>
                     <a
-                      href="https://chat.whatsapp.com/ai-lab-hackathon"
+                      href="https://chat.whatsapp.com/I45ihbrdcNm90cxfweTuqo?s=sw&p=a&ilr=0"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 font-extrabold text-sm shadow-md transition-all group animate-pulse-subtle"
@@ -1881,7 +1881,7 @@ export default function ParticipantDashboard() {
 
                 {/* WhatsApp + Emergency Contact */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <a href="https://chat.whatsapp.com/ai-lab-hackathon" target="_blank" rel="noopener noreferrer"
+                  <a href="https://chat.whatsapp.com/I45ihbrdcNm90cxfweTuqo?s=sw&p=a&ilr=0" target="_blank" rel="noopener noreferrer"
                     className="group flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:border-primary-green/30 hover:shadow-md transition-all cursor-pointer">
                     <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"><MessageCircle className="h-5 w-5" /></div>
                     <div className="flex-1 min-w-0">
