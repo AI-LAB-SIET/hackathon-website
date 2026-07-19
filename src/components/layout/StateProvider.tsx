@@ -212,7 +212,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
               startDate: "2026-07-01",
               endDate: "2026-07-10",
               registrationOpen: true,
-              maxTeamSize: 4,
+              maxTeamSize: 3,
               minTeamSize: 2,
               status: "active",
               createdAt: new Date().toISOString(),
@@ -943,6 +943,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       const newName = request.direction === "join" ? request.fromName : request.toName;
 
       if (team) {
+        const hackathon = hackathons.find((h) => h.id === team.hackathonId);
+        const maxTeamSize = Math.min(hackathon?.maxTeamSize || 3, 3);
+        if (team.members.length >= maxTeamSize) {
+          throw new Error(`Team has already reached the maximum size of ${maxTeamSize} members.`);
+        }
         if (!team.members.some((m) => m.email === newEmail)) {
           const newMember: Participant = { name: newName, email: newEmail, registerNumber: "", phone: "", department: "", year: "", skills: [], isLeader: false };
           const updatedMembers = [...team.members, newMember];

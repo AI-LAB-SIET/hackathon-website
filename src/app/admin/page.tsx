@@ -102,7 +102,7 @@ export default function AdminDashboard() {
     endDate: "",
     registrationOpen: true,
     minTeamSize: 1,
-    maxTeamSize: 4,
+    maxTeamSize: 3,
     status: "upcoming" as Hackathon["status"],
     problemStatementRevealTime: "",
     resultsRevealTime: "",
@@ -540,14 +540,14 @@ export default function AdminDashboard() {
       endDate: new Date(Date.now() + 24*3600*1000).toISOString().slice(0, 16),
       registrationOpen: true,
       minTeamSize: 1,
-      maxTeamSize: 4,
+      maxTeamSize: 3,
       status: "upcoming",
       problemStatementRevealTime: "",
       resultsRevealTime: ""
     });
     setHackathonModalOpen(true);
   };
-
+ 
   const openEditHackathon = (h: Hackathon) => {
     setEditingHackathon(h);
     setHackathonForm({
@@ -559,7 +559,7 @@ export default function AdminDashboard() {
       endDate: h.endDate ? new Date(h.endDate).toISOString().slice(0, 16) : "",
       registrationOpen: h.registrationOpen,
       minTeamSize: h.minTeamSize || 1,
-      maxTeamSize: h.maxTeamSize || 4,
+      maxTeamSize: Math.min(h.maxTeamSize || 3, 3),
       status: h.status,
       problemStatementRevealTime: h.problemStatementRevealTime ? new Date(h.problemStatementRevealTime).toISOString().slice(0, 16) : "",
       resultsRevealTime: h.resultsRevealTime ? new Date(h.resultsRevealTime).toISOString().slice(0, 16) : ""
@@ -575,6 +575,11 @@ export default function AdminDashboard() {
     const slugFormat = /^[a-z0-9-]+$/;
     if (!slugFormat.test(hackathonForm.slug)) {
       toast("Slug must contain only lowercase letters, numbers, and dashes.", "error");
+      return;
+    }
+
+    if (Number(hackathonForm.maxTeamSize) > 3) {
+      toast("Max team size cannot be greater than 3.", "error");
       return;
     }
 
@@ -1263,7 +1268,7 @@ export default function AdminDashboard() {
                               <strong>Venue:</strong> {h.venue || "TBD"}
                             </div>
                             <div>
-                              <strong>Team Limits:</strong> {h.minTeamSize || 1} to {h.maxTeamSize || 4} members
+                              <strong>Team Limits:</strong> {h.minTeamSize || 1} to {Math.min(h.maxTeamSize || 3, 3)} members
                             </div>
                             <div>
                               <strong>Registration:</strong> {h.registrationOpen ? "Open" : "Closed"}
@@ -2548,8 +2553,9 @@ export default function AdminDashboard() {
             <Input
               label="Max Team Size"
               type="number"
+              max={3}
               value={hackathonForm.maxTeamSize}
-              onChange={(e) => setHackathonForm((p) => ({ ...p, maxTeamSize: Number(e.target.value) }))}
+              onChange={(e) => setHackathonForm((p) => ({ ...p, maxTeamSize: Math.min(Number(e.target.value), 3) }))}
             />
           </div>
           <Input

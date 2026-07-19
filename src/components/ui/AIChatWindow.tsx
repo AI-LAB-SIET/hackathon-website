@@ -243,7 +243,7 @@ export default function AIChatWindow({ onClose, onMinimize }: AIChatWindowProps)
       lines.push(`- Status: ${activeHackathon.status}`);
       lines.push(`- Dates: Starts ${new Date(activeHackathon.startDate).toLocaleString()}, Ends ${new Date(activeHackathon.endDate).toLocaleString()}`);
       lines.push(`- Min Team Size: ${activeHackathon.minTeamSize || 2}`);
-      lines.push(`- Max Team Size: ${activeHackathon.maxTeamSize || 4}`);
+      lines.push(`- Max Team Size: ${Math.min(activeHackathon.maxTeamSize || 3, 3)}`);
       lines.push(`- Rules/Description: ${activeHackathon.description}`);
     }
 

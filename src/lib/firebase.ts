@@ -1,6 +1,12 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  Firestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -31,9 +37,26 @@ export function isFirebaseReady(): boolean {
 
 if (isConfigured) {
   try {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    const isFirstInit = getApps().length === 0;
+    app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
-    db = getFirestore(app);
+
+    if (isFirstInit) {
+      // Use long-polling instead of WebSocket (gRPC-Web) to avoid
+      // "Could not reach Cloud Firestore backend" warnings in environments
+      // where WebSocket connections are throttled or blocked (VPNs, proxies, etc.).
+      // persistentLocalCache enables offline reads + multi-tab coordination.
+      db = initializeFirestore(app, {
+        experimentalForceLongPolling: true,
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+        }),
+      });
+    } else {
+      // App was already initialized elsewhere — get the existing Firestore instance.
+      db = getFirestore(app);
+    }
+
     storage = getStorage(app);
   } catch (error) {
     initError = error instanceof Error ? error.message : "Unknown initialization error";

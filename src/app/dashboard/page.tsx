@@ -56,7 +56,7 @@ export default function ParticipantDashboard() {
 
   const currentHackathonId = session.currentHackathonId || activeHackathonId;
   const activeHackathon = hackathons.find((h) => h.id === currentHackathonId);
-  const maxTeamSize = activeHackathon?.maxTeamSize || 4;
+  const maxTeamSize = Math.min(activeHackathon?.maxTeamSize || 3, 3);
   const minTeamSize = activeHackathon?.minTeamSize || 1;
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -326,8 +326,8 @@ export default function ParticipantDashboard() {
       toast("Please fill in Name, Email, and Register Number.", "error");
       return;
     }
-    if (team.members.length >= 4) {
-      toast("Maximum 4 members per team.", "error");
+    if (team.members.length >= maxTeamSize) {
+      toast(`Maximum ${maxTeamSize} members per team.`, "error");
       return;
     }
     updateTeamMembers(team.id, [...team.members, { ...newMember, skills: newMember.skills }]);
@@ -829,7 +829,7 @@ export default function ParticipantDashboard() {
                         </div>
 
                         <div className="border-t border-gray-100 dark:border-gray-800 pt-4 flex justify-between items-center text-xs text-gray-450">
-                          <span>Team Size: {team.members.length}/4 Members</span>
+                          <span>Team Size: {team.members.length}/{maxTeamSize} Members</span>
                           <span>Created: {new Date(team.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>

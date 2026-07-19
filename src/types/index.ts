@@ -24,7 +24,7 @@ export interface Hackathon {
   startDate: string;          // ISO datetime
   endDate: string;            // ISO datetime
   registrationOpen: boolean;
-  maxTeamSize: number;        // default 4
+  maxTeamSize: number;        // default 3
   minTeamSize: number;        // default 1 (solo allowed)
   status: "upcoming" | "active" | "completed" | "archived" | "ended";
   createdAt: string;

@@ -297,7 +297,7 @@ export const INITIAL_TEAMS: Team[] = [
   {
     id: "team-3",
     name: "Cyber Sentinels",
-    size: 4,
+    size: 3,
     status: "PENDING",
     createdAt: "2026-06-26T10:45:00.000Z",
     projectDescription: "Intrusion detection dashboard using federated learning across campus nodes.",
@@ -337,15 +337,6 @@ export const INITIAL_TEAMS: Team[] = [
         department: "Electronics & Communication",
         year: "4th Year",
         skills: ["IoT", "Raspberry Pi", "C++"],
-      },
-      {
-        name: "Riya Seth",
-        registerNumber: "2021IT0045",
-        email: "riya@college.edu",
-        phone: "9234567893",
-        department: "Information Technology",
-        year: "4th Year",
-        skills: ["Python", "SQL", "Tableau"],
       },
     ],
     milestonesProgress: [
