@@ -145,10 +145,15 @@ export default function ParticipantDashboard() {
     ? hackathons.find((h) => h.id === team.hackathonId)
     : activeHackathon;
 
+  const isHackathonOver = teamHackathon
+    ? (new Date().getTime() > new Date(teamHackathon.endDate).getTime())
+    : false;
+
   const isTeamLocked = teamHackathon?.teamsLocked === true || 
                        teamHackathon?.status === "ended" || 
                        teamHackathon?.status === "completed" || 
-                       teamHackathon?.status === "archived";
+                       teamHackathon?.status === "archived" ||
+                       isHackathonOver;
 
   const isProblemStatementRevealed = !activeHackathon?.problemStatementRevealTime || new Date().getTime() >= new Date(activeHackathon.problemStatementRevealTime).getTime();
   const isResultRevealed = activeHackathon?.resultsRevealTime ? new Date().getTime() >= new Date(activeHackathon.resultsRevealTime).getTime() : false;
@@ -358,6 +363,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isTeamLocked) { toast("Submissions are currently locked.", "error"); e.target.value = ""; return; }
     if (!team) return;
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -398,6 +404,7 @@ export default function ParticipantDashboard() {
   };
 
   const handleDeleteAttachment = (fileId: string) => {
+    if (isTeamLocked) { toast("Submissions are currently locked.", "error"); return; }
     if (!team) return;
     const updated = (team.attachments || []).filter((a) => a.id !== fileId);
     updateProjectDetails(team.id, {

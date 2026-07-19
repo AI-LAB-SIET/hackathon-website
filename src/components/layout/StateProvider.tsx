@@ -141,9 +141,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const volunteersRef = useRef(volunteers);
   const teamsRef = useRef(teams);
   const userProfilesRef = useRef(userProfiles);
+  const hackathonsRef = useRef(hackathons);
   useEffect(() => { volunteersRef.current = volunteers; }, [volunteers]);
   useEffect(() => { teamsRef.current = teams; }, [teams]);
   useEffect(() => { userProfilesRef.current = userProfiles; }, [userProfiles]);
+  useEffect(() => { hackathonsRef.current = hackathons; }, [hackathons]);
 
   // ── 1. Global Auth & Metadata listeners ─────────────────────────────────────
   useEffect(() => {
@@ -472,6 +474,16 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timeout);
   }, [teams, session, announcements, notifications, volunteers, userProfiles, problemStatements, tickets, hackathons, initialized]);
 
+  const isHackathonFrozen = useCallback((hackathonId?: string | null) => {
+    const hId = hackathonId || activeHackathonId;
+    if (!hId) return false;
+    const h = hackathonsRef.current.find((h) => h.id === hId);
+    if (!h) return false;
+    const isEnded = h.status === "ended" || h.status === "completed" || h.status === "archived";
+    const isPastEnd = new Date().getTime() > new Date(h.endDate).getTime();
+    return h.teamsLocked === true || isEnded || isPastEnd;
+  }, [activeHackathonId]);
+
   // ── 3. Actions & Operations ──────────────────────────────────────────────────
 
   const setActiveHackathon = useCallback(async (id: string | null) => {
@@ -687,6 +699,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   // ─── Team Operations ────────────────────────────────────────────────────────
 
   const registerTeam = useCallback(async (teamData: { name: string; projectDescription: string; members: Participant[]; hackathonId?: string }) => {
+    const targetHackathonId = teamData.hackathonId || activeHackathonId;
+    if (isHackathonFrozen(targetHackathonId)) {
+      throw new Error("Cannot register team: Hackathon has ended or teams are locked.");
+    }
     const teamId = `team-${Date.now()}`;
     const prefix = teamData.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
     const teamNum = 100 + teamsRef.current.length + 5;
@@ -694,7 +710,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
     const newTeam: Team = {
       id: teamId,
-      hackathonId: teamData.hackathonId || activeHackathonId || "",
+      hackathonId: targetHackathonId || "",
       name: teamData.name,
       size: teamData.members.length,
       members: teamData.members,
@@ -739,15 +755,19 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       body: `Your team "${teamData.name}" has been registered. Await admin approval.`,
       priority: "high"
     });
-  }, [addNotification, session.email, activeHackathonId]);
+  }, [addNotification, session.email, activeHackathonId, isHackathonFrozen]);
 
   const updateTeamMembers = useCallback(async (teamId: string, members: Participant[]) => {
+    const team = teamsRef.current.find((t) => t.id === teamId);
+    if (team && isHackathonFrozen(team.hackathonId)) {
+      throw new Error("Cannot update members: Hackathon has ended or teams are locked.");
+    }
     if (isConfigured && db) {
       await updateDoc(doc(db, "teams", teamId), { members, size: members.length });
     } else {
       setTeams((prev) => prev.map((t) => t.id === teamId ? { ...t, members, size: members.length } : t));
     }
-  }, []);
+  }, [isHackathonFrozen]);
 
   const approveTeam = useCallback(async (teamId: string) => {
     if (isConfigured && db) {
@@ -766,6 +786,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteTeam = useCallback(async (teamId: string) => {
+    const team = teamsRef.current.find((t) => t.id === teamId);
+    if (team && isHackathonFrozen(team.hackathonId)) {
+      throw new Error("Cannot delete team: Hackathon has ended or teams are locked.");
+    }
     if (isConfigured && db) {
       if (auth?.currentUser) {
         await updateDoc(doc(db, "users", auth.currentUser.uid), { teamId: null, teamSetupDone: false });
@@ -779,10 +803,14 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       }
       return prev;
     });
-  }, []);
+  }, [isHackathonFrozen]);
+
   const leaveTeam = useCallback(async (teamId: string, email: string) => {
     const team = teamsRef.current.find((t) => t.id === teamId);
     if (!team) return;
+    if (isHackathonFrozen(team.hackathonId)) {
+      throw new Error("Cannot leave team: Hackathon has ended or teams are locked.");
+    }
     const updatedMembers = team.members.filter((m) => m.email !== email);
     if (isConfigured && db) {
       if (auth?.currentUser) {
@@ -793,8 +821,13 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       setTeams((prev) => prev.map((t) => t.id === teamId ? { ...t, members: updatedMembers, size: updatedMembers.length } : t));
     }
     setSession((prev) => ({ ...prev, teamId: null, teamSetupDone: false }));
-  }, []);
+  }, [isHackathonFrozen]);
+
   const updateProjectDetails = useCallback(async (teamId: string, details: Partial<Team>) => {
+    const team = teamsRef.current.find((t) => t.id === teamId);
+    if (team && isHackathonFrozen(team.hackathonId)) {
+      throw new Error("Cannot update project details: Hackathon has ended or teams/submissions are locked.");
+    }
     if (isConfigured && db) {
       const cleanDetails = Object.fromEntries(
         Object.entries(details).filter((entry) => entry[1] !== undefined)
@@ -803,7 +836,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     } else {
       setTeams((prev) => prev.map((t) => t.id === teamId ? { ...t, ...details } : t));
     }
-  }, []);
+  }, [isHackathonFrozen]);
 
   const evaluateProject = useCallback(async (teamId: string, evaluation: { innovation: number; feasibility: number; presentation: number; technicalDepth?: number; aiUsage?: number; feedback: string; judgeEmail: string }) => {
     if (isConfigured && db) {
@@ -871,6 +904,10 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     if (!session.email || !session.name) return;
     const team = teamsRef.current.find((t) => t.id === teamId);
     if (!team) return;
+    if (isHackathonFrozen(team.hackathonId)) {
+      throw new Error("Cannot send request: Hackathon has ended or teams are locked.");
+    }
+
     const leader = team.members.find((m) => m.isLeader) || team.members[0];
 
     const requestData = {
@@ -894,12 +931,15 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     }
 
     addNotification({ userId: leader?.email || "", type: "team_request", title: "Join Request Received", body: `${session.name} wants to join your team "${team.name}".`, priority: "high", relatedTeamId: teamId });
-  }, [session.email, session.name, activeHackathonId, addNotification]);
+  }, [session.email, session.name, activeHackathonId, addNotification, isHackathonFrozen]);
 
   const sendTeamInvite = useCallback(async (toEmail: string, toName: string, teamId: string, message?: string) => {
     if (!session.email || !session.name) return;
     const team = teamsRef.current.find((t) => t.id === teamId);
     if (!team) return;
+    if (isHackathonFrozen(team.hackathonId)) {
+      throw new Error("Cannot send invite: Hackathon has ended or teams are locked.");
+    }
 
     const requestData = {
       hackathonId: team.hackathonId || activeHackathonId || "",
@@ -922,11 +962,14 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     }
 
     addNotification({ userId: toEmail, type: "team_request", title: "Team Invite", body: `Team "${team.name}" has invited you to join.`, priority: "high", relatedTeamId: teamId });
-  }, [session.email, session.name, activeHackathonId, addNotification]);
+  }, [session.email, session.name, activeHackathonId, addNotification, isHackathonFrozen]);
 
   const respondToRequest = useCallback(async (requestId: string, accept: boolean) => {
     const request = teamRequests.find((r) => r.id === requestId);
     if (!request) return;
+    if (accept && isHackathonFrozen(request.hackathonId)) {
+      throw new Error("Cannot accept request: Hackathon has ended or teams are locked.");
+    }
 
     const newStatus = accept ? "accepted" : "rejected";
 
@@ -972,7 +1015,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       const notifyEmail = request.direction === "join" ? request.fromEmail : request.toEmail;
       addNotification({ userId: notifyEmail, type: "team_request", title: "Request Accepted", body: `You have been added to team "${request.teamName}".`, priority: "high", relatedTeamId: request.teamId, relatedRequestId: requestId });
     }
-  }, [teamRequests, updateTeamMembers, addNotification, session.email, isConfigured, hackathons]);
+  }, [teamRequests, updateTeamMembers, addNotification, session.email, isConfigured, hackathons, isHackathonFrozen]);
 
   const cancelRequest = useCallback(async (requestId: string) => {
     if (isConfigured && db) {

@@ -1273,6 +1273,9 @@ export default function AdminDashboard() {
                             <div>
                               <strong>Registration:</strong> {h.registrationOpen ? "Open" : "Closed"}
                             </div>
+                            <div>
+                              <strong>Freeze Status:</strong> {h.teamsLocked || h.status === 'ended' || h.status === 'completed' || h.status === 'archived' || (new Date().getTime() > new Date(h.endDate).getTime()) ? 'Frozen ❄️' : 'Active 🟢'}
+                            </div>
                           </div>
 
                           <div className="mt-3 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700 flex flex-col gap-1.5">
@@ -1317,14 +1320,14 @@ export default function AdminDashboard() {
                               size="sm"
                               variant="secondary"
                               onClick={() => {
-                                if (confirm(`Are you sure you want to ${h.teamsLocked ? 'unlock' : 'lock'} teams for this hackathon?`)) {
+                                if (confirm(`Are you sure you want to ${h.teamsLocked ? 'unfreeze' : 'freeze'} teams and submissions for this hackathon?`)) {
                                   updateHackathon(h.id, { teamsLocked: !h.teamsLocked });
-                                  toast(`Teams ${h.teamsLocked ? 'unlocked' : 'locked'} successfully.`, "success");
+                                  toast(`Teams and submissions ${h.teamsLocked ? 'unfrozen' : 'frozen'} successfully.`, "success");
                                 }
                               }}
                               className={`h-7 text-[10px] ${h.teamsLocked ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30' : 'text-primary-dark hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}
                             >
-                              {h.teamsLocked ? 'Unlock Teams' : 'Lock Teams'}
+                              {h.teamsLocked ? 'Unfreeze' : 'Freeze'}
                             </Button>
                             <Button
                               size="sm"
