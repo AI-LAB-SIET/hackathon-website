@@ -972,7 +972,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       const notifyEmail = request.direction === "join" ? request.fromEmail : request.toEmail;
       addNotification({ userId: notifyEmail, type: "team_request", title: "Request Accepted", body: `You have been added to team "${request.teamName}".`, priority: "high", relatedTeamId: request.teamId, relatedRequestId: requestId });
     }
-  }, [teamRequests, updateTeamMembers, addNotification, session.email, isConfigured]);
+  }, [teamRequests, updateTeamMembers, addNotification, session.email, isConfigured, hackathons]);
 
   const cancelRequest = useCallback(async (requestId: string) => {
     if (isConfigured && db) {
