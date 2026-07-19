@@ -477,20 +477,69 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const setActiveHackathon = useCallback(async (id: string | null) => {
     setActiveHackathonIdState(id);
     if (session.isLoggedIn && session.email) {
+      let foundTeamId: string | null = null;
+
       if (isConfigured && db && auth?.currentUser) {
-        await updateDoc(doc(db, "users", auth.currentUser.uid), { currentHackathonId: id || null });
+        if (id) {
+          try {
+            const teamsQ = query(
+              collection(db, "teams"),
+              where("hackathonId", "==", id)
+            );
+            const teamsSnap = await getDocs(teamsQ);
+            teamsSnap.forEach((doc) => {
+              const tData = doc.data();
+              if (tData.members && tData.members.some((m: Participant) => m.email.toLowerCase() === session.email!.toLowerCase())) {
+                foundTeamId = doc.id;
+              }
+            });
+          } catch (err) {
+            console.warn("Failed to fetch teams for switcher:", err);
+          }
+        }
+
+        await updateDoc(doc(db, "users", auth.currentUser.uid), {
+          currentHackathonId: id || null,
+          teamId: foundTeamId,
+          teamSetupDone: foundTeamId ? true : false,
+        });
+
+        setSession((prev) => ({
+          ...prev,
+          currentHackathonId: id,
+          teamId: foundTeamId,
+          teamSetupDone: foundTeamId ? true : false,
+        }));
       } else {
+        if (id) {
+          const matchedTeam = teamsRef.current.find((t) => t.hackathonId === id && t.members.some((m) => m.email.toLowerCase() === session.email!.toLowerCase()));
+          if (matchedTeam) {
+            foundTeamId = matchedTeam.id;
+          }
+        }
+
         setUserProfiles((prev) => {
           const idx = prev.findIndex((p) => p.email.toLowerCase() === session.email!.toLowerCase());
           if (idx > -1) {
             const updated = [...prev];
-            updated[idx] = { ...updated[idx], currentHackathonId: id || undefined };
+            updated[idx] = {
+              ...updated[idx],
+              currentHackathonId: id || undefined,
+              teamId: foundTeamId || undefined,
+              teamSetupDone: foundTeamId ? true : false
+            };
             return updated;
           }
           return prev;
         });
+
+        setSession((prev) => ({
+          ...prev,
+          currentHackathonId: id,
+          teamId: foundTeamId,
+          teamSetupDone: foundTeamId ? true : false,
+        }));
       }
-      setSession((prev) => ({ ...prev, currentHackathonId: id }));
     }
   }, [session.isLoggedIn, session.email]);
 

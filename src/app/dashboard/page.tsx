@@ -153,6 +153,18 @@ export default function ParticipantDashboard() {
   const isProblemStatementRevealed = !activeHackathon?.problemStatementRevealTime || new Date().getTime() >= new Date(activeHackathon.problemStatementRevealTime).getTime();
   const isResultRevealed = activeHackathon?.resultsRevealTime ? new Date().getTime() >= new Date(activeHackathon.resultsRevealTime).getTime() : false;
 
+  const isConcludedOrMissing = useMemo(() => {
+    if (!activeHackathon) return true;
+    const now = new Date().getTime();
+    const end = new Date(activeHackathon.endDate).getTime();
+    return (
+      activeHackathon.status === "ended" ||
+      activeHackathon.status === "completed" ||
+      activeHackathon.status === "archived" ||
+      now >= end
+    );
+  }, [activeHackathon]);
+
   // Auto-sync for kicked members
   useEffect(() => {
     if (session.teamId && session.email && teams.length > 0) {
@@ -633,19 +645,49 @@ export default function ParticipantDashboard() {
                   </div>
                 </div>
 
-                {/* Concluded Hackathon Banner */}
-                {timeLeft?.status === "ended" && (
+                {/* WhatsApp Group Banner */}
+                <div className="relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-2xl p-6 text-white shadow-lg border border-emerald-400/20">
+                  <div className="absolute right-0 top-0 translate-x-12 -translate-y-8 opacity-10 pointer-events-none">
+                    <MessageCircle className="h-64 w-64" />
+                  </div>
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                    <div className="flex items-center gap-4 text-left">
+                      <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0">
+                        <MessageCircle className="h-7 w-7 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-lg md:text-xl">Join the Official WhatsApp Community</h3>
+                        <p className="text-emerald-100 text-xs md:text-sm mt-1 max-w-xl">
+                          Stay updated with real-time announcements, coordinate with your team members, and get direct assistance from mentors and organizers.
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href="https://chat.whatsapp.com/ai-lab-hackathon"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 font-extrabold text-sm shadow-md transition-all group animate-pulse-subtle"
+                    >
+                      <span>Join WhatsApp Group</span>
+                      <ExternalLink className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Concluded or Missing Hackathon Banner */}
+                {isConcludedOrMissing && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
                     <div className="flex flex-col items-center text-center mb-6">
-                      <div className="h-16 w-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
-                        <Clock className="h-8 w-8 text-red-500" />
+                      <div className="h-16 w-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4 text-amber-600 dark:text-amber-400">
+                        {activeHackathon ? <Clock className="h-8 w-8" /> : <AlertTriangle className="h-8 w-8" />}
                       </div>
                       <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">
-                        {activeHackathon?.name || "This Hackathon"} has Concluded!
+                        {activeHackathon ? `${activeHackathon.name} has Concluded!` : "No Active Hackathon Selected"}
                       </h2>
                       <p className="text-gray-500 dark:text-gray-400 max-w-lg">
-                        Thank you for participating. You can still view your team and project details. 
-                        Ready for your next challenge? Register for an active hackathon below!
+                        {activeHackathon 
+                          ? "Thank you for participating. You can still view your team and project details. Ready for your next challenge? Register for an active hackathon below!"
+                          : "You are not registered for any active hackathon, or your registered hackathon doesn't exist. Ready to start? Register/Switch to an active hackathon below!"}
                       </p>
                     </div>
 
@@ -680,27 +722,29 @@ export default function ParticipantDashboard() {
                 )}
 
                 {/* Dynamic Hackathon Timer */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 text-center">
-                  <h2 className="font-bold text-primary-dark mb-4 flex items-center justify-center gap-2 dark:text-gray-100">
-                    <Clock className="h-5 w-5 text-primary-green" />
-                    {timeLeft?.status === "upcoming" ? "Time to Hackathon" : timeLeft?.status === "active" ? "Hacking Ends In" : "Hackathon Concluded"}
-                  </h2>
-                  <div className="flex justify-center items-center gap-4">
-                    {[
-                      { label: "Days", value: timeLeft?.days ?? 0 },
-                      { label: "Hours", value: timeLeft?.hours ?? 0 },
-                      { label: "Minutes", value: timeLeft?.minutes ?? 0 },
-                      { label: "Seconds", value: timeLeft?.seconds ?? 0 },
-                    ].map((unit) => (
-                      <div key={unit.label} className="flex flex-col items-center">
-                        <div className="bg-gray-50 dark:bg-gray-800 text-primary-dark dark:text-primary-green font-extrabold text-3xl sm:text-5xl w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center rounded-2xl shadow-inner border border-gray-100 dark:border-gray-700">
-                          {unit.value.toString().padStart(2, "0")}
+                {!isConcludedOrMissing && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 dark:bg-gray-900 dark:border-gray-700 text-center">
+                    <h2 className="font-bold text-primary-dark mb-4 flex items-center justify-center gap-2 dark:text-gray-100">
+                      <Clock className="h-5 w-5 text-primary-green" />
+                      {timeLeft?.status === "upcoming" ? "Time to Hackathon" : timeLeft?.status === "active" ? "Hacking Ends In" : "Hackathon Concluded"}
+                    </h2>
+                    <div className="flex justify-center items-center gap-4">
+                      {[
+                        { label: "Days", value: timeLeft?.days ?? 0 },
+                        { label: "Hours", value: timeLeft?.hours ?? 0 },
+                        { label: "Minutes", value: timeLeft?.minutes ?? 0 },
+                        { label: "Seconds", value: timeLeft?.seconds ?? 0 },
+                      ].map((unit) => (
+                        <div key={unit.label} className="flex flex-col items-center">
+                          <div className="bg-gray-50 dark:bg-gray-800 text-primary-dark dark:text-primary-green font-extrabold text-3xl sm:text-5xl w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center rounded-2xl shadow-inner border border-gray-100 dark:border-gray-700">
+                            {unit.value.toString().padStart(2, "0")}
+                          </div>
+                          <span className="text-xs sm:text-sm font-semibold text-gray-500 mt-2 uppercase tracking-wide">{unit.label}</span>
                         </div>
-                        <span className="text-xs sm:text-sm font-semibold text-gray-500 mt-2 uppercase tracking-wide">{unit.label}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Quick cards row */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
