@@ -174,7 +174,7 @@ export class ChatService {
         return "The hackathon schedule is available in the dashboard. Key events: Opening ceremony (9 AM), Workshop sessions (11 AM), Hacking begins (1 PM), Midpoint check-in (5 PM), Final presentations (next day 10 AM).";
       }
       if (lowerMsg.includes('team') || lowerMsg.includes('join')) {
-        return "You can join or create a team in the Participants tab. Make sure your team has 2-4 members and selects a problem statement to work on.";
+        return "You can join or create a team in the Participants tab. Make sure your team has 1-3 members and selects a problem statement to work on.";
       }
       if (lowerMsg.includes('problem') || lowerMsg.includes('challenge')) {
         return "Check the Problems tab for available problem statements. Select one that interests your team and start working on your solution!";

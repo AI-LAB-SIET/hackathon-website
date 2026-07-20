@@ -563,7 +563,7 @@ export default function AdminDashboard() {
       endDate: h.endDate ? new Date(h.endDate).toISOString().slice(0, 16) : "",
       registrationOpen: h.registrationOpen,
       minTeamSize: h.minTeamSize || 1,
-      maxTeamSize: Math.min(h.maxTeamSize || 3, 3),
+      maxTeamSize: h.maxTeamSize || 3,
       status: h.status,
       problemStatementRevealTime: h.problemStatementRevealTime ? new Date(h.problemStatementRevealTime).toISOString().slice(0, 16) : "",
       resultsRevealTime: h.resultsRevealTime ? new Date(h.resultsRevealTime).toISOString().slice(0, 16) : ""
@@ -582,8 +582,8 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (Number(hackathonForm.maxTeamSize) > 3) {
-      toast("Max team size cannot be greater than 3.", "error");
+    if (Number(hackathonForm.maxTeamSize) < 1) {
+      toast("Max team size must be at least 1.", "error");
       return;
     }
 
@@ -1274,9 +1274,49 @@ export default function AdminDashboard() {
             {activeTab === "hackathons" && (
               <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-6">
                 <div className="flex justify-between items-center border-b border-gray-150 dark:border-gray-700 pb-3">
-                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">Hackathon Profiles</h3>
+                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">Hackathon Profiles & Settings</h3>
                   <span className="text-xs text-gray-500 font-medium">Total: {hackathons.length}</span>
                 </div>
+
+                {/* Quick Active Hackathon Team Limit Control */}
+                {(() => {
+                  const activeHack = hackathons.find((h) => h.id === activeHackathonId) || hackathons[0];
+                  if (!activeHack) return null;
+                  return (
+                    <div className="p-4 sm:p-5 rounded-2xl border border-primary-green/30 bg-emerald-50/40 dark:bg-emerald-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-primary-green" />
+                          <h4 className="font-extrabold text-sm text-primary-dark dark:text-gray-100">
+                            System Team Size Limit ({activeHack.name})
+                          </h4>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Set the maximum allowed participants per team for participants and team leaders (Default: 3 members).
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Max Team Size:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          defaultValue={activeHack.maxTeamSize || 3}
+                          key={`max-size-${activeHack.id}-${activeHack.maxTeamSize}`}
+                          onChange={(e) => {
+                            const val = Math.max(1, Number(e.target.value) || 3);
+                            if (val !== activeHack.maxTeamSize) {
+                              updateHackathon(activeHack.id, { maxTeamSize: val });
+                              toast(`Max team size updated to ${val} members.`, "success");
+                            }
+                          }}
+                          className="w-20 px-3 py-1.5 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-extrabold text-center bg-white dark:bg-gray-800 text-primary-dark dark:text-gray-100 focus:ring-2 focus:ring-primary-green focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {hackathons.map((h) => {
@@ -1315,7 +1355,7 @@ export default function AdminDashboard() {
                               <strong>Venue:</strong> {h.venue || "TBD"}
                             </div>
                             <div>
-                              <strong>Team Limits:</strong> {h.minTeamSize || 1} to {Math.min(h.maxTeamSize || 3, 3)} members
+                              <strong>Team Limits:</strong> {h.minTeamSize || 1} to {h.maxTeamSize || 3} members
                             </div>
                             <div>
                               <strong>Registration:</strong> {h.registrationOpen ? "Open" : "Closed"}
@@ -2740,9 +2780,9 @@ export default function AdminDashboard() {
             <Input
               label="Max Team Size"
               type="number"
-              max={3}
+              min={1}
               value={hackathonForm.maxTeamSize}
-              onChange={(e) => setHackathonForm((p) => ({ ...p, maxTeamSize: Math.min(Number(e.target.value), 3) }))}
+              onChange={(e) => setHackathonForm((p) => ({ ...p, maxTeamSize: Math.max(1, Number(e.target.value)) }))}
             />
           </div>
           <Input

@@ -56,7 +56,7 @@ export default function ParticipantDashboard() {
 
   const currentHackathonId = session.currentHackathonId || activeHackathonId;
   const activeHackathon = hackathons.find((h) => h.id === currentHackathonId);
-  const maxTeamSize = Math.min(activeHackathon?.maxTeamSize || 3, 3);
+  const maxTeamSize = activeHackathon?.maxTeamSize || 3;
   const minTeamSize = activeHackathon?.minTeamSize || 1;
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -1240,7 +1240,7 @@ export default function ParticipantDashboard() {
                                     <div className="flex justify-between items-start gap-2">
                                       <h4 className="font-extrabold text-sm text-primary-dark dark:text-gray-100 truncate">{t.name}</h4>
                                       <span className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-505 px-2 py-0.5 rounded-full shrink-0">
-                                        {t.size}/4 members
+                                        {t.size}/{maxTeamSize} members
                                       </span>
                                     </div>
                                     <span className="text-[9px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wide block w-fit rounded px-1.5 py-0.5">

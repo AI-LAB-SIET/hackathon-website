@@ -47,7 +47,7 @@ const timelineSteps = [
 
 const rules = [
   "Eligibility: Open to all current undergraduate and postgraduate engineering, technology, and science students.",
-  "Team Size: Teams must consist of 2 to 4 members. Cross-department collaborations are highly encouraged.",
+  "Team Size: Teams can consist of up to 3 members. Cross-department collaborations are highly encouraged.",
   "Academic Integrity: All code repositories must be hosted publicly on GitHub and created from scratch during the hackathon. Pre-existing projects are disqualified.",
   "AI Disclosure: Usage of AI coding helpers (Copilot, ChatGPT, Claude) is permitted, but must be declared in the final project disclosure form.",
   "Plagiarism: Code duplication or datasets manipulation will result in immediate termination of the registration.",

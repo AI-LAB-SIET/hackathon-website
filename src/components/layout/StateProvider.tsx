@@ -1045,7 +1045,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
       if (team) {
         const hackathon = hackathons.find((h) => h.id === team.hackathonId);
-        const maxTeamSize = Math.min(hackathon?.maxTeamSize || 3, 3);
+        const maxTeamSize = hackathon?.maxTeamSize || 3;
         if (team.members.length >= maxTeamSize) {
           throw new Error(`Team has already reached the maximum size of ${maxTeamSize} members.`);
         }

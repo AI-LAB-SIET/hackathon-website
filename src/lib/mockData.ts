@@ -10,7 +10,7 @@ export const INITIAL_FAQS: FAQItem[] = [
   {
     id: "faq-2",
     question: "What is the maximum team size?",
-    answer: "Teams must consist of 2 to 4 members. Single-member registrations are not permitted for this hackathon.",
+    answer: "Teams can consist of 1 to 3 members as configured for the hackathon.",
     category: "Registration",
   },
   {

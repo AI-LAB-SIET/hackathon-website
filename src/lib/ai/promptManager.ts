@@ -18,7 +18,7 @@ import type { UserRole } from "./types";
 function buildBaseContext(additionalContext?: string): string {
   let hackathonName = "SIET HACKATHONS";
   let durationStr = "36 hours across 2 days";
-  let teamSizeStr = "2–4 members";
+  let teamSizeStr = "1–3 members";
   let themeStr = "Build real-world AI solutions across three tracks: Generative AI & LLMs, Healthcare & Assistive Technology, Smart Infrastructure & Sustainability.";
 
   if (additionalContext) {
