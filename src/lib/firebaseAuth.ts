@@ -251,6 +251,16 @@ export async function sendPasswordReset(email: string): Promise<void> {
       url: `${window.location.origin}/login`,
     });
   } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code === 'auth/unauthorized-continue-uri') {
+      try {
+        // Fallback without actionCodeSettings (uses Firebase's default authorized domain)
+        await sendPasswordResetEmail(auth, email);
+        return;
+      } catch (fallbackErr: unknown) {
+        throw mapFirebaseError(fallbackErr);
+      }
+    }
     throw mapFirebaseError(err);
   }
 }
@@ -269,9 +279,22 @@ export async function sendMemberInviteEmail(memberEmail: string): Promise<void> 
   }
   // This will throw auth/user-not-found if the account doesn't exist yet.
   // We intentionally let it propagate so the caller can handle it.
-  await sendPasswordResetEmail(auth, memberEmail, {
-    url: `${window.location.origin}/login`,
-  });
+  try {
+    await sendPasswordResetEmail(auth, memberEmail, {
+      url: `${window.location.origin}/login`,
+    });
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code === 'auth/unauthorized-continue-uri') {
+      try {
+        await sendPasswordResetEmail(auth, memberEmail);
+        return;
+      } catch (fallbackErr: unknown) {
+        throw mapFirebaseError(fallbackErr);
+      }
+    }
+    throw mapFirebaseError(err);
+  }
 }
 
 /**
@@ -403,6 +426,7 @@ function mapFirebaseError(err: unknown): FirebaseAuthError {
     'auth/operation-not-allowed': 'Email/password sign-in is not enabled. Contact the admin.',
     'auth/api-key-not-valid': 'Firebase API key is not valid. Contact the admin.',
     'auth/email-not-verified': 'Please verify your email address before logging in. Check your inbox for the confirmation link.',
+    'auth/unauthorized-continue-uri': 'Domain not authorized in Firebase Console. Continued using standard reset link.',
   };
   const msg = userFriendlyMessages[code] ??
     (code.startsWith('auth/') ? `Authentication failed. (${code})` : 'Authentication service error.');
