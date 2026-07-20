@@ -129,6 +129,7 @@ export interface FoodMeal {
   createdBy: string;
   totalIssued?: number;      // updated when tokens are bulk-issued
   totalRedeemed?: number;    // updated on each redemption
+  targetAudience?: "all" | "dayscholars" | "hostellers";
 }
 
 export interface FoodToken {

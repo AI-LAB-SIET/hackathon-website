@@ -99,7 +99,7 @@ interface StateContextType {
   createMeal: (meal: Omit<FoodMeal, "id" | "createdAt" | "totalIssued" | "totalRedeemed">) => Promise<string>;
   updateMeal: (id: string, data: Partial<FoodMeal>) => Promise<void>;
   deleteMeal: (id: string) => Promise<void>;
-  issueMealTokens: (mealId: string) => Promise<{ issued: number; skipped: number }>;
+  issueMealTokens: (mealId: string, filterTarget?: "all" | "dayscholars" | "hostellers") => Promise<{ issued: number; skipped: number }>;
   redeemToken: (tokenId: string) => Promise<void>;
   redeemTokenByCode: (tokenCode: string) => Promise<FoodToken | null>;
   getMyTokens: (email: string) => FoodToken[];
@@ -1326,11 +1326,19 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     setFoodMeals((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
-  const issueMealTokens = useCallback(async (mealId: string): Promise<{ issued: number; skipped: number }> => {
+  const issueMealTokens = useCallback(async (mealId: string, filterTarget?: "all" | "dayscholars" | "hostellers"): Promise<{ issued: number; skipped: number }> => {
     const meal = foodMeals.find((m) => m.id === mealId);
     if (!meal) return { issued: 0, skipped: 0 };
 
-    const participants: Array<{ email: string; name: string; registerNumber: string; teamId?: string; teamName?: string }> = [];
+    let participants: Array<{ email: string; name: string; registerNumber: string; teamId?: string; teamName?: string; hostelStatus?: string }> = [];
+
+    const getParticipantStatus = (email: string, memberStatus?: string) => {
+      if (memberStatus) return memberStatus.toLowerCase();
+      const profile = userProfilesRef.current.find((u) => (u.email || "").toLowerCase() === (email || "").toLowerCase());
+      return (profile?.hostelStatus || "").toLowerCase();
+    };
+
+    const targetFilter = filterTarget || meal.targetAudience || "all";
 
     if (isConfigured && db) {
       // Get all participants from teams in this hackathon
@@ -1338,10 +1346,27 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       teamsSnap.forEach((d) => {
         const team = d.data() as Team;
         team.members.forEach((m) => {
-          participants.push({ email: m.email, name: m.name, registerNumber: m.registerNumber, teamId: d.id, teamName: team.name });
+          participants.push({ email: m.email, name: m.name, registerNumber: m.registerNumber, teamId: d.id, teamName: team.name, hostelStatus: m.hostelStatus });
         });
       });
+    } else {
+      // Mock mode: use teams in state
+      const hackathonTeams = teamsRef.current.filter((t) => t.hackathonId === meal.hackathonId || !meal.hackathonId);
+      hackathonTeams.forEach((team) => {
+        team.members.forEach((m) => {
+          participants.push({ email: m.email, name: m.name, registerNumber: m.registerNumber, teamId: team.id, teamName: team.name, hostelStatus: m.hostelStatus });
+        });
+      });
+    }
 
+    // Apply dayscholars / hostellers filtering if target is specified
+    if (targetFilter === "dayscholars") {
+      participants = participants.filter((p) => getParticipantStatus(p.email, p.hostelStatus) === "dayscholar");
+    } else if (targetFilter === "hostellers") {
+      participants = participants.filter((p) => getParticipantStatus(p.email, p.hostelStatus) === "hosteller");
+    }
+
+    if (isConfigured && db) {
       // Check which tokens already exist for this meal
       const existingSnap = await getDocs(query(collection(db, "foodTokens"), where("mealId", "==", mealId)));
       const existingEmails = new Set<string>();
@@ -1374,13 +1399,6 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       await batch.commit();
       return { issued: newParticipants.length, skipped: existingEmails.size };
     } else {
-      // Mock mode: use teams in state
-      const hackathonTeams = teamsRef.current.filter((t) => t.hackathonId === meal.hackathonId || !meal.hackathonId);
-      hackathonTeams.forEach((team) => {
-        team.members.forEach((m) => {
-          participants.push({ email: m.email, name: m.name, registerNumber: m.registerNumber, teamId: team.id, teamName: team.name });
-        });
-      });
       const existingEmails = new Set(foodTokens.filter((t) => t.mealId === mealId).map((t) => t.participantEmail));
       const newTokens: FoodToken[] = participants
         .filter((p) => !existingEmails.has(p.email))

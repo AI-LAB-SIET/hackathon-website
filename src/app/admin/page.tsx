@@ -115,7 +115,10 @@ export default function AdminDashboard() {
     type: "lunch" as FoodMeal["type"],
     scheduledAt: "",
     windowMinutes: 120,
+    targetAudience: "all" as "all" | "dayscholars" | "hostellers",
   });
+  const [mealTargetMap, setMealTargetMap] = useState<Record<string, "all" | "dayscholars" | "hostellers">>({});
+  const [tokenResidenceFilter, setTokenResidenceFilter] = useState<"ALL" | "DAYSCHOLAR" | "HOSTELLER">("ALL");
 
   const [tokenSearch, setTokenSearch] = useState("");
 
@@ -123,11 +126,12 @@ export default function AdminDashboard() {
   const [annEditId, setAnnEditId] = useState<string | null>(null);
   const [annCreateOpen, setAnnCreateOpen] = useState(false);
 
-  // Participant edit form
+  // Participant edit form & filters
   const [participantEditOpen, setParticipantEditOpen] = useState(false);
   const [editingParticipant, setEditingParticipant] = useState<(Participant & { teamId: string }) | null>(null);
-  const [participantForm, setParticipantForm] = useState({ name: "", email: "", isLeader: false });
+  const [participantForm, setParticipantForm] = useState({ name: "", email: "", isLeader: false, hostelStatus: "dayscholar" as "hosteller" | "dayscholar" | "" });
   const [participantSearch, setParticipantSearch] = useState("");
+  const [participantHostelFilter, setParticipantHostelFilter] = useState<"ALL" | "DAYSCHOLAR" | "HOSTELLER">("ALL");
 
   // Team management state
   const [teamSearch, setTeamSearch] = useState("");
@@ -640,6 +644,7 @@ export default function AdminDashboard() {
       type: "lunch",
       scheduledAt: new Date().toISOString().slice(0, 16),
       windowMinutes: 125,
+      targetAudience: "all",
     });
     setMealModalOpen(true);
   };
@@ -662,6 +667,7 @@ export default function AdminDashboard() {
         scheduledAt: new Date(mealForm.scheduledAt).toISOString(),
         windowMinutes: Number(mealForm.windowMinutes),
         createdBy: session.email || "admin@siet.edu",
+        targetAudience: mealForm.targetAudience,
       };
 
       await createMeal(data);
@@ -685,10 +691,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleBulkIssueTokens = async (mealId: string) => {
+  const handleBulkIssueTokens = async (mealId: string, filterTarget?: "all" | "dayscholars" | "hostellers") => {
     try {
-      const result = await issueMealTokens(mealId);
-      toast(`Tokens issued: ${result.issued} created, ${result.skipped} skipped.`, "success");
+      const result = await issueMealTokens(mealId, filterTarget);
+      const targetLabel = filterTarget === "dayscholars" ? " (Dayscholars only)" : filterTarget === "hostellers" ? " (Hostellers only)" : "";
+      toast(`Tokens issued${targetLabel}: ${result.issued} created, ${result.skipped} skipped.`, "success");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "An error occurred.";
       toast(msg, "error");
@@ -725,7 +732,9 @@ export default function AdminDashboard() {
   // ─── PARTICIPANT HANDLERS ───
   const handleOpenParticipantEdit = (p: Participant & { teamId: string }) => {
     setEditingParticipant(p);
-    setParticipantForm({ name: p.name, email: p.email, isLeader: p.isLeader || false });
+    const profile = userProfiles.find((u) => u.email.toLowerCase() === p.email.toLowerCase());
+    const status = (p.hostelStatus || profile?.hostelStatus || "") as "hosteller" | "dayscholar" | "";
+    setParticipantForm({ name: p.name, email: p.email, isLeader: p.isLeader || false, hostelStatus: status });
     setParticipantEditOpen(true);
   };
   const handleSaveParticipant = () => {
@@ -734,7 +743,13 @@ export default function AdminDashboard() {
     if (!team) return;
     const updatedMembers = team.members.map((m) => {
       if (m.email === editingParticipant.email) {
-        return { ...m, name: participantForm.name, email: participantForm.email, isLeader: participantForm.isLeader };
+        return {
+          ...m,
+          name: participantForm.name,
+          email: participantForm.email,
+          isLeader: participantForm.isLeader,
+          hostelStatus: (participantForm.hostelStatus as "hosteller" | "dayscholar") || undefined,
+        };
       }
       if (participantForm.isLeader && m.email !== editingParticipant.email) {
         return { ...m, isLeader: false };
@@ -1404,20 +1419,46 @@ export default function AdminDashboard() {
             {/* ═══════════════════════════════════════════ PARTICIPANTS TAB ═══════════════════════════════════════════ */}
             {activeTab === "participants" && (
               <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col gap-5">
-                <div className="flex items-center justify-between gap-3 border-b border-gray-150 dark:border-gray-700 pb-3">
-                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">
-                    All Participants
-                    {isConfigured && (
-                      <span className="ml-2 text-xs font-normal text-gray-400">(Live from Firebase)</span>
-                    )}
-                  </h3>
-                  <input
-                    type="text"
-                    placeholder="Search by name, email, register no..."
-                    value={participantSearch}
-                    onChange={(e) => setParticipantSearch(e.target.value)}
-                    className="text-xs border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-64 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/40"
-                  />
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-150 dark:border-gray-700 pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">
+                      All Participants
+                      {isConfigured && (
+                        <span className="ml-2 text-xs font-normal text-gray-400">(Live from Firebase)</span>
+                      )}
+                    </h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Filter Pills for Hostel Status */}
+                    <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-xl text-xs font-semibold">
+                      <button
+                        onClick={() => setParticipantHostelFilter("ALL")}
+                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${participantHostelFilter === "ALL" ? "bg-white dark:bg-gray-700 text-primary-dark dark:text-gray-100 shadow-xs" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setParticipantHostelFilter("DAYSCHOLAR")}
+                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${participantHostelFilter === "DAYSCHOLAR" ? "bg-emerald-500 text-white shadow-xs font-bold" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+                      >
+                        <span>🎓 Dayscholars Only</span>
+                      </button>
+                      <button
+                        onClick={() => setParticipantHostelFilter("HOSTELLER")}
+                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${participantHostelFilter === "HOSTELLER" ? "bg-purple-600 text-white shadow-xs font-bold" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+                      >
+                        <span>🏢 Hostellers Only</span>
+                      </button>
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Search by name, email, register no..."
+                      value={participantSearch}
+                      onChange={(e) => setParticipantSearch(e.target.value)}
+                      className="text-xs border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-56 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/40"
+                    />
+                  </div>
                 </div>
 
                 {isConfigured && teams.length === 0 && (
@@ -1433,6 +1474,7 @@ export default function AdminDashboard() {
                         <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Name</th>
                         <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Reg No.</th>
                         <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Team</th>
+                        <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Residence</th>
                         <th className="text-left py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Dept / Year</th>
                         <th className="text-center py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Leader</th>
                         {isConfigured && <th className="text-center py-3 px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Account</th>}
@@ -1441,39 +1483,46 @@ export default function AdminDashboard() {
                     </thead>
                     <tbody>
                       {(() => {
-                        // Only show teams from Firestore when configured.
-                        // Exclude the hardcoded mock team IDs (exactly "team-1", "team-2", "team-3") — 
-                        // NOT by startsWith (which would wrongly filter real teams like "team-1751234567890")
                         const MOCK_TEAM_IDS = new Set(["team-1", "team-2", "team-3"]);
                         const sourceteams = teams.filter(t => !MOCK_TEAM_IDS.has(t.id));
 
                         const allParticipants = sourceteams.flatMap((t) =>
-                          t.members.map((m) => ({ ...m, teamName: t.name, teamId: t.id }))
+                          t.members.map((m) => {
+                            const profile = userProfiles.find((u) => u.email.toLowerCase() === m.email.toLowerCase());
+                            const status = (m.hostelStatus || profile?.hostelStatus || "").toLowerCase();
+                            return { ...m, teamName: t.name, teamId: t.id, hostelStatusResolved: status };
+                          })
                         );
 
+                        let filtered = allParticipants;
+                        if (participantHostelFilter === "DAYSCHOLAR") {
+                          filtered = filtered.filter((p) => p.hostelStatusResolved === "dayscholar");
+                        } else if (participantHostelFilter === "HOSTELLER") {
+                          filtered = filtered.filter((p) => p.hostelStatusResolved === "hosteller");
+                        }
+
                         const query = participantSearch.toLowerCase().trim();
-                        const filtered = query
-                          ? allParticipants.filter(
-                              (p) =>
-                                p.name.toLowerCase().includes(query) ||
-                                p.email.toLowerCase().includes(query) ||
-                                (p.registerNumber ?? "").toLowerCase().includes(query) ||
-                                (p.department ?? "").toLowerCase().includes(query)
-                            )
-                          : allParticipants;
+                        if (query) {
+                          filtered = filtered.filter(
+                            (p) =>
+                              p.name.toLowerCase().includes(query) ||
+                              p.email.toLowerCase().includes(query) ||
+                              (p.registerNumber ?? "").toLowerCase().includes(query) ||
+                              (p.department ?? "").toLowerCase().includes(query)
+                          );
+                        }
 
                         if (filtered.length === 0) {
                           return (
                             <tr>
-                              <td colSpan={isConfigured ? 7 : 6} className="py-8 text-center text-gray-400 text-sm">
-                                {query ? `No participants match "${participantSearch}"` : "No participants yet."}
+                              <td colSpan={isConfigured ? 8 : 7} className="py-8 text-center text-gray-400 text-sm">
+                                {query || participantHostelFilter !== "ALL" ? `No participants match current search / filters` : "No participants yet."}
                               </td>
                             </tr>
                           );
                         }
 
                         return filtered.map((p, idx) => {
-                          // Cross-reference with Firestore userProfiles to check if they have a Firebase account
                           const hasAccount = isConfigured
                             ? userProfiles.some((u) => u.email === p.email)
                             : true;
@@ -1494,6 +1543,19 @@ export default function AdminDashboard() {
                                 {p.registerNumber || <span className="text-gray-300">—</span>}
                               </td>
                               <td className="py-3 px-3 text-gray-600 dark:text-gray-300">{p.teamName}</td>
+                              <td className="py-3 px-3">
+                                {p.hostelStatusResolved === "dayscholar" ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                                    🎓 Dayscholar
+                                  </span>
+                                ) : p.hostelStatusResolved === "hosteller" ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-[10px] font-bold border border-purple-200 dark:border-purple-800">
+                                    🏢 Hosteller
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400 text-[10px] font-medium">—</span>
+                                )}
+                              </td>
                               <td className="py-3 px-3">
                                 <div className="text-gray-600 dark:text-gray-300">{p.department || <span className="text-gray-300">—</span>}</div>
                                 {p.year && <div className="text-[10px] text-gray-400">{p.year}</div>}
@@ -1990,7 +2052,14 @@ export default function AdminDashboard() {
                               <div className="flex justify-between items-start">
                                 <div>
                                   <h5 className="font-extrabold text-sm text-primary-dark dark:text-gray-150">{m.name}</h5>
-                                  <span className="text-[10px] text-gray-400 capitalize">{m.type}</span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] text-gray-400 capitalize">{m.type}</span>
+                                    {m.targetAudience && m.targetAudience !== "all" && (
+                                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 uppercase tracking-wide">
+                                        {m.targetAudience === "dayscholars" ? "🎓 Dayscholars Only" : "🏢 Hostellers Only"}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${isPast ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>
                                   {isPast ? "Expired" : "Active"}
@@ -2004,22 +2073,36 @@ export default function AdminDashboard() {
                                 <p><strong>Redeemed:</strong> {countRedeemed} / {countTokens} ({countTokens > 0 ? Math.round((countRedeemed/countTokens)*100) : 0}%)</p>
                               </div>
 
-                              <div className="flex gap-2 pt-2 justify-between items-center border-t border-gray-100 dark:border-gray-700/50">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleBulkIssueTokens(m.id)}
-                                  className="h-7 text-[10px]"
-                                >
-                                  Bulk Issue Tokens
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => handleDeleteMeal(m.id)}
-                                  className="h-7 text-[10px] text-red-500 hover:bg-red-50"
-                                >
-                                  Delete
-                                </Button>
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Target:</span>
+                                  <select
+                                    value={mealTargetMap[m.id] ?? m.targetAudience ?? "all"}
+                                    onChange={(e) => setMealTargetMap((prev) => ({ ...prev, [m.id]: e.target.value as "all" | "dayscholars" | "hostellers" }))}
+                                    className="text-xs py-1 px-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-green"
+                                  >
+                                    <option value="all">All Participants</option>
+                                    <option value="dayscholars">Dayscholars Only 🎓</option>
+                                    <option value="hostellers">Hostellers Only 🏢</option>
+                                  </select>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleBulkIssueTokens(m.id, mealTargetMap[m.id] ?? m.targetAudience ?? "all")}
+                                    className="h-7 text-[10px] bg-primary-green hover:bg-emerald-600 text-white font-bold"
+                                  >
+                                    Publish / Issue Tokens
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => handleDeleteMeal(m.id)}
+                                    className="h-7 text-[10px] text-red-500 hover:bg-red-50"
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           );
@@ -2035,9 +2118,18 @@ export default function AdminDashboard() {
 
                     {/* Tokens List / Audit Log */}
                     <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700/80">
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">Issued Tokens & Redemption Log</h4>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={tokenResidenceFilter}
+                            onChange={(e) => setTokenResidenceFilter(e.target.value as "ALL" | "DAYSCHOLAR" | "HOSTELLER")}
+                            className="text-xs px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-150 focus:outline-none font-semibold"
+                          >
+                            <option value="ALL">All Residence Types</option>
+                            <option value="DAYSCHOLAR">Dayscholars Only 🎓</option>
+                            <option value="HOSTELLER">Hostellers Only 🏢</option>
+                          </select>
                           <input
                             type="text"
                             placeholder="Search by name/email/code..."
@@ -2063,6 +2155,21 @@ export default function AdminDashboard() {
                           <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {foodTokens
                               .filter((t) => {
+                                if (tokenResidenceFilter !== "ALL") {
+                                  const userProf = userProfiles.find((u) => u.email.toLowerCase() === t.participantEmail.toLowerCase());
+                                  let statusStr = (userProf?.hostelStatus || "").toLowerCase();
+                                  if (!statusStr) {
+                                    for (const team of teams) {
+                                      const mem = team.members.find((m) => m.email.toLowerCase() === t.participantEmail.toLowerCase());
+                                      if (mem?.hostelStatus) {
+                                        statusStr = mem.hostelStatus.toLowerCase();
+                                        break;
+                                      }
+                                    }
+                                  }
+                                  if (tokenResidenceFilter === "DAYSCHOLAR" && statusStr !== "dayscholar") return false;
+                                  if (tokenResidenceFilter === "HOSTELLER" && statusStr !== "hosteller") return false;
+                                }
                                 if (!tokenSearch) return true;
                                 const queryStr = tokenSearch.toLowerCase();
                                 return (
@@ -2632,6 +2739,20 @@ export default function AdminDashboard() {
               <option value="snack">Snack/Refreshments</option>
             </select>
           </div>
+          <div>
+            <label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide block mb-1.5">
+              Target Audience Filter
+            </label>
+            <select
+              value={mealForm.targetAudience}
+              onChange={(e) => setMealForm((p) => ({ ...p, targetAudience: e.target.value as "all" | "dayscholars" | "hostellers" }))}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 font-semibold"
+            >
+              <option value="all">All Participants (Hostellers & Dayscholars)</option>
+              <option value="dayscholars">Dayscholars Only 🎓</option>
+              <option value="hostellers">Hostellers Only 🏢</option>
+            </select>
+          </div>
           <Input
             label="Scheduled Date & Time *"
             type="datetime-local"
@@ -2669,6 +2790,20 @@ export default function AdminDashboard() {
             onChange={(e) => setParticipantForm((p) => ({ ...p, email: e.target.value }))}
             placeholder="email@srishakthi.ac.in"
           />
+          <div>
+            <label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide block mb-1.5">
+              Residence Status
+            </label>
+            <select
+              value={participantForm.hostelStatus}
+              onChange={(e) => setParticipantForm((p) => ({ ...p, hostelStatus: e.target.value as "hosteller" | "dayscholar" | "" }))}
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30 font-semibold"
+            >
+              <option value="">Not Specified</option>
+              <option value="dayscholar">Dayscholar 🎓</option>
+              <option value="hosteller">Hosteller 🏢</option>
+            </select>
+          </div>
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
