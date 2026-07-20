@@ -762,14 +762,46 @@ export default function AdminDashboard() {
     setEditingParticipant(null);
   };
 
-  const handleDeleteParticipant = (p: Participant & { teamId: string; teamName: string }) => {
-    if (!confirm(`Remove "${p.name}" from team "${p.teamName}"? This cannot be undone.`)) return;
-    const team = teams.find(t => t.id === p.teamId);
-    if (!team) return;
-    const updatedMembers = team.members.filter(m => m.email !== p.email);
-    updateTeamMembers(p.teamId, updatedMembers);
-    toast(`"${p.name}" removed from ${p.teamName}.`, "success");
+  const handleDeleteParticipant = async (p: Participant & { teamId: string; teamName: string }) => {
+    if (!confirm(`Permanently delete "${p.name}" (${p.email}) from the system?\n\nThis will:\n• Remove them from Firebase Auth\n• Delete their user profile\n• Remove them from team "${p.teamName}"\n• Delete their food tokens\n\nThis action cannot be undone.`)) return;
+
+    if (isConfigured && db && auth && auth.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        // Find the participant's uid from userProfiles
+        const userProfile = userProfiles.find(
+          (u) => u.email?.toLowerCase() === p.email?.toLowerCase()
+        );
+        const uid = userProfile?.uid || userProfile?.id || "";
+        const params = new URLSearchParams();
+        if (uid) params.set("uid", uid);
+        params.set("email", p.email);
+
+        const res = await fetch(`/api/admin/participants?${params.toString()}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to delete participant.");
+        }
+        toast(`"${p.name}" has been fully deleted from the system.`, "success");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "An error occurred.";
+        toast(msg, "error");
+      }
+    } else {
+      // Mock mode: just remove from team locally
+      const team = teams.find(t => t.id === p.teamId);
+      if (!team) return;
+      const updatedMembers = team.members.filter(m => m.email !== p.email);
+      updateTeamMembers(p.teamId, updatedMembers);
+      // Also remove from userProfiles if present
+      deleteProfile(p.email);
+      toast(`"${p.name}" removed from ${p.teamName}.`, "success");
+    }
   };
+
 
   // ─── PROBLEM STATEMENT HANDLERS ───
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1367,10 +1399,55 @@ export default function AdminDashboard() {
                   })}
                   
                   {hackathons.length === 0 && (
-                    <div className="col-span-2 py-12 text-center text-xs text-gray-400">
-                      No hackathons registered. Click &quot;Create Hackathon&quot; in the header to get started.
+                    <div className="col-span-2 py-14 text-center flex flex-col items-center gap-4">
+                      <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-3xl">⚠️</div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-700 dark:text-gray-200">No hackathons found</p>
+                        <p className="text-xs text-gray-400 mt-1">The hackathon data may have been deleted. Restore the default or create a new one.</p>
+                      </div>
+                      <div className="flex gap-3 flex-wrap justify-center">
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await createHackathon({
+                                name: "AI Lab Hackathon 2026",
+                                slug: "ai-lab-2026",
+                                description: "The premier AI & ML hackathon at Sri Eshwar College of Engineering — 24-hour coding sprint with mentors, cloud GPU credits, and a ₹1,00,000 prize pool.",
+                                venue: "AI Research Lab, SIET Campus",
+                                startDate: "2026-07-18T09:00",
+                                endDate: "2026-07-19T18:00",
+                                registrationOpen: true,
+                                maxTeamSize: 3,
+                                minTeamSize: 2,
+                                status: "active",
+                                createdBy: session.email || "admin@hacklab.internal",
+                                teamsLocked: false,
+                                problemStatementRevealTime: "",
+                                resultsRevealTime: "",
+                              });
+                              toast("Default hackathon restored successfully!", "success");
+                            } catch (err: unknown) {
+                              const msg = err instanceof Error ? err.message : "Failed to restore";
+                              toast(msg, "error");
+                            }
+                          }}
+                          className="text-xs px-4 py-2 bg-primary-green text-white"
+                        >
+                          🔄 Restore Default Hackathon
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={openAddHackathon}
+                          className="text-xs px-4 py-2"
+                        >
+                          + Create New Hackathon
+                        </Button>
+                      </div>
                     </div>
                   )}
+
                 </div>
               </div>
             )}

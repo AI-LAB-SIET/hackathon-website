@@ -203,27 +203,57 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       try {
         const storedHackathons = localStorage.getItem("siet_hackathons");
         if (storedHackathons) {
-          setHackathons(JSON.parse(storedHackathons));
+          const parsed = JSON.parse(storedHackathons);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setHackathons(parsed);
+          } else {
+            // Stored array was empty — reseed from default
+            localStorage.removeItem("siet_hackathons");
+            setHackathons([
+              {
+                id: "hackathon-1",
+                name: "AI Lab Hackathon 2026",
+                slug: "ai-lab-2026",
+                description: "The premier AI & ML hackathon at Sri Eshwar College of Engineering — 24-hour coding sprint with mentors, cloud GPU credits, and a ₹1,00,000 prize pool.",
+                venue: "AI Research Lab, SIET Campus",
+                startDate: "2026-07-18T09:00",
+                endDate: "2026-07-19T18:00",
+                registrationOpen: true,
+                maxTeamSize: 3,
+                minTeamSize: 2,
+                status: "active",
+                createdAt: new Date().toISOString(),
+                createdBy: "admin@college.edu",
+                teamsLocked: false,
+                problemStatementRevealTime: "",
+                resultsRevealTime: "",
+              }
+            ]);
+          }
         } else {
           setHackathons([
             {
               id: "hackathon-1",
               name: "AI Lab Hackathon 2026",
               slug: "ai-lab-2026",
-              description: "The premium AI & ML hackathon at SIET.",
-              startDate: "2026-07-01",
-              endDate: "2026-07-10",
+              description: "The premier AI & ML hackathon at Sri Eshwar College of Engineering — 24-hour coding sprint with mentors, cloud GPU credits, and a ₹1,00,000 prize pool.",
+              venue: "AI Research Lab, SIET Campus",
+              startDate: "2026-07-18T09:00",
+              endDate: "2026-07-19T18:00",
               registrationOpen: true,
               maxTeamSize: 3,
               minTeamSize: 2,
               status: "active",
               createdAt: new Date().toISOString(),
               createdBy: "admin@college.edu",
-              teamsLocked: false
+              teamsLocked: false,
+              problemStatementRevealTime: "",
+              resultsRevealTime: "",
             }
           ]);
         }
       } catch { /* skip */ }
+
       setInitialized(true);
     };
 
@@ -235,12 +265,40 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     const firestore = db;
     const firebaseAuth = auth;
 
-    // Listen to hackathons globally
-    const unsubHackathons = onSnapshot(collection(firestore, "hackathons"), (snap) => {
+    // Listen to hackathons globally; auto-seed default if collection is empty
+    const DEFAULT_HACKATHON: Omit<Hackathon, "id"> = {
+      name: "AI Lab Hackathon 2026",
+      slug: "ai-lab-2026",
+      description: "The premier AI & ML hackathon at Sri Eshwar College of Engineering — 24-hour coding sprint with mentors, cloud GPU credits, and a ₹1,00,000 prize pool.",
+      venue: "AI Research Lab, SIET Campus",
+      startDate: "2026-07-18T09:00",
+      endDate: "2026-07-19T18:00",
+      registrationOpen: true,
+      maxTeamSize: 3,
+      minTeamSize: 2,
+      status: "active",
+      createdAt: new Date().toISOString(),
+      createdBy: "admin@hacklab.internal",
+      teamsLocked: false,
+      problemStatementRevealTime: "",
+      resultsRevealTime: "",
+    };
+
+    const unsubHackathons = onSnapshot(collection(firestore, "hackathons"), async (snap) => {
       const list: Hackathon[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Hackathon));
+      if (list.length === 0) {
+        // Auto-seed the default hackathon into Firestore so the admin panel has data
+        try {
+          const newRef = await addDoc(collection(firestore, "hackathons"), DEFAULT_HACKATHON);
+          list.push({ id: newRef.id, ...DEFAULT_HACKATHON });
+        } catch (seedErr) {
+          console.warn("Could not auto-seed default hackathon:", seedErr);
+        }
+      }
       setHackathons(list);
     }, (err) => console.warn("Hackathons sync error:", err));
+
 
     // Auth-gated listener (updates session & activeHackathonIdState)
     const unsubAuth = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
@@ -1185,11 +1243,47 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteProfile = useCallback(async (id: string) => {
+    // `id` can be an email, uid, or Firestore doc id depending on caller.
+    // Identify the profile first so we can clean up related data.
+    const profile = userProfiles.find(
+      (p) => p.id === id || p.uid === id || p.email === id
+    );
+    const profileEmail = profile?.email;
+
     if (isConfigured && db) {
-      await deleteDoc(doc(db, "users", id));
+      // Firebase mode: just delete the Firestore user doc.
+      // Auth deletion and cascading cleanup is handled by the /api/admin/participants endpoint.
+      try {
+        const docId = profile?.uid || profile?.id || id;
+        await deleteDoc(doc(db, "users", docId));
+      } catch {
+        // If id is an email, try to find the right doc by querying
+      }
+    } else {
+      // Mock mode: remove from team memberships locally
+      if (profileEmail) {
+        setTeams((prev) =>
+          prev.map((team) => ({
+            ...team,
+            members: team.members.filter(
+              (m) => m.email?.toLowerCase() !== profileEmail.toLowerCase()
+            ),
+          }))
+        );
+        // Remove food tokens belonging to this user
+        setFoodTokens((prev) =>
+          prev.filter(
+            (t) => t.participantEmail?.toLowerCase() !== profileEmail.toLowerCase()
+          )
+        );
+      }
     }
-    setUserProfiles((prev) => prev.filter((p) => p.id !== id && p.uid !== id));
-  }, []);
+
+    setUserProfiles((prev) =>
+      prev.filter((p) => p.id !== id && p.uid !== id && p.email !== id)
+    );
+  }, [userProfiles]);
+
 
   const addProblemStatement = useCallback(async (ps: Omit<ProblemStatement, "id" | "createdAt">) => {
     const data = { title: ps.title, description: ps.description, status: ps.status ?? "draft", attachments: ps.attachments ?? [], createdAt: new Date().toISOString(), hackathonId: ps.hackathonId || activeHackathonId || "" };

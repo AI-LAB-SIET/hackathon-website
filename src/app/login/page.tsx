@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
-import { signInWithRole, signInAsAdmin, resendVerificationEmail } from "@/lib/firebaseAuth";
+import { signInWithRole, signInAsAdmin, resendVerificationEmail, sendPasswordReset } from "@/lib/firebaseAuth";
 import { isConfigured } from "@/lib/firebase";
 
 type RoleType = "participant" | "admin" | "judge" | "organizer" | "volunteer";
@@ -28,6 +28,13 @@ export default function Login() {
   const [firebaseError, setFirebaseError] = useState("");
   const [isUnverified, setIsUnverified] = useState(false);
   const [resending, setResending] = useState(false);
+
+  // Forgot password
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSending, setForgotSending] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotError, setForgotError] = useState("");
 
   const redirectByRole = useCallback((role: RoleType, onboarded?: boolean) => {
     switch (role) {
@@ -167,6 +174,34 @@ export default function Login() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = forgotEmail.trim();
+    if (!trimmed) {
+      setForgotError("Please enter your email address.");
+      return;
+    }
+    setForgotSending(true);
+    setForgotError("");
+    try {
+      await sendPasswordReset(trimmed);
+      setForgotSent(true);
+    } catch (err: unknown) {
+      const msg = (err as { userFriendly?: string })?.userFriendly ?? "Failed to send reset email. Please try again.";
+      setForgotError(msg);
+    } finally {
+      setForgotSending(false);
+    }
+  };
+
+  const closeForgotModal = () => {
+    setForgotOpen(false);
+    setForgotEmail("");
+    setForgotSent(false);
+    setForgotError("");
+    setForgotSending(false);
+  };
+
   return (
     <PageWrapper className="relative bg-white min-h-screen flex flex-col dark:bg-gray-950">
       <Navbar />
@@ -244,7 +279,7 @@ export default function Login() {
               </label>
               <button
                 type="button"
-                onClick={() => toast("Contact AI Lab coordinator to reset passwords.", "info")}
+                onClick={() => { setForgotEmail(email); setForgotOpen(true); }}
                 className="text-primary-green hover:underline cursor-pointer"
               >
                 Forgot Password?
@@ -259,6 +294,74 @@ export default function Login() {
       </main>
 
       <Footer />
+
+      {/* ── Forgot Password Modal ─────────────────────────── */}
+      {forgotOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.55)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeForgotModal(); }}
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 border border-input-border/30 dark:border-gray-700 shadow-2xl p-7 flex flex-col gap-5 relative animate-fade-in">
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={closeForgotModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+
+            {!forgotSent ? (
+              <>
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold text-primary-dark dark:text-gray-100">Reset Password</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    Enter the email address linked to your account. We&apos;ll send you a link to reset your password.
+                  </p>
+                </div>
+                <form onSubmit={handleForgotPassword} className="flex flex-col gap-4">
+                  <Input
+                    label="Email Address"
+                    placeholder="e.g. name@srishakthi.ac.in"
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => { setForgotEmail(e.target.value); setForgotError(""); }}
+                    error={forgotError || undefined}
+                  />
+                  {forgotError && (
+                    <p className="text-xs text-red-600 font-semibold -mt-2">{forgotError}</p>
+                  )}
+                  <Button type="submit" isLoading={forgotSending} className="w-full py-3">
+                    Send Reset Link
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-4 py-4 text-center">
+                <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary-green/10">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-primary-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-primary-dark dark:text-gray-100">Check your inbox!</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                    A password reset link has been sent to <span className="font-semibold text-gray-700 dark:text-gray-300">{forgotEmail}</span>. Follow the link to set a new password.
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Didn&apos;t receive it? Check spam or try again.</p>
+                </div>
+                <Button type="button" onClick={closeForgotModal} className="w-full py-2.5">
+                  Back to Login
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 }

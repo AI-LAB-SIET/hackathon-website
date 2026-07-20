@@ -237,6 +237,25 @@ export async function signUpWithEmail(
 }
 
 /**
+ * Send a password reset email to the given email address.
+ * Returns a user-friendly error message if the request fails.
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  if (!isConfigured || !auth) {
+    // Mock mode: simulate success
+    console.log(`[Mock] Password reset email would be sent to: ${email}`);
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email, {
+      url: `${window.location.origin}/login`,
+    });
+  } catch (err: unknown) {
+    throw mapFirebaseError(err);
+  }
+}
+
+/**
  * Send a "Set your password" email to a newly invited team member.
  * Uses Firebase's own email infrastructure (same as email verification).
  * The member receives a password reset link that lets them set their password
