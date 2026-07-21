@@ -132,6 +132,7 @@ export default function AdminDashboard() {
   const [participantForm, setParticipantForm] = useState({ name: "", email: "", isLeader: false, hostelStatus: "dayscholar" as "hosteller" | "dayscholar" | "" });
   const [participantSearch, setParticipantSearch] = useState("");
   const [participantHostelFilter, setParticipantHostelFilter] = useState<"ALL" | "DAYSCHOLAR" | "HOSTELLER">("ALL");
+  const [participantYearFilter, setParticipantYearFilter] = useState<string>("ALL");
 
   // Team management state
   const [teamSearch, setTeamSearch] = useState("");
@@ -397,6 +398,24 @@ export default function AdminDashboard() {
       bandwidthUsed: parseFloat(egressMB),
     };
   }, [teams, notifications, templates, totalStorageBytes]);
+
+  const uniqueYears = useMemo(() => {
+    const yearsSet = new Set<string>();
+    const MOCK_TEAM_IDS = new Set(["team-1", "team-2", "team-3"]);
+    const sourceteams = teams.filter(t => !MOCK_TEAM_IDS.has(t.id));
+    
+    sourceteams.forEach((t) => {
+      t.members.forEach((m) => {
+        const profile = userProfiles.find((u) => u.email.toLowerCase() === m.email.toLowerCase());
+        const y = m.year || profile?.year;
+        if (y) {
+          yearsSet.add(y);
+        }
+      });
+    });
+    
+    return Array.from(yearsSet).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+  }, [teams, userProfiles]);
 
   if (!mounted || !session.isLoggedIn || session.role !== "admin") {
     return (
@@ -800,6 +819,132 @@ export default function AdminDashboard() {
       deleteProfile(p.email);
       toast(`"${p.name}" removed from ${p.teamName}.`, "success");
     }
+  };
+
+  const handleExportParticipants = (exportType: "dayscholar" | "hosteller" | "filtered") => {
+    const MOCK_TEAM_IDS = new Set(["team-1", "team-2", "team-3"]);
+    const sourceteams = teams.filter(t => !MOCK_TEAM_IDS.has(t.id));
+
+    const allParticipants = sourceteams.flatMap((t) =>
+      t.members.map((m) => {
+        const profile = userProfiles.find((u) => u.email.toLowerCase() === m.email.toLowerCase());
+        const status = (m.hostelStatus || profile?.hostelStatus || "").toLowerCase();
+        const resolvedYear = m.year || profile?.year || "";
+        return { ...m, teamName: t.name, teamId: t.id, hostelStatusResolved: status, resolvedYear };
+      })
+    );
+
+    let filtered = allParticipants;
+
+    // Apply active hostel status filter
+    if (exportType === "dayscholar") {
+      filtered = filtered.filter((p) => p.hostelStatusResolved === "dayscholar");
+    } else if (exportType === "hosteller") {
+      filtered = filtered.filter((p) => p.hostelStatusResolved === "hosteller");
+    } else if (exportType === "filtered") {
+      if (participantHostelFilter === "DAYSCHOLAR") {
+        filtered = filtered.filter((p) => p.hostelStatusResolved === "dayscholar");
+      } else if (participantHostelFilter === "HOSTELLER") {
+        filtered = filtered.filter((p) => p.hostelStatusResolved === "hosteller");
+      }
+    }
+
+    // Apply active year filter
+    if (participantYearFilter !== "ALL") {
+      filtered = filtered.filter(
+        (p) => (p.resolvedYear || "").toLowerCase() === participantYearFilter.toLowerCase()
+      );
+    }
+
+    // Apply search query (only if exporting the currently filtered UI view)
+    if (exportType === "filtered") {
+      const query = participantSearch.toLowerCase().trim();
+      if (query) {
+        filtered = filtered.filter(
+          (p) =>
+            p.name.toLowerCase().includes(query) ||
+            p.email.toLowerCase().includes(query) ||
+            (p.registerNumber ?? "").toLowerCase().includes(query) ||
+            (p.department ?? "").toLowerCase().includes(query)
+        );
+      }
+    }
+
+    if (filtered.length === 0) {
+      toast("No participants found matching the criteria to export.", "info");
+      return;
+    }
+
+    const headers = [
+      "Name",
+      "Email",
+      "Phone",
+      "Register Number",
+      "Team Name",
+      "Residence",
+      "Department",
+      "Year",
+      "Is Leader",
+      "Has Account",
+    ];
+
+    const escapeCSV = (val: unknown) => {
+      if (val === undefined || val === null) return '""';
+      const str = String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const rows = filtered.map((p) => {
+      const hasAccount = isConfigured
+        ? userProfiles.some((u) => u.email === p.email)
+        : true;
+      return [
+        escapeCSV(p.name),
+        escapeCSV(p.email),
+        escapeCSV(p.phone || ""),
+        escapeCSV(p.registerNumber || ""),
+        escapeCSV(p.teamName),
+        escapeCSV(p.hostelStatusResolved === "dayscholar" ? "Dayscholar" : p.hostelStatusResolved === "hosteller" ? "Hosteller" : "—"),
+        escapeCSV(p.department || ""),
+        escapeCSV(p.resolvedYear || ""),
+        escapeCSV(p.isLeader ? "Yes" : "No"),
+        escapeCSV(hasAccount ? "Active" : "No Account"),
+      ];
+    });
+
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    
+    let filename = "";
+    if (exportType === "dayscholar") {
+      filename = "dayscholars_export";
+    } else if (exportType === "hosteller") {
+      filename = "hostellers_export";
+    } else {
+      filename = "participants_filtered_export";
+    }
+
+    if (participantYearFilter !== "ALL") {
+      filename += `_${participantYearFilter.replace(/\s+/g, "_").toLowerCase()}`;
+    }
+    filename += ".csv";
+
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    let successMsg = "";
+    if (exportType === "dayscholar") {
+      successMsg = `Dayscholars${participantYearFilter !== "ALL" ? ` (${participantYearFilter})` : ""} exported successfully.`;
+    } else if (exportType === "hosteller") {
+      successMsg = `Hostellers${participantYearFilter !== "ALL" ? ` (${participantYearFilter})` : ""} exported successfully.`;
+    } else {
+      successMsg = "Filtered participants exported successfully.";
+    }
+    toast(successMsg, "success");
   };
 
 
@@ -1568,6 +1713,20 @@ export default function AdminDashboard() {
                       </button>
                     </div>
 
+                    {/* Year selection dropdown */}
+                    <select
+                      value={participantYearFilter}
+                      onChange={(e) => setParticipantYearFilter(e.target.value)}
+                      className="text-xs border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/40 font-semibold cursor-pointer"
+                    >
+                      <option value="ALL">All Years</option>
+                      {(uniqueYears.length > 0 ? uniqueYears : ["1st Year", "2nd Year", "3rd Year", "4th Year"]).map((yearOption) => (
+                        <option key={yearOption} value={yearOption}>
+                          {yearOption}
+                        </option>
+                      ))}
+                    </select>
+
                     <input
                       type="text"
                       placeholder="Search by name, email, register no..."
@@ -1575,6 +1734,31 @@ export default function AdminDashboard() {
                       onChange={(e) => setParticipantSearch(e.target.value)}
                       className="text-xs border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-56 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/40"
                     />
+
+                    <button
+                      onClick={() => handleExportParticipants("dayscholar")}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer"
+                      title="Export Dayscholars to CSV"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>Export Dayscholars</span>
+                    </button>
+                    <button
+                      onClick={() => handleExportParticipants("hosteller")}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-900/40 transition-colors cursor-pointer"
+                      title="Export Hostellers to CSV"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>Export Hostellers</span>
+                    </button>
+                    <button
+                      onClick={() => handleExportParticipants("filtered")}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                      title="Export Filtered Participants to CSV"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>Export Filtered List</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1607,7 +1791,8 @@ export default function AdminDashboard() {
                           t.members.map((m) => {
                             const profile = userProfiles.find((u) => u.email.toLowerCase() === m.email.toLowerCase());
                             const status = (m.hostelStatus || profile?.hostelStatus || "").toLowerCase();
-                            return { ...m, teamName: t.name, teamId: t.id, hostelStatusResolved: status };
+                            const resolvedYear = m.year || profile?.year || "";
+                            return { ...m, teamName: t.name, teamId: t.id, hostelStatusResolved: status, resolvedYear };
                           })
                         );
 
@@ -1616,6 +1801,10 @@ export default function AdminDashboard() {
                           filtered = filtered.filter((p) => p.hostelStatusResolved === "dayscholar");
                         } else if (participantHostelFilter === "HOSTELLER") {
                           filtered = filtered.filter((p) => p.hostelStatusResolved === "hosteller");
+                        }
+
+                        if (participantYearFilter !== "ALL") {
+                          filtered = filtered.filter((p) => (p.resolvedYear || "").toLowerCase() === participantYearFilter.toLowerCase());
                         }
 
                         const query = participantSearch.toLowerCase().trim();
@@ -1633,7 +1822,7 @@ export default function AdminDashboard() {
                           return (
                             <tr>
                               <td colSpan={isConfigured ? 8 : 7} className="py-8 text-center text-gray-400 text-sm">
-                                {query || participantHostelFilter !== "ALL" ? `No participants match current search / filters` : "No participants yet."}
+                                {query || participantHostelFilter !== "ALL" || participantYearFilter !== "ALL" ? `No participants match current search / filters` : "No participants yet."}
                               </td>
                             </tr>
                           );
@@ -1675,7 +1864,7 @@ export default function AdminDashboard() {
                               </td>
                               <td className="py-3 px-3">
                                 <div className="text-gray-600 dark:text-gray-300">{p.department || <span className="text-gray-300">—</span>}</div>
-                                {p.year && <div className="text-[10px] text-gray-400">{p.year}</div>}
+                                {p.resolvedYear && <div className="text-[10px] text-gray-400">{p.resolvedYear}</div>}
                               </td>
                               <td className="py-3 px-3 text-center">
                                 {p.isLeader ? (
