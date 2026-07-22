@@ -51,13 +51,13 @@ function RegisterForm() {
     if (!account.college.trim()) errs.college = "College name is required";
     if (!account.hostelStatus) errs.hostelStatus = "Hosteller/Dayscholar status is required";
 
-    // Validate email format and restrict to college domains
+    // Validate email format and restrict to college domains or gmail
     const emailLower = account.email.toLowerCase().trim();
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@(srishakthi\.ac\.in|siet\.ac\.in)$/i;
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@(srishakthi\.ac\.in|siet\.ac\.in|gmail\.com)$/i;
     if (!emailLower) {
-      errs.email = "College email is required";
+      errs.email = "Email is required";
     } else if (!emailPattern.test(emailLower)) {
-      errs.email = "Please use a valid college email (@srishakthi.ac.in or @siet.ac.in)";
+      errs.email = "Please use a valid college email (@srishakthi.ac.in or @siet.ac.in) or Gmail (@gmail.com)";
     }
 
     if (account.password.length < 6) errs.password = "Must be at least 6 characters";
@@ -178,8 +178,8 @@ function RegisterForm() {
               <Mail className="h-4 w-4" />
             </div>
             <Input
-              label="College Email"
-              placeholder="you@srishakthi.ac.in"
+              label="Email Address"
+              placeholder="you@srishakthi.ac.in or you@gmail.com"
               type="email"
               value={account.email}
               onChange={(e) => setAccount((p) => ({ ...p, email: e.target.value }))}
