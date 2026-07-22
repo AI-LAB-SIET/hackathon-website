@@ -1033,33 +1033,66 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     email: string; name: string; registerNumber: string; teamId: string; teamName: string;
     hostelStatus?: string; department?: string; year?: string; problemStatementTitle?: string;
   }) => {
-    const entryId = `${slotId}_${participant.email.replace(/[^a-zA-Z0-9]/g, "_")}`;
-    const entry: Omit<AttendanceEntry, "id"> = {
-      slotId,
-      hackathonId: activeHackathonId || "",
-      participantEmail: participant.email,
-      participantName: participant.name,
-      registerNumber: participant.registerNumber,
-      teamId: participant.teamId,
-      teamName: participant.teamName,
-      hostelStatus: participant.hostelStatus as AttendanceEntry["hostelStatus"],
-      department: participant.department,
-      year: participant.year,
-      problemStatementTitle: participant.problemStatementTitle,
-      markedAt: new Date().toISOString(),
-      markedBy: session.email || "",
-      markedByName: session.name || "",
-    };
-    if (isConfigured && db) {
-      await setDoc(doc(db, "attendanceEntries", entryId), entry);
-    } else {
+    const team = participant.teamId ? teamsRef.current.find((t) => t.id === participant.teamId) : null;
+    const problemTitle = team?.problemStatementId
+      ? (problemStatements.find((ps) => ps.id === team.problemStatementId)?.title || "")
+      : (participant.problemStatementTitle || "");
+
+    const membersToMark = (team && team.members && team.members.length > 0)
+      ? team.members
+      : [{
+          email: participant.email,
+          name: participant.name,
+          registerNumber: participant.registerNumber,
+          hostelStatus: participant.hostelStatus,
+          department: participant.department,
+          year: participant.year,
+        }];
+
+    const now = new Date().toISOString();
+    const newEntries: AttendanceEntry[] = [];
+
+    for (const m of membersToMark) {
+      const profile = userProfilesRef.current.find((u) => u.email === m.email);
+      const entryId = `${slotId}_${m.email.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      const entryData: Omit<AttendanceEntry, "id"> = {
+        slotId,
+        hackathonId: activeHackathonId || "",
+        participantEmail: m.email,
+        participantName: m.name,
+        registerNumber: m.registerNumber || profile?.registerNumber || participant.registerNumber || "",
+        teamId: participant.teamId || (team?.id || ""),
+        teamName: participant.teamName || (team?.name || ""),
+        hostelStatus: (m.hostelStatus || profile?.hostelStatus || participant.hostelStatus) as AttendanceEntry["hostelStatus"],
+        department: m.department || profile?.department || participant.department,
+        year: m.year || profile?.year || participant.year,
+        problemStatementTitle: problemTitle,
+        markedAt: now,
+        markedBy: session.email || "",
+        markedByName: session.name || "",
+      };
+
+      if (isConfigured && db) {
+        await setDoc(doc(db, "attendanceEntries", entryId), entryData);
+      }
+      newEntries.push({ id: entryId, ...entryData });
+    }
+
+    if (!isConfigured || !db) {
       setAttendanceEntries((prev) => {
-        const exists = prev.find((e) => e.id === entryId);
-        if (exists) return prev.map((e) => e.id === entryId ? { id: entryId, ...entry } : e);
-        return [...prev, { id: entryId, ...entry }];
+        let updated = [...prev];
+        for (const ne of newEntries) {
+          const idx = updated.findIndex((e) => e.id === ne.id);
+          if (idx >= 0) {
+            updated[idx] = ne;
+          } else {
+            updated.push(ne);
+          }
+        }
+        return updated;
       });
     }
-  }, [activeHackathonId, session.email, session.name]);
+  }, [activeHackathonId, session.email, session.name, problemStatements]);
 
   const unmarkAttendance = useCallback(async (slotId: string, participantEmail: string) => {
     const entryId = `${slotId}_${participantEmail.replace(/[^a-zA-Z0-9]/g, "_")}`;
