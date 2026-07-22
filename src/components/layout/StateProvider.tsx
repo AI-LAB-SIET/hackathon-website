@@ -1080,7 +1080,7 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
     if (!isConfigured || !db) {
       setAttendanceEntries((prev) => {
-        let updated = [...prev];
+        const updated = [...prev];
         for (const ne of newEntries) {
           const idx = updated.findIndex((e) => e.id === ne.id);
           if (idx >= 0) {
