@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Team, UserSession, Announcement, Participant, Notification, SupportTicket, Volunteer, UserProfile, ProblemStatement, Ticket, Hackathon, TeamRequest, FoodMeal, FoodToken, TemplateResource } from "@/types";
+import { Team, UserSession, Announcement, Participant, Notification, SupportTicket, Volunteer, UserProfile, ProblemStatement, Ticket, Hackathon, TeamRequest, FoodMeal, FoodToken, TemplateResource, AttendanceSlot, AttendanceEntry } from "@/types";
 import { INITIAL_TEAMS, INITIAL_ANNOUNCEMENTS, INITIAL_NOTIFICATIONS, INITIAL_VOLUNTEERS } from "@/lib/mockData";
 import { db as rawDb, auth as rawAuth, isConfigured } from "@/lib/firebase";
 import { Firestore } from "firebase/firestore";
@@ -105,6 +105,15 @@ interface StateContextType {
   getMyTokens: (email: string) => FoodToken[];
   revokeToken: (tokenId: string) => Promise<void>;
   lookupToken: (codeOrRegister: string) => Promise<FoodToken | null>;
+  // ─── Attendance Slots ────────────────────────────────────────────────────────
+  attendanceSlots: AttendanceSlot[];
+  attendanceEntries: AttendanceEntry[];
+  createAttendanceSlot: (slot: Omit<AttendanceSlot, "id" | "createdAt">) => Promise<string>;
+  updateAttendanceSlot: (id: string, data: Partial<AttendanceSlot>) => Promise<void>;
+  deleteAttendanceSlot: (id: string) => Promise<void>;
+  markAttendance: (slotId: string, participant: { email: string; name: string; registerNumber: string; teamId: string; teamName: string; hostelStatus?: string; department?: string; year?: string; problemStatementTitle?: string }) => Promise<void>;
+  unmarkAttendance: (slotId: string, participantEmail: string) => Promise<void>;
+  bulkMarkTeamAttendance: (slotId: string, teamId: string) => Promise<void>;
 }
 
 const StateContext = createContext<StateContextType | undefined>(undefined);
@@ -136,6 +145,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
   const [foodTokens, setFoodTokens] = useState<FoodToken[]>([]);
   const [templates, setTemplates] = useState<TemplateResource[]>([]);
   const [activeHackathonId, setActiveHackathonIdState] = useState<string | null>(null);
+  const [attendanceSlots, setAttendanceSlots] = useState<AttendanceSlot[]>([]);
+  const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>([]);
   const [initialized, setInitialized] = useState(false);
 
   const volunteersRef = useRef(volunteers);
@@ -377,6 +388,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       setAnnouncements([]);
       setProblemStatements([]);
       setTemplates([]);
+      setAttendanceSlots([]);
+      setAttendanceEntries([]);
       return;
     }
 
@@ -501,6 +514,22 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     }, (err) => console.warn("Users sync error:", err));
 
 
+    // Attendance slots scoped listener
+    const attendanceSlotsQ = query(collection(firestore, "attendanceSlots"), where("hackathonId", "==", targetHackathonId));
+    const unsubAttendanceSlots = onSnapshot(attendanceSlotsQ, (snap) => {
+      const list: AttendanceSlot[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as AttendanceSlot));
+      setAttendanceSlots(list);
+    }, (err) => console.warn("AttendanceSlots sync error:", err));
+
+    // Attendance entries scoped listener
+    const attendanceEntriesQ = query(collection(firestore, "attendanceEntries"), where("hackathonId", "==", targetHackathonId));
+    const unsubAttendanceEntries = onSnapshot(attendanceEntriesQ, (snap) => {
+      const list: AttendanceEntry[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as AttendanceEntry));
+      setAttendanceEntries(list);
+    }, (err) => console.warn("AttendanceEntries sync error:", err));
+
     return () => {
       unsubTeams();
       unsubTickets();
@@ -512,6 +541,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       unsubFoodTokens();
       unsubTemplates();
       unsubUsers();
+      unsubAttendanceSlots();
+      unsubAttendanceEntries();
     };
   }, [session.isLoggedIn, session.role, session.email, activeHackathonId]);
 
@@ -528,9 +559,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("siet_problems", JSON.stringify(problemStatements));
       localStorage.setItem("siet_tickets", JSON.stringify(tickets));
       localStorage.setItem("siet_hackathons", JSON.stringify(hackathons));
+      localStorage.setItem("siet_attendance_slots", JSON.stringify(attendanceSlots));
+      localStorage.setItem("siet_attendance_entries", JSON.stringify(attendanceEntries));
     }, 300);
     return () => clearTimeout(timeout);
-  }, [teams, session, announcements, notifications, volunteers, userProfiles, problemStatements, tickets, hackathons, initialized]);
+  }, [teams, session, announcements, notifications, volunteers, userProfiles, problemStatements, tickets, hackathons, attendanceSlots, attendanceEntries, initialized]);
 
   const isHackathonFrozen = useCallback((hackathonId?: string | null) => {
     const hId = hackathonId || activeHackathonId;
@@ -955,6 +988,109 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       addNotification({ userId: team.members[0]?.email || "", type: "approval", title: "Attendance Recorded", body: `Team "${team.name}" checked in at ${now} by ${byName}.`, priority: "normal", relatedTeamId: teamId });
     }
   }, [addNotification]);
+
+  // ─── Attendance Slots ──────────────────────────────────────────────────────
+
+  const createAttendanceSlot = useCallback(async (slotData: Omit<AttendanceSlot, "id" | "createdAt">) => {
+    const newSlot: Omit<AttendanceSlot, "id"> = {
+      ...slotData,
+      createdAt: new Date().toISOString(),
+    };
+    if (isConfigured && db) {
+      const ref = await addDoc(collection(db, "attendanceSlots"), newSlot);
+      return ref.id;
+    } else {
+      const id = `slot-${Date.now()}`;
+      setAttendanceSlots((prev) => [...prev, { id, ...newSlot }]);
+      return id;
+    }
+  }, []);
+
+  const updateAttendanceSlot = useCallback(async (id: string, data: Partial<AttendanceSlot>) => {
+    if (isConfigured && db) {
+      await updateDoc(doc(db, "attendanceSlots", id), data);
+    } else {
+      setAttendanceSlots((prev) => prev.map((s) => s.id === id ? { ...s, ...data } : s));
+    }
+  }, []);
+
+  const deleteAttendanceSlot = useCallback(async (id: string) => {
+    if (isConfigured && db) {
+      await deleteDoc(doc(db, "attendanceSlots", id));
+      // Also delete all entries for this slot
+      const entriesQ = query(collection(db, "attendanceEntries"), where("slotId", "==", id));
+      const entriesSnap = await getDocs(entriesQ);
+      const batch = writeBatch(db);
+      entriesSnap.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    } else {
+      setAttendanceSlots((prev) => prev.filter((s) => s.id !== id));
+      setAttendanceEntries((prev) => prev.filter((e) => e.slotId !== id));
+    }
+  }, []);
+
+  const markAttendance = useCallback(async (slotId: string, participant: {
+    email: string; name: string; registerNumber: string; teamId: string; teamName: string;
+    hostelStatus?: string; department?: string; year?: string; problemStatementTitle?: string;
+  }) => {
+    const entryId = `${slotId}_${participant.email.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    const entry: Omit<AttendanceEntry, "id"> = {
+      slotId,
+      hackathonId: activeHackathonId || "",
+      participantEmail: participant.email,
+      participantName: participant.name,
+      registerNumber: participant.registerNumber,
+      teamId: participant.teamId,
+      teamName: participant.teamName,
+      hostelStatus: participant.hostelStatus as AttendanceEntry["hostelStatus"],
+      department: participant.department,
+      year: participant.year,
+      problemStatementTitle: participant.problemStatementTitle,
+      markedAt: new Date().toISOString(),
+      markedBy: session.email || "",
+      markedByName: session.name || "",
+    };
+    if (isConfigured && db) {
+      await setDoc(doc(db, "attendanceEntries", entryId), entry);
+    } else {
+      setAttendanceEntries((prev) => {
+        const exists = prev.find((e) => e.id === entryId);
+        if (exists) return prev.map((e) => e.id === entryId ? { id: entryId, ...entry } : e);
+        return [...prev, { id: entryId, ...entry }];
+      });
+    }
+  }, [activeHackathonId, session.email, session.name]);
+
+  const unmarkAttendance = useCallback(async (slotId: string, participantEmail: string) => {
+    const entryId = `${slotId}_${participantEmail.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    if (isConfigured && db) {
+      await deleteDoc(doc(db, "attendanceEntries", entryId));
+    } else {
+      setAttendanceEntries((prev) => prev.filter((e) => e.id !== entryId));
+    }
+  }, []);
+
+  const bulkMarkTeamAttendance = useCallback(async (slotId: string, teamId: string) => {
+    const team = teamsRef.current.find((t) => t.id === teamId);
+    if (!team) return;
+    const problemTitle = team.problemStatementId
+      ? (problemStatements.find((ps) => ps.id === team.problemStatementId)?.title || "")
+      : "";
+    for (const member of team.members) {
+      const profile = userProfilesRef.current.find((u) => u.email === member.email);
+      await markAttendance(slotId, {
+        email: member.email,
+        name: member.name,
+        registerNumber: member.registerNumber || profile?.registerNumber || "",
+        teamId: team.id,
+        teamName: team.name,
+        hostelStatus: member.hostelStatus || profile?.hostelStatus,
+        department: member.department || profile?.department,
+        year: member.year || profile?.year,
+        problemStatementTitle: problemTitle,
+      });
+    }
+  }, [problemStatements, markAttendance]);
 
   // ─── Team Requests ──────────────────────────────────────────────────────────
 
@@ -1633,6 +1769,14 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
 
   // ─── Context value ──────────────────────────────────────────────────────────
 
+  const filteredAttendanceSlots = useMemo(() => {
+    return activeHackathonId ? attendanceSlots.filter((s) => s.hackathonId === activeHackathonId) : attendanceSlots;
+  }, [attendanceSlots, activeHackathonId]);
+
+  const filteredAttendanceEntries = useMemo(() => {
+    return activeHackathonId ? attendanceEntries.filter((e) => e.hackathonId === activeHackathonId) : attendanceEntries;
+  }, [attendanceEntries, activeHackathonId]);
+
   const value = useMemo(() => ({
     // Data
     teams: filteredTeams,
@@ -1649,6 +1793,8 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     foodTokens: filteredFoodTokens,
     activeHackathonId,
     templates,
+    attendanceSlots: filteredAttendanceSlots,
+    attendanceEntries: filteredAttendanceEntries,
     // Auth
     login, logout,
     // Hackathons
@@ -1676,10 +1822,14 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     createMeal, updateMeal, deleteMeal, issueMealTokens, redeemToken, redeemTokenByCode, getMyTokens, revokeToken, lookupToken,
     // Templates
     addTemplate, deleteTemplate,
+    // Attendance slots
+    createAttendanceSlot, updateAttendanceSlot, deleteAttendanceSlot,
+    markAttendance, unmarkAttendance, bulkMarkTeamAttendance,
   }), [
     filteredTeams, session, filteredAnnouncements, notifications,
     volunteers, userProfiles, filteredProblems, filteredTickets,
     hackathons, filteredTeamRequests, filteredFoodMeals, filteredFoodTokens, activeHackathonId,
+    filteredAttendanceSlots, filteredAttendanceEntries,
     login, logout,
     setActiveHackathon, createHackathon, updateHackathon, deleteHackathon,
     registerTeam, updateTeamMembers, approveTeam, rejectTeam, deleteTeam, leaveTeam,
@@ -1694,6 +1844,9 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     createTicket, assignTicket, updateTicketStatus,
     createMeal, updateMeal, deleteMeal, issueMealTokens, redeemToken, redeemTokenByCode, getMyTokens, revokeToken, lookupToken,
     addTemplate, deleteTemplate,
+    createAttendanceSlot, updateAttendanceSlot, deleteAttendanceSlot,
+    markAttendance, unmarkAttendance, bulkMarkTeamAttendance,
+    templates,
   ]);
 
   return (

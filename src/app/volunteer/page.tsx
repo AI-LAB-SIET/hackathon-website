@@ -44,7 +44,8 @@ export default function VolunteerDashboard() {
   const {
     session, teams, problemStatements, notifications, tickets, volunteers, updateTicketStatus,
     markAllNotificationsRead, updateProfile, getProfile,
-    foodMeals, foodTokens, redeemToken, lookupToken, activeHackathonId
+    foodMeals, foodTokens, redeemToken, lookupToken, activeHackathonId,
+    attendanceSlots, attendanceEntries, markAttendance, unmarkAttendance, bulkMarkTeamAttendance,
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -58,6 +59,18 @@ export default function VolunteerDashboard() {
   const [lookupError, setLookupError] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [scanModalOpen, setScanModalOpen] = useState(false);
+
+  // Attendance states
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [attendanceSearch, setAttendanceSearch] = useState("");
+
+  // Auto-select active slot
+  useEffect(() => {
+    const activeSlot = attendanceSlots.find(s => s.isActive);
+    if (activeSlot) {
+      setSelectedSlotId(activeSlot.id);
+    }
+  }, [attendanceSlots]);
 
 
   // Profile form state
@@ -127,7 +140,7 @@ export default function VolunteerDashboard() {
       } else {
         setLookupError("No valid token found for this code or registration number.");
       }
-    } catch (err: unknown) {
+    } catch {
       setLookupError("Failed to lookup token.");
     }
   };
@@ -143,8 +156,8 @@ export default function VolunteerDashboard() {
       await redeemToken(scannedToken.id);
       toast("Food token redeemed successfully!", "success");
       setScannedToken({ ...scannedToken, status: "redeemed" });
-    } catch (err: unknown) {
-      toast("Failed to redeem token.", "error");
+    } catch {
+      toast("Invalid token format", "error");
     } finally {
       setRedeeming(false);
     }
@@ -610,63 +623,149 @@ export default function VolunteerDashboard() {
               </div>
             )}
 
-            {/* ==================== ATTENDANCE TAB ==================== */}
-            {activeTab === "attendance" && (
-              <div className="flex flex-col gap-6">
-                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
-                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
-                    <CheckCircle className="h-4.5 w-4.5 text-primary-green" /> Teams Checked In Today
-                  </h3>
-                  <div className="flex flex-col gap-3">
-                    {teams.filter((t) => t.status === "APPROVED").slice(0, 10).map((team) => (
-                      <div
-                        key={team.id}
-                        className="flex justify-between items-center p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
-                            {team.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
-                          </div>
-                          <div>
-                            <div className="font-bold text-gray-800 dark:text-gray-100">{team.name}</div>
-                            <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                              {team.members.length} members · {problemStatements.find(ps => ps.id === team.problemStatementId)?.title || "No problem statement"}
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                          {team.status}
-                        </span>
+            {activeTab === "attendance" && (() => {
+              const activeSlot = attendanceSlots.find(s => s.id === selectedSlotId);
+              const slotEntries = selectedSlotId ? attendanceEntries.filter(e => e.slotId === selectedSlotId) : [];
+              const approvedTeams = teams.filter(t => t.status === "APPROVED");
+              const allParticipants = approvedTeams.flatMap(team =>
+                team.members.map(m => ({
+                  email: m.email, name: m.name, registerNumber: m.registerNumber || "",
+                  teamId: team.id, teamName: team.name, hostelStatus: m.hostelStatus,
+                  department: m.department || "", year: m.year || "",
+                  problemStatementTitle: problemStatements.find(ps => ps.id === team.problemStatementId)?.title || "",
+                }))
+              );
+              const filteredParticipants = attendanceSearch.trim()
+                ? allParticipants.filter(p =>
+                    p.name.toLowerCase().includes(attendanceSearch.toLowerCase()) ||
+                    p.registerNumber.toLowerCase().includes(attendanceSearch.toLowerCase()) ||
+                    p.teamName.toLowerCase().includes(attendanceSearch.toLowerCase()))
+                : allParticipants;
+
+              const exportCSV = () => {
+                if (!activeSlot) { return; }
+                const rows = [
+                  ["#","Name","Register No.","Email","Department","Year","Hostel Status","Team","Problem Statement","Present","Marked At","Marked By"],
+                  ...allParticipants.map((p, i) => {
+                    const entry = slotEntries.find(e => e.participantEmail === p.email);
+                    return [i+1,p.name,p.registerNumber,p.email,p.department,p.year,p.hostelStatus||"",p.teamName,p.problemStatementTitle,entry?"Present":"Absent",entry?new Date(entry.markedAt).toLocaleString():"",entry?(entry.markedByName||entry.markedBy):""];
+                  }),
+                ];
+                const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+                const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `attendance_${activeSlot.name.replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+              };
+
+              return (
+                <div className="flex flex-col gap-5">
+                  {/* Slot Selector */}
+                  <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-primary-dark dark:text-gray-100 flex items-center gap-2">
+                        <ClipboardCheck className="h-4 w-4 text-primary-green" /> Attendance — Select Slot
+                      </h3>
+                      {selectedSlotId && activeSlot && (
+                        <button onClick={exportCSV} className="flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green hover:text-primary-green transition-colors">
+                          ⬇ Export CSV
+                        </button>
+                      )}
+                    </div>
+                    {attendanceSlots.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">No attendance slots have been created by admin yet.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {attendanceSlots.map(slot => (
+                          <button key={slot.id} onClick={() => setSelectedSlotId(slot.id)}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                              selectedSlotId === slot.id
+                                ? "bg-primary-green text-white border-emerald-600"
+                                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary-green"
+                            }`}>
+                            {slot.isActive && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-300 mr-1.5 align-middle" />}
+                            {slot.name}
+                            <span className="ml-1.5 opacity-60 font-normal">({attendanceEntries.filter(e => e.slotId === slot.id).length}/{allParticipants.length})</span>
+                          </button>
+                        ))}
                       </div>
-                    ))}
-                    {teams.filter((t) => t.status === "APPROVED").length === 0 && (
-                      <p className="text-xs text-gray-400 italic">No teams checked in today.</p>
                     )}
                   </div>
-                </div>
 
-                <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700">
-                  <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-4 dark:text-gray-100">
-                    <Clock className="h-4.5 w-4.5 text-amber-500" /> Check-in History
-                  </h3>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    <p>Attendance records are updated in real-time as teams scan in at stations.</p>
-                    <p className="mt-2">Use the <strong>Attendance</strong> tab to track team attendance.</p>
-                  </div>
+                  {/* Attendance table */}
+                  {selectedSlotId && activeSlot && (
+                    <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-1">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div>
+                            <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">{activeSlot.name}</h4>
+                            <p className="text-[11px] text-gray-400">{slotEntries.length} present / {allParticipants.length} total</p>
+                          </div>
+                          <button
+                            onClick={async () => { for (const t of approvedTeams) await bulkMarkTeamAttendance(selectedSlotId, t.id); }}
+                            className="px-3 py-1.5 text-[10px] font-bold rounded-lg bg-primary-green/10 text-emerald-700 hover:bg-primary-green hover:text-white dark:bg-emerald-950/30 dark:text-emerald-400 transition-colors">
+                            Mark All Present
+                          </button>
+                        </div>
+                        <div className="relative mt-2">
+                          <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                          <input type="text" placeholder="Search name, reg. no., or team…" value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)}
+                            className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
+                            <tr>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">#</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Participant</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Team</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Status</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Marked At</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                            {filteredParticipants.map((p, i) => {
+                              const entry = slotEntries.find(e => e.participantEmail === p.email);
+                              return (
+                                <tr key={p.email} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3 text-gray-400">{i+1}</td>
+                                  <td className="px-4 py-3">
+                                    <div className="font-semibold text-gray-800 dark:text-gray-100">{p.name}</div>
+                                    <div className="text-[10px] text-gray-400">{p.registerNumber || "—"} · {p.hostelStatus||"—"}</div>
+                                  </td>
+                                  <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium">{p.teamName}</span></td>
+                                  <td className="px-4 py-3">
+                                    {entry
+                                      ? <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold">Present</span>
+                                      : <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-bold">Absent</span>
+                                    }
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-500">
+                                    {entry ? new Date(entry.markedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}) : "—"}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {entry
+                                      ? <button onClick={() => unmarkAttendance(selectedSlotId, p.email)} className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30 transition-colors">Unmark</button>
+                                      : <button onClick={() => markAttendance(selectedSlotId, p)} className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950/30 transition-colors">Mark Present</button>
+                                    }
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {filteredParticipants.length === 0 && (
+                              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400 italic">No participants found.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {volunteerInfo?.assignedArea && (
-                  <div className="rounded-3xl border border-input-border/30 bg-linear-to-r from-primary-green/5 to-emerald-50 p-5 sm:p-6 shadow-sm dark:from-primary-green/10 dark:to-emerald-900/20">
-                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
-                      <Info className="h-4.5 w-4.5 text-primary-green" /> Your Station
-                    </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      You are assigned to <strong>{volunteerInfo.assignedArea}</strong>. Scan QR codes at this station to track attendance.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+              );
+            })()}
 
             {/* ==================== SCANNER TAB (Food Token Redemption) ==================== */}
             {activeTab === "scanner" && (

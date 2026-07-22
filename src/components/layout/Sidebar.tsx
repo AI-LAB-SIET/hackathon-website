@@ -84,6 +84,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         return [
           { id: "dashboard", name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
           { id: "scanner", name: "Redemption Scanner", icon: <QrCode className="h-5 w-5" /> },
+          { id: "attendance", name: "Attendance", icon: <ClipboardCheck className="h-5 w-5" /> },
           { id: "teams", name: "Teams Directory", icon: <Users className="h-5 w-5" /> },
           { id: "approval", name: "Approval Queue", icon: <UserCheck className="h-5 w-5" /> },
           { id: "problems", name: "On-Spot Materials", icon: <BookOpen className="h-5 w-5" /> },

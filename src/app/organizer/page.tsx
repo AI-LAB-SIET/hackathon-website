@@ -9,7 +9,7 @@ import { useAppState } from "@/components/layout/StateProvider";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { AttendancePanel } from "@/components/ui/AttendancePanel";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, ClipboardCheck, Bell,
@@ -19,9 +19,9 @@ import {
   Github, Video, Globe, BookOpen, Upload, FileText, Paperclip,
   Archive, Send, Edit3, X, QrCode, Info, FolderCode
 } from "lucide-react";
-import { FileAttachment, ProblemStatement, Team, Volunteer, SupportTicket, FoodToken, TemplateResource } from "@/types";
+import { FileAttachment, ProblemStatement, Team, Volunteer, SupportTicket, FoodToken } from "@/types";
 
-type TabType = "dashboard" | "scanner" | "teams" | "approval" | "problems" | "templates" | "volunteers" | "tickets" | "profile";
+type TabType = "dashboard" | "attendance" | "scanner" | "teams" | "approval" | "problems" | "templates" | "volunteers" | "tickets" | "profile";
 type ApprovalFilter = "all" | "pending" | "approved" | "rejected";
 type TicketFilter = "all" | "Open" | "Assigned" | "In Progress" | "Resolved" | "Closed";
 
@@ -33,7 +33,8 @@ export default function OrganizerDashboard() {
     addVolunteer, updateVolunteer, removeVolunteer, assignTicket, updateTicketStatus,
     addProblemStatement, updateProblemStatement, archiveProblemStatement,
     templates, addTemplate, deleteTemplate,
-    foodMeals, foodTokens, redeemToken, lookupToken, activeHackathonId
+    foodMeals, foodTokens, redeemToken, lookupToken, activeHackathonId,
+    attendanceSlots, attendanceEntries, markAttendance, unmarkAttendance, bulkMarkTeamAttendance,
   } = useAppState();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -55,7 +56,17 @@ export default function OrganizerDashboard() {
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>("all");
 
   // Attendance
-  const [attendanceTeam, setAttendanceTeam] = useState<Team | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [attendanceSearch, setAttendanceSearch] = useState("");
+
+
+  // Auto-select active slot
+  useEffect(() => {
+    const activeSlot = attendanceSlots.find(s => s.isActive);
+    if (activeSlot) {
+      setSelectedSlotId(activeSlot.id);
+    }
+  }, [attendanceSlots]);
 
   // Announcement form
   const [annForm, setAnnForm] = useState({ title: "", content: "", type: "info" as "info" | "warning" | "success" });
@@ -100,7 +111,7 @@ export default function OrganizerDashboard() {
   const pendingTeams = teams.filter((t) => t.status === "PENDING");
   const rejectedTeams = teams.filter((t) => t.status === "REJECTED");
   const submittedProjects = teams.filter((t) => t.submitted);
-  const checkedIn = teams.filter((t) => t.attendance?.checkedIn);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const departments = useMemo(() => Array.from(new Set(teams.flatMap((t) => t.members.map((m) => m.department)))), [teams]);
@@ -163,7 +174,7 @@ export default function OrganizerDashboard() {
       } else {
         setLookupError("No valid token found for this code or registration number.");
       }
-    } catch (err: unknown) {
+    } catch {
       setLookupError("Failed to lookup token.");
     }
   };
@@ -179,7 +190,7 @@ export default function OrganizerDashboard() {
       await redeemToken(scannedToken.id);
       toast("Food token redeemed successfully!", "success");
       setScannedToken({ ...scannedToken, status: "redeemed" });
-    } catch (err: unknown) {
+    } catch {
       toast("Failed to redeem token.", "error");
     } finally {
       setRedeeming(false);
@@ -335,7 +346,7 @@ export default function OrganizerDashboard() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["Team Name", "Status", "Members", "Track", "Attendance", "Checked In"];
+    const headers = ["Team Name", "Status", "Members", "Track"];
     const rows = teams.map((t) => {
       const problemStatement = problemStatements.find((ps) => ps.id === t.problemStatementId);
       return [
@@ -343,8 +354,6 @@ export default function OrganizerDashboard() {
         t.status,
         t.size.toString(),
         problemStatement?.title || "—",
-        t.attendance?.checkedIn ? "Yes" : "No",
-        t.attendance?.checkInTime || "—",
       ];
     });
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -486,7 +495,7 @@ export default function OrganizerDashboard() {
                     { label: "Approved Teams", value: approvedTeams.length, icon: <CheckCircle className="h-5 w-5 text-emerald-500" />, bg: "bg-emerald-50" },
                     { label: "Pending Approval", value: pendingTeams.length, icon: <Clock className="h-5 w-5 text-blue-500" />, bg: "bg-blue-50" },
                     { label: "Projects Submitted", value: submittedProjects.length, icon: <ClipboardCheck className="h-5 w-5 text-purple-500" />, bg: "bg-purple-50" },
-                    { label: "Checked In", value: checkedIn.length, icon: <Activity className="h-5 w-5 text-teal-500" />, bg: "bg-teal-50" },
+
                     { label: "Volunteers", value: volunteers.length, icon: <UserCheck className="h-5 w-5 text-indigo-500" />, bg: "bg-indigo-50" },
                     { label: "Open Tickets", value: openTickets.length, icon: <Ticket className="h-5 w-5 text-orange-500" />, bg: "bg-orange-50" },
                     { label: "Rejected", value: rejectedTeams.length, icon: <XCircle className="h-5 w-5 text-red-500" />, bg: "bg-red-50" },
@@ -522,175 +531,347 @@ export default function OrganizerDashboard() {
 
             {/* ==================== SCANNER TAB (Food Token Redemption) ==================== */}
             {activeTab === "scanner" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Lookup & Redemption Panel */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
-                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
-                      <QrCode className="h-4.5 w-4.5 text-primary-green" /> Scan or Lookup Token
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Enter the token code (e.g., FT-ABCD-1234) or the student&apos;s registration number to verify food tokens.
-                    </p>
+              <motion.div key="scanner" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Food Token Scanner</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Lookup & Redemption Panel */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                      <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                        <QrCode className="h-4.5 w-4.5 text-primary-green" /> Scan or Lookup Token
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Enter the token code (e.g., FT-ABCD-1234) or the student&apos;s registration number to verify food tokens.
+                      </p>
 
-                    <form onSubmit={handleLookup} className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Token Code or Register Number"
-                        value={lookupQuery}
-                        onChange={(e) => setLookupQuery(e.target.value)}
-                        className="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
-                      />
-                      <Button type="submit">
-                        Look Up
-                      </Button>
-                      <Button type="button" variant="outline" onClick={() => setScanModalOpen(true)}>
-                        Scan Token
-                      </Button>
-                    </form>
+                      <form onSubmit={handleLookup} className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Token Code or Register Number"
+                          value={lookupQuery}
+                          onChange={(e) => setLookupQuery(e.target.value)}
+                          className="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                        />
+                        <Button type="submit">
+                          Look Up
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => setScanModalOpen(true)}>
+                          Scan Token
+                        </Button>
+                      </form>
 
-                    {lookupError && (
-                      <p className="text-xs text-red-500 font-bold">{lookupError}</p>
-                    )}
-
-                    {/* Scanned Token Card */}
-                    <AnimatePresence mode="wait">
-                      {scannedToken && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          className="p-5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 space-y-4"
-                        >
-                          <div className="flex justify-between items-start border-b border-gray-100 dark:border-gray-700/50 pb-3">
-                            <div>
-                              <h4 className="font-extrabold text-sm text-primary-dark dark:text-gray-100">
-                                {scannedToken.participantName}
-                              </h4>
-                              <span className="text-[10px] text-gray-400 font-mono">Reg No: {scannedToken.registerNumber || "N/A"}</span>
-                            </div>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${scannedToken.status === "redeemed" ? "bg-red-50 text-red-650" : "bg-emerald-50 text-emerald-700"}`}>
-                              {scannedToken.status === "redeemed" ? "Redeemed" : "Valid"}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4 text-xs">
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">Meal</span>
-                              <span className="font-bold text-primary-dark dark:text-gray-150">{scannedToken.mealName}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">Type</span>
-                              <span className="font-bold text-primary-dark dark:text-gray-150 capitalize">{scannedToken.mealType}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">Email Address</span>
-                              <span className="font-semibold text-gray-650 dark:text-gray-300">{scannedToken.participantEmail}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">Token Code</span>
-                              <span className="font-mono text-gray-650 dark:text-gray-300 font-bold">{scannedToken.tokenCode}</span>
-                            </div>
-                          </div>
-
-                          {scannedToken.status === "issued" ? (
-                            <Button
-                              onClick={handleRedeem}
-                              isLoading={redeeming}
-                              className="w-full py-3 mt-2"
-                            >
-                              Confirm &amp; Redeem Token
-                            </Button>
-                          ) : (
-                            <div className="p-3 text-center rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-400 font-bold">
-                              Token already redeemed at {scannedToken.redeemedAt ? new Date(scannedToken.redeemedAt).toLocaleString() : "an earlier time"}.
-                            </div>
-                          )}
-                        </motion.div>
+                      {lookupError && (
+                        <p className="text-xs text-red-500 font-bold">{lookupError}</p>
                       )}
-                    </AnimatePresence>
-                  </div>
 
-                  {/* Redemptions Log */}
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
-                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
-                      <Clock className="h-4.5 w-4.5 text-primary-green" /> Your Redemption Log
-                    </h3>
-                    <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-750">
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-800 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                          <tr>
-                            <th className="px-3 py-2">Participant</th>
-                            <th className="px-3 py-2">Meal</th>
-                            <th className="px-3 py-2">Code</th>
-                            <th className="px-3 py-2">Time</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                          {foodTokens
-                            .filter((t) => t.status === "redeemed" && t.redeemedBy === session.email)
-                            .slice(0, 10)
-                            .map((t) => (
-                              <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/10">
-                                <td className="px-3 py-2">
-                                  <div className="font-semibold">{t.participantName}</div>
-                                  <div className="text-[9px] text-gray-400">{t.registerNumber}</div>
-                                </td>
-                                <td className="px-3 py-2">{t.mealName}</td>
-                                <td className="px-3 py-2 font-mono text-[10px]">{t.tokenCode}</td>
-                                <td className="px-3 py-2 text-[10px] text-gray-400">
-                                  {t.redeemedAt ? new Date(t.redeemedAt).toLocaleTimeString() : "-"}
-                                </td>
-                              </tr>
-                            ))}
-                          {foodTokens.filter((t) => t.status === "redeemed" && t.redeemedBy === session.email).length === 0 && (
-                            <tr>
-                              <td colSpan={4} className="text-center py-4 text-gray-400 text-[10px]">
-                                No redemptions logged at this station yet.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Serving Station Info */}
-                <div className="space-y-6">
-                  <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
-                    <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
-                      <Info className="h-4.5 w-4.5 text-primary-green" /> Active Meals
-                    </h3>
-                    <div className="space-y-3">
-                      {foodMeals.map((m) => {
-                        const isPast = new Date(m.scheduledAt).getTime() + m.windowMinutes * 60000 < Date.now();
-                        const isFuture = new Date(m.scheduledAt).getTime() > Date.now();
-                        const isServing = !isPast && !isFuture;
-
-                        return (
-                          <div
-                            key={m.id}
-                            className={`p-3.5 rounded-xl border flex flex-col gap-1.5 ${isServing ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/10 dark:border-emerald-900" : "bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700"}`}
+                      {/* Scanned Token Card */}
+                      <AnimatePresence mode="wait">
+                        {scannedToken && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="p-5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 space-y-4"
                           >
-                            <div className="flex justify-between items-center">
-                              <span className="font-extrabold text-xs text-primary-dark dark:text-gray-150">{m.name}</span>
-                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${isServing ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-500"}`}>
-                                {isServing ? "Serving Now" : isFuture ? "Upcoming" : "Ended"}
+                            <div className="flex justify-between items-start border-b border-gray-100 dark:border-gray-700/50 pb-3">
+                              <div>
+                                <h4 className="font-extrabold text-sm text-primary-dark dark:text-gray-100">
+                                  {scannedToken.participantName}
+                                </h4>
+                                <span className="text-[10px] text-gray-400 font-mono">Reg No: {scannedToken.registerNumber || "N/A"}</span>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${scannedToken.status === "redeemed" ? "bg-red-50 text-red-650" : "bg-emerald-50 text-emerald-700"}`}>
+                                {scannedToken.status === "redeemed" ? "Redeemed" : "Valid"}
                               </span>
                             </div>
-                            <span className="text-[10px] text-gray-400">Scheduled: {new Date(m.scheduledAt).toLocaleTimeString()} ({m.windowMinutes}m validity)</span>
-                          </div>
-                        );
-                      })}
-                      {foodMeals.length === 0 && (
-                        <div className="text-center py-4 text-xs text-gray-400">No scheduled meals found.</div>
-                      )}
+
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                              <div>
+                                <span className="text-[10px] text-gray-400 block">Meal</span>
+                                <span className="font-bold text-primary-dark dark:text-gray-150">{scannedToken.mealName}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-gray-400 block">Type</span>
+                                <span className="font-bold text-primary-dark dark:text-gray-150 capitalize">{scannedToken.mealType}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-gray-400 block">Email Address</span>
+                                <span className="font-semibold text-gray-650 dark:text-gray-300">{scannedToken.participantEmail}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-gray-400 block">Token Code</span>
+                                <span className="font-mono text-gray-650 dark:text-gray-300 font-bold">{scannedToken.tokenCode}</span>
+                              </div>
+                            </div>
+
+                            {scannedToken.status === "issued" ? (
+                              <Button
+                                onClick={handleRedeem}
+                                isLoading={redeeming}
+                                className="w-full py-3 mt-2"
+                              >
+                                Confirm &amp; Redeem Token
+                              </Button>
+                            ) : (
+                              <div className="p-3 text-center rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-400 font-bold">
+                                Token already redeemed at {scannedToken.redeemedAt ? new Date(scannedToken.redeemedAt).toLocaleString() : "an earlier time"}.
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Redemptions Log */}
+                    <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                      <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                        <Clock className="h-4.5 w-4.5 text-primary-green" /> Recent Redemptions
+                      </h3>
+                      <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-750">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-gray-50 dark:bg-gray-800 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <tr>
+                              <th className="px-3 py-2">Participant</th>
+                              <th className="px-3 py-2">Meal</th>
+                              <th className="px-3 py-2">Code</th>
+                              <th className="px-3 py-2">Time</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                            {foodTokens
+                              .filter((t) => t.status === "redeemed")
+                              .sort((a, b) => (b.redeemedAt || "").localeCompare(a.redeemedAt || ""))
+                              .slice(0, 10)
+                              .map((t) => (
+                                <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                  <td className="px-3 py-2 font-semibold text-gray-800 dark:text-gray-200">{t.participantName}</td>
+                                  <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{t.mealName}</td>
+                                  <td className="px-3 py-2 text-gray-500 font-mono text-[10px]">{t.tokenCode.split("-").pop()}</td>
+                                  <td className="px-3 py-2 text-gray-400 text-[10px]">
+                                    {t.redeemedAt ? new Date(t.redeemedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+                                  </td>
+                                </tr>
+                              ))}
+                            {foodTokens.filter((t) => t.status === "redeemed").length === 0 && (
+                              <tr>
+                                <td colSpan={4} className="px-3 py-4 text-center text-gray-400 italic">No redemptions yet.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sidebar Stats */}
+                  <div className="space-y-6">
+                    <div className="rounded-3xl border border-input-border/30 bg-linear-to-b from-primary-green/5 to-emerald-50 dark:from-primary-green/10 dark:to-emerald-900/20 p-5 sm:p-6 shadow-sm">
+                      <h3 className="text-sm font-bold text-primary-dark mb-4 flex items-center gap-2 dark:text-gray-100">
+                        <Activity className="h-4.5 w-4.5 text-primary-green" /> Live Metrics
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                          <p className="text-xs text-gray-500 font-bold mb-1">Tokens Issued</p>
+                          <p className="text-2xl font-black text-gray-800 dark:text-gray-100">{foodTokens.length}</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                          <p className="text-xs text-gray-500 font-bold mb-1">Tokens Redeemed</p>
+                          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                            {foodTokens.filter(t => t.status === "redeemed").length}
+                          </p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                          <p className="text-xs text-gray-500 font-bold mb-1">Redemption Rate</p>
+                          <p className="text-xl font-bold text-primary-dark dark:text-gray-150">
+                            {foodTokens.length > 0
+                              ? Math.round((foodTokens.filter(t => t.status === "redeemed").length / foodTokens.length) * 100)
+                              : 0}%
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Serving Station Info */}
+                    <div className="rounded-3xl border border-input-border/30 bg-white p-5 sm:p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700 space-y-4">
+                      <h3 className="text-sm font-bold text-primary-dark flex items-center gap-2 mb-2 dark:text-gray-100">
+                        <Info className="h-4.5 w-4.5 text-primary-green" /> Active Meals
+                      </h3>
+                      <div className="space-y-3">
+                        {foodMeals.map((m) => {
+                          const isPast = new Date(m.scheduledAt).getTime() + m.windowMinutes * 60000 < Date.now();
+                          const isFuture = new Date(m.scheduledAt).getTime() > Date.now();
+                          const isServing = !isPast && !isFuture;
+
+                          return (
+                            <div
+                              key={m.id}
+                              className={`p-3.5 rounded-xl border flex flex-col gap-1.5 ${isServing ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/10 dark:border-emerald-900" : "bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700"}`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="font-extrabold text-xs text-primary-dark dark:text-gray-150">{m.name}</span>
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${isServing ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-500"}`}>
+                                  {isServing ? "Serving Now" : isFuture ? "Upcoming" : "Ended"}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-gray-400">Scheduled: {new Date(m.scheduledAt).toLocaleTimeString()} ({m.windowMinutes}m validity)</span>
+                            </div>
+                          );
+                        })}
+                        {foodMeals.length === 0 && (
+                          <div className="text-center py-4 text-xs text-gray-400">No scheduled meals found.</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
+
+            {/* ─── ATTENDANCE (Slot-based) ─── */}
+            {activeTab === "attendance" && (() => {
+              const activeSlot = attendanceSlots.find(s => s.id === selectedSlotId);
+              const slotEntries = selectedSlotId ? attendanceEntries.filter(e => e.slotId === selectedSlotId) : [];
+              const approvedTeams = teams.filter(t => t.status === "APPROVED");
+              const allParticipants = approvedTeams.flatMap(team =>
+                team.members.map(m => ({
+                  email: m.email, name: m.name, registerNumber: m.registerNumber || "",
+                  teamId: team.id, teamName: team.name, hostelStatus: m.hostelStatus,
+                  department: m.department || "", year: m.year || "",
+                  problemStatementTitle: problemStatements.find(ps => ps.id === team.problemStatementId)?.title || "",
+                }))
+              );
+              const filteredParticipants = attendanceSearch.trim()
+                ? allParticipants.filter(p =>
+                    p.name.toLowerCase().includes(attendanceSearch.toLowerCase()) ||
+                    p.registerNumber.toLowerCase().includes(attendanceSearch.toLowerCase()) ||
+                    p.teamName.toLowerCase().includes(attendanceSearch.toLowerCase()))
+                : allParticipants;
+
+              const exportCSV = () => {
+                if (!activeSlot) return;
+                const rows = [
+                  ["#","Name","Register No.","Email","Department","Year","Hostel Status","Team","Problem Statement","Present","Marked At","Marked By"],
+                  ...allParticipants.map((p, i) => {
+                    const entry = slotEntries.find(e => e.participantEmail === p.email);
+                    return [i+1, p.name, p.registerNumber, p.email, p.department, p.year, p.hostelStatus||"", p.teamName, p.problemStatementTitle, entry?"Present":"Absent", entry?new Date(entry.markedAt).toLocaleString():"", entry?(entry.markedByName||entry.markedBy):""];
+                  }),
+                ];
+                const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+                const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `attendance_${activeSlot.name.replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+              };
+
+              return (
+                <motion.div key="attendance" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                  <h2 className="font-extrabold text-primary-dark text-xl dark:text-gray-100">Participant Attendance</h2>
+                  
+                  <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-primary-dark dark:text-gray-100 flex items-center gap-2">
+                        <ClipboardCheck className="h-4 w-4 text-primary-green" /> Attendance — Select Slot
+                      </h3>
+                      {selectedSlotId && activeSlot && (
+                        <button onClick={exportCSV} className="flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-green hover:text-primary-green transition-colors">
+                          ⬇ Export CSV
+                        </button>
+                      )}
+                    </div>
+                    {attendanceSlots.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">No attendance slots have been created by admin yet.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {attendanceSlots.map(slot => (
+                          <button key={slot.id} onClick={() => setSelectedSlotId(slot.id)}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                              selectedSlotId === slot.id
+                                ? "bg-primary-green text-white border-emerald-600"
+                                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary-green"
+                            }`}>
+                            {slot.isActive && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-300 mr-1.5 align-middle" />}
+                            {slot.name}
+                            <span className="ml-1.5 opacity-60 font-normal">({attendanceEntries.filter(e => e.slotId === slot.id).length}/{allParticipants.length})</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedSlotId && activeSlot && (
+                    <div className="rounded-3xl border border-input-border/30 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-1">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div>
+                            <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">{activeSlot.name}</h4>
+                            <p className="text-[11px] text-gray-400">{slotEntries.length} present / {allParticipants.length} total</p>
+                          </div>
+                          <button
+                            onClick={async () => { for (const t of approvedTeams) await bulkMarkTeamAttendance(selectedSlotId, t.id); }}
+                            className="px-3 py-1.5 text-[10px] font-bold rounded-lg bg-primary-green/10 text-emerald-700 hover:bg-primary-green hover:text-white dark:bg-emerald-950/30 dark:text-emerald-400 transition-colors">
+                            Mark All Present
+                          </button>
+                        </div>
+                        <div className="relative mt-2">
+                          <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                          <input type="text" placeholder="Search name, reg. no., or team…" value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)}
+                            className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-green/30" />
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
+                            <tr>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">#</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Participant</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Team</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Status</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Marked At</th>
+                              <th className="px-4 py-2.5 font-bold uppercase text-[10px] tracking-wider">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                            {filteredParticipants.map((p, i) => {
+                              const entry = slotEntries.find(e => e.participantEmail === p.email);
+                              return (
+                                <tr key={p.email} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                                  <td className="px-4 py-3 text-gray-400">{i+1}</td>
+                                  <td className="px-4 py-3">
+                                    <div className="font-semibold text-gray-800 dark:text-gray-100">{p.name}</div>
+                                    <div className="text-[10px] text-gray-400">{p.registerNumber || "—"} · {p.hostelStatus||"—"}</div>
+                                  </td>
+                                  <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium">{p.teamName}</span></td>
+                                  <td className="px-4 py-3">
+                                    {entry
+                                      ? <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold">Present</span>
+                                      : <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-bold">Absent</span>
+                                    }
+                                  </td>
+                                  <td className="px-4 py-3 text-gray-500">
+                                    {entry ? new Date(entry.markedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}) : "—"}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {entry
+                                      ? <button onClick={() => unmarkAttendance(selectedSlotId, p.email)} className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30 transition-colors">Unmark</button>
+                                      : <button onClick={() => markAttendance(selectedSlotId, p)} className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950/30 transition-colors">Mark Present</button>
+                                    }
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {filteredParticipants.length === 0 && (
+                              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400 italic">No participants found.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })()}
+
 
             {/* ─── TEAMS ─── */}
             {activeTab === "teams" && (
@@ -714,7 +895,6 @@ export default function OrganizerDashboard() {
                         <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Track</th>
                         <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Size</th>
                         <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Status</th>
-                        <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Attendance</th>
                         <th className="px-5 py-3 text-left text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Actions</th>
                       </tr>
                     </thead>
@@ -730,11 +910,6 @@ export default function OrganizerDashboard() {
                             <td className="px-5 py-3 text-gray-600 dark:text-gray-300">{t.size}</td>
                             <td className="px-5 py-3">
                               <span className={`text-xs font-bold px-2 py-1 rounded-full ${t.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : t.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>{t.status}</span>
-                            </td>
-                            <td className="px-5 py-3">
-                              {t.attendance?.checkedIn
-                                ? <span className="text-xs font-semibold text-emerald-600">✓ {t.attendance.checkInTime}</span>
-                                : <span className="text-xs text-gray-400">—</span>}
                             </td>
                             <td className="px-5 py-3">
                               <div className="flex flex-wrap items-center gap-2">
@@ -758,11 +933,7 @@ export default function OrganizerDashboard() {
                                 }} className="text-[10px] font-bold px-2 py-1.5 rounded bg-gray-100 hover:bg-red-50 dark:bg-gray-700 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 border border-gray-200 dark:border-gray-600 cursor-pointer transition-colors">
                                   Delete
                                 </button>
-                                {t.status === "APPROVED" && (
-                                  <button onClick={() => setAttendanceTeam(t)} className="text-[10px] font-bold text-amber-600 hover:underline cursor-pointer flex items-center gap-1 ml-1">
-                                    Attendance
-                                  </button>
-                                )}
+
                               </div>
                             </td>
                           </tr>
@@ -1204,15 +1375,7 @@ export default function OrganizerDashboard() {
           {/* QR Scanner */}
           
 
-          {/* Attendance Panel */}
-          {attendanceTeam && (
-            <AttendancePanel
-              team={attendanceTeam}
-              open={!!attendanceTeam}
-              onClose={() => setAttendanceTeam(null)}
-              scannerName={session.name || session.email || "Organizer"}
-            />
-          )}
+
 
           {/* ─── TEAM DETAIL MODAL ─── */}
           <Modal

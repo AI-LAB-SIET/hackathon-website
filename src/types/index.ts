@@ -469,3 +469,34 @@ export interface ProblemStatement {
 }
 
 export type Ticket = SupportTicket;
+
+// ─── Attendance Slots ─────────────────────────────────────────────────────────
+
+export interface AttendanceSlot {
+  id: string;
+  hackathonId: string;
+  name: string;             // e.g. "Day 1 — Morning Session"
+  description?: string;
+  scheduledAt: string;      // ISO datetime
+  isActive: boolean;        // only one should be active at a time
+  createdBy: string;        // admin email
+  createdAt: string;
+}
+
+export interface AttendanceEntry {
+  id: string;
+  slotId: string;
+  hackathonId: string;
+  participantEmail: string;
+  participantName: string;
+  registerNumber: string;
+  teamId: string;
+  teamName: string;
+  hostelStatus?: "hosteller" | "dayscholar";
+  department?: string;
+  year?: string;
+  problemStatementTitle?: string;
+  markedAt: string;         // ISO datetime
+  markedBy: string;         // email of the staff who marked
+  markedByName?: string;
+}
