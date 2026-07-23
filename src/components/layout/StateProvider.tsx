@@ -235,7 +235,6 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
                 status: "active",
                 createdAt: new Date().toISOString(),
                 createdBy: "admin@college.edu",
-                teamsLocked: false,
                 problemStatementRevealTime: "",
                 resultsRevealTime: "",
               }
@@ -257,7 +256,6 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
               status: "active",
               createdAt: new Date().toISOString(),
               createdBy: "admin@college.edu",
-              teamsLocked: false,
               problemStatementRevealTime: "",
               resultsRevealTime: "",
             }
@@ -290,7 +288,6 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
       status: "active",
       createdAt: new Date().toISOString(),
       createdBy: "admin@hacklab.internal",
-      teamsLocked: false,
       problemStatementRevealTime: "",
       resultsRevealTime: "",
     };
@@ -570,9 +567,11 @@ export function StateProvider({ children }: { children: React.ReactNode }) {
     if (!hId) return false;
     const h = hackathonsRef.current.find((h) => h.id === hId);
     if (!h) return false;
+    if (h.teamsLocked === true) return true;
+    if (h.teamsLocked === false) return false;
     const isEnded = h.status === "ended" || h.status === "completed" || h.status === "archived";
     const isPastEnd = new Date().getTime() > new Date(h.endDate).getTime();
-    return h.teamsLocked === true || isEnded || isPastEnd;
+    return isEnded || isPastEnd;
   }, [activeHackathonId]);
 
   // ── 3. Actions & Operations ──────────────────────────────────────────────────

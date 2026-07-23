@@ -1478,6 +1478,9 @@ export default function AdminDashboard() {
                   {hackathons.map((h) => {
                     const regLink = typeof window !== "undefined" ? `${window.location.origin}/register?h=${h.slug}` : `/register?h=${h.slug}`;
                     const isActive = activeHackathonId === h.id;
+                    const isEnded = h.status === 'ended' || h.status === 'completed' || h.status === 'archived';
+                    const isPastEnd = new Date().getTime() > new Date(h.endDate).getTime();
+                    const isFrozen = h.teamsLocked === true || (h.teamsLocked !== false && (isEnded || isPastEnd));
                     return (
                       <div
                         key={h.id}
@@ -1517,7 +1520,7 @@ export default function AdminDashboard() {
                               <strong>Registration:</strong> {h.registrationOpen ? "Open" : "Closed"}
                             </div>
                             <div>
-                              <strong>Freeze Status:</strong> {h.teamsLocked || h.status === 'ended' || h.status === 'completed' || h.status === 'archived' || (new Date().getTime() > new Date(h.endDate).getTime()) ? 'Frozen ❄️' : 'Active 🟢'}
+                              <strong>Freeze Status:</strong> {isFrozen ? 'Frozen ❄️' : 'Active 🟢'}
                             </div>
                           </div>
 
@@ -1563,14 +1566,15 @@ export default function AdminDashboard() {
                               size="sm"
                               variant="secondary"
                               onClick={() => {
-                                if (confirm(`Are you sure you want to ${h.teamsLocked ? 'unfreeze' : 'freeze'} teams and submissions for this hackathon?`)) {
-                                  updateHackathon(h.id, { teamsLocked: !h.teamsLocked });
-                                  toast(`Teams and submissions ${h.teamsLocked ? 'unfrozen' : 'frozen'} successfully.`, "success");
+                                const nextLocked = !isFrozen;
+                                if (confirm(`Are you sure you want to ${isFrozen ? 'unfreeze' : 'freeze'} teams and submissions for this hackathon?`)) {
+                                  updateHackathon(h.id, { teamsLocked: nextLocked });
+                                  toast(`Teams and submissions ${isFrozen ? 'unfrozen' : 'frozen'} successfully.`, "success");
                                 }
                               }}
-                              className={`h-7 text-[10px] ${h.teamsLocked ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30' : 'text-primary-dark hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}
+                              className={`h-7 text-[10px] ${isFrozen ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30' : 'text-primary-dark hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}
                             >
-                              {h.teamsLocked ? 'Unfreeze' : 'Freeze'}
+                              {isFrozen ? 'Unfreeze' : 'Freeze'}
                             </Button>
                             <Button
                               size="sm"
@@ -1618,7 +1622,6 @@ export default function AdminDashboard() {
                                 minTeamSize: 2,
                                 status: "active",
                                 createdBy: session.email || "admin@hacklab.internal",
-                                teamsLocked: false,
                                 problemStatementRevealTime: "",
                                 resultsRevealTime: "",
                               });

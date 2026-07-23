@@ -149,11 +149,14 @@ export default function ParticipantDashboard() {
     ? (new Date().getTime() > new Date(teamHackathon.endDate).getTime())
     : false;
 
-  const isTeamLocked = teamHackathon?.teamsLocked === true || 
-                       teamHackathon?.status === "ended" || 
-                       teamHackathon?.status === "completed" || 
-                       teamHackathon?.status === "archived" ||
-                       isHackathonOver;
+  const isTeamLocked = teamHackathon
+    ? (teamHackathon.teamsLocked === true || (teamHackathon.teamsLocked !== false && (
+        teamHackathon.status === "ended" || 
+        teamHackathon.status === "completed" || 
+        teamHackathon.status === "archived" ||
+        isHackathonOver
+      )))
+    : false;
 
   const isProblemStatementRevealed = !activeHackathon?.problemStatementRevealTime || new Date().getTime() >= new Date(activeHackathon.problemStatementRevealTime).getTime();
   const isResultRevealed = activeHackathon?.resultsRevealTime ? new Date().getTime() >= new Date(activeHackathon.resultsRevealTime).getTime() : false;
